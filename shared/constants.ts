@@ -25,3 +25,6 @@ export const RATE_LIMITS = {
 
 /** POST /v1/waitlist body cap (dispatch uses MAX_BODY_BYTES in shared/dispatch.ts). */
 export const WAITLIST_MAX_BYTES = 4 * 1024
+
+/** RTL reserve (%) the canonical aerial payload requests ([ TASK NODE ] / default console payload). */
+export const CANONICAL_RTL_RESERVE_PCT = 25

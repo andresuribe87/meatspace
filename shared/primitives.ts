@@ -1,3 +1,4 @@
+import { CANONICAL_RTL_RESERVE_PCT } from './constants'
 import { offsetKm, round5 } from './geo'
 import type {
   AerialIsrPayload,
@@ -118,7 +119,7 @@ function aerialPayload(node: HardwareNode): AerialIsrPayload {
     node_id: node.id,
     intent: 'SCAN_CORRIDOR',
     geometry: { type: 'Polygon', coordinates: [[sw, se, ne, nw, sw]] },
-    constraints: { agl_floor_m: Math.max(60, node.minAglM ?? 0), agl_ceiling_m: 120, rtl_reserve_pct: 25 },
+    constraints: { agl_floor_m: Math.max(60, node.minAglM ?? 0), agl_ceiling_m: 120, rtl_reserve_pct: CANONICAL_RTL_RESERVE_PCT },
     sensors: ['EO', 'LWIR'],
     est_duration_min: def.estDurationMin,
     max_spend_usdc: suggestedMaxSpendUsd(node.rateCents, def.estDurationMin),

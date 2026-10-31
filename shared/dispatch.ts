@@ -4,9 +4,10 @@
  *  - planDispatch(): runs the VALIDATE -> ESCROW -> COMPILE state machine against a node snapshot.
  * The ATTEST step (hash + receipt) is appended by the Durable Object, which owns randomness and time.
  */
+import { CANONICAL_RTL_RESERVE_PCT } from './constants'
 import { centsToDecimal, formatUsd } from './format'
 import { haversineKm, isLat, isLon } from './geo'
-import { COMPILE_TARGETS, escrowCents, PRIMITIVES, VALIDATE_MESSAGES } from './primitives'
+import { COMPILE_TARGETS, escrowCents, PRIMITIVES, primitiveForCategory, VALIDATE_MESSAGES } from './primitives'
 import type {
   DispatchEvent,
   DispatchPayload,
@@ -337,6 +338,19 @@ function chargeCheck(node: HardwareNode, durationMin: number, reservePct: number
     }
   }
   return null
+}
+
+/**
+ * Charge (%) a battery node needs to pass ERR_INSUFFICIENT_CHARGE with its own canonical payload
+ * (the one [ TASK NODE ] loads): draw for the primitive's default duration + reserve. 0 for mains cells.
+ * The drift model sends IDLE nodes to their charger before they fall below it, and the orderbook
+ * shows a node as available only at or above it, so "available" always means "dispatchable".
+ */
+export function canonicalChargeFloorPct(node: HardwareNode): number {
+  if (node.power !== 'BATTERY') return 0
+  const def = PRIMITIVES[primitiveForCategory(node.category)]
+  const reserve = node.category === 'AERIAL' ? CANONICAL_RTL_RESERVE_PCT : GROUND_RESERVE_PCT
+  return node.drainPctPerMin * def.estDurationMin + reserve
 }
 
 /** Number of compiled primitives the COMPILE phase reports (deterministic). */
