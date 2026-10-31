@@ -1,0 +1,215 @@
+<!doctype html>
+<!--
+  Source for public/og.png (1200x630). Rendered by scripts/render-og.mjs; open it directly in a
+  browser from a checkout (file://) to preview. Fonts are the same @fontsource-variable files the
+  SPA bundles, loaded from node_modules. Palette is the handoff palette only; no gradients,
+  shadows, glow or radius. Copy is verbatim from docs/handoff-v0.1.md.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>meatspace.sh og card</title>
+    <style>
+      @font-face {
+        font-family: 'JetBrains Mono Variable';
+        font-style: normal;
+        font-weight: 100 800;
+        src: url('../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2') format('woff2-variations');
+      }
+      /* Declared for parity with the SPA; the card itself is all mono (sans is reserved for the value proposition). */
+      @font-face {
+        font-family: 'Inter Variable';
+        font-style: normal;
+        font-weight: 100 900;
+        src: url('../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2-variations');
+      }
+
+      :root {
+        --bg: #090a0c;
+        --panel: #111318;
+        --line: #222630;
+        --fg: #e2e8f0;
+        --muted: #64748b;
+        --emerald: #10b981;
+        --mono: 'JetBrains Mono Variable', monospace;
+        --sans: 'Inter Variable', sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        border-radius: 0;
+      }
+
+      html,
+      body {
+        background: var(--bg);
+      }
+
+      #og {
+        position: relative;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--mono);
+        font-feature-settings: 'zero' 1, 'calt' 0;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .frame {
+        position: absolute;
+        inset: 24px;
+        display: grid;
+        grid-template-rows: 56px 1fr 52px;
+        border: 1px solid var(--line);
+      }
+
+      .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 32px;
+        font-size: 18px;
+        color: var(--muted);
+        white-space: pre;
+      }
+      .bar.top {
+        border-bottom: 1px solid var(--line);
+      }
+      .bar.bottom {
+        justify-content: flex-start;
+        gap: 16px;
+        border-top: 1px solid var(--line);
+        font-size: 14px;
+        letter-spacing: -0.01em;
+      }
+
+      main {
+        padding: 44px 32px 0;
+      }
+
+      h1 {
+        font-size: 88px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: -0.025em;
+        color: var(--fg);
+        white-space: pre;
+      }
+      .cursor {
+        display: inline-block;
+        width: 0.5em;
+        height: 0.82em;
+        margin-left: 0.12em;
+        vertical-align: baseline;
+        transform: translateY(0.06em);
+        background: var(--emerald);
+      }
+
+      .sub {
+        margin-top: 22px;
+        font-size: 28px;
+        color: var(--muted);
+      }
+
+      .console {
+        margin-top: 40px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        font-size: 18px;
+        line-height: 1.75;
+      }
+      .console .head {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 20px;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+      }
+      .console .rows {
+        padding: 10px 20px 12px;
+      }
+      .head span,
+      .row span {
+        white-space: pre;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 5ch 1fr;
+        column-gap: 2ch;
+      }
+      .t {
+        text-align: right;
+        color: var(--muted);
+      }
+      .ok {
+        font-weight: 700;
+        color: var(--emerald);
+      }
+
+      .ticker {
+        color: var(--fg);
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .emerald {
+        color: var(--emerald);
+      }
+      .live {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--emerald);
+      }
+      .live::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        background: var(--emerald);
+      }
+      .rule {
+        width: 1px;
+        height: 14px;
+        background: var(--line);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="og">
+      <div class="frame">
+        <header class="bar top">
+          <span>meatspace.sh // v0.1.4-alpha</span>
+          <span>MEATSPACE(1)</span>
+        </header>
+
+        <main>
+          <h1>stdout to reality.<span class="cursor"></span></h1>
+          <p class="sub">dispatch tasks to physical hardware.</p>
+
+          <div class="console">
+            <div class="head">
+              <span>$ curl -sN -X POST https://meatspace.sh/v1/dispatch</span>
+              <span class="emerald">HTTP 200</span>
+            </div>
+            <div class="rows">
+              <div class="row"><span class="t">00ms</span><span>Validating GeoJSON polygon against node firmware geofence... <b class="ok">PASS</b></span></div>
+              <div class="row"><span class="t">140ms</span><span>Locking escrow ($42.50 USDC) &amp; bidding on Node VTOL-260-TX-04... <b class="ok">ACCEPTED</b></span></div>
+              <div class="row"><span class="t">380ms</span><span>Compiling intent to MAVLink waypoint primitive... <b class="ok">DISPATCHED</b></span></div>
+              <div class="row"><span class="t">800ms</span><span>Returning TPM-signed telemetry stream hash (<span class="emerald">0x9f8c...3a1b</span>).</span></div>
+            </div>
+          </div>
+        </main>
+
+        <footer class="bar bottom">
+          <span class="live">LIVE</span>
+          <span class="rule"></span>
+          <span class="ticker"><span class="muted">ACTIVE NODES: </span>1,408<span class="muted"> | AVAILABLE FLIGHT/ACTUATION HRS: </span>924.2<span class="muted"> | 24H SETTLED VOLUME: </span>$142,890 USDC<span class="muted"> | NETWORK LATENCY: </span>18ms</span>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

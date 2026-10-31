@@ -1,0 +1,21 @@
+# Workers Static Assets custom headers: https://developers.cloudflare.com/workers/static-assets/headers/
+# Applied to responses served from the asset store (including index.html that the Worker fetches
+# through env.ASSETS for browser requests to /docs). Not applied to responses the Worker builds
+# itself (/v1/*, /install.sh, /healthz, text/plain /docs); worker/http.ts sets those headers.
+# This file is parsed at build/preview/deploy time and is never served.
+#
+# CSP notes: the production build has no inline <script> (Vite emits external module scripts and
+# CSS); 'unsafe-inline' in style-src covers React style attributes. font-src allows data: because
+# Vite inlines font files under build.assetsInlineLimit (4 KiB) as data: URIs; the
+# @fontsource-variable/jetbrains-mono cyrillic-ext subset (2 KB) is one of them.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' wss: ws:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+
+# Vite's content-hashed bundles.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

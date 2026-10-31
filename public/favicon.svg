@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+  <!-- meatspace.sh ">_" prompt, drawn on a 16px pixel grid (no fonts). Glyph is reused by scripts/render-og.mjs. -->
+  <rect width="16" height="16" fill="#090A0C"/>
+  <rect x=".5" y=".5" width="15" height="15" fill="none" stroke="#222630"/>
+  <path id="glyph" fill="#10B981" d="M3 3h2v1H3zM4 4h2v1H4zM5 5h2v1H5zM6 6h2v1H6zM7 7h2v2H7zM6 9h2v1H6zM5 10h2v1H5zM4 11h2v1H4zM3 12h2v1H3zM9 11h4v2H9z"/>
+</svg>
