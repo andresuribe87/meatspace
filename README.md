@@ -17,10 +17,10 @@ All of it runs on Cloudflare as a single Worker:
 
 ```
 browser ──► Workers Static Assets (React SPA, /assets/*, /docs HTML)
-        └─► Worker (Hono)  run_worker_first: /v1 /v1/* /install.sh /docs /healthz
+        └─► Worker (Hono)  run_worker_first: /v1 /v1/* /install.sh /docs /healthz (+ trailing-slash 301s)
               ├── /v1/snapshot /v1/nodes /v1/stats ──► NetworkState DO (RPC)
-              ├── /v1/stream  (WebSocket) ──────────► NetworkState DO (hibernatable WS, 2 s ticks while watched)
-              ├── POST /v1/dispatch ─► parse ─► DO.dispatch() (atomic check-and-lock) ─► NDJSON stream @ 0/140/380/800 ms
+              ├── /v1/stream  (WebSocket) ──────────► NetworkState DO (hibernatable WS, 2 s ticks while watched, locked or charging)
+              ├── POST /v1/dispatch ─► parse ─► DO.dispatch() (atomic check-and-lock, 2 locks per client) ─► NDJSON stream @ 0/140/380/800 ms
               ├── POST /v1/waitlist ─► D1 (meatspace-waitlist)
               └── /install.sh, /docs (text/plain for curl)
 ```
@@ -45,7 +45,7 @@ The Tailwind palette is closed to the seven handoff colours (`bg`, `panel`, `lin
 | GET | `/v1/nodes`, `/v1/nodes/:id` | orderbook |
 | GET | `/v1/stats` | ticker stats |
 | GET | `/v1/stream` | WebSocket, `{"type":"snapshot"}` frames every ~2 s |
-| POST | `/v1/dispatch` | task a node, `application/x-ndjson` event stream |
+| POST | `/v1/dispatch` | task a node, `application/x-ndjson` event stream (20/min and 2 concurrent locks per IPv4 address or IPv6 /64) |
 | POST | `/v1/waitlist` | API key / hardware operator queue |
 | GET | `/install.sh` | inert dry-run installer for `meatspaced` |
 | GET | `/docs` | man page (HTML for browsers, text for curl) |

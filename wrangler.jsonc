@@ -14,7 +14,7 @@
 		"binding": "ASSETS",
 		"not_found_handling": "single-page-application",
 		// Everything else is served straight from the asset store without invoking the Worker.
-		"run_worker_first": ["/v1", "/v1/*", "/install.sh", "/docs", "/healthz"]
+		"run_worker_first": ["/v1", "/v1/*", "/install.sh", "/docs", "/healthz", "/install.sh/", "/docs/", "/healthz/"]
 	},
 
 	// Apex custom domain (zone must be active on this account). workers.dev stays on as a fallback origin.

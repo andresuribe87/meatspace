@@ -128,7 +128,7 @@ export function Meter({ value, tone = 'emerald', label, className = '' }: { valu
       aria-label={label}
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-valuenow={Math.round(v)}
+      aria-valuenow={Math.floor(v)}
       className={`h-2 w-16 shrink-0 border border-line bg-bg p-px ${className}`}
     >
       <div className={`h-full ${fill}`} style={{ width: `${v}%` }} />

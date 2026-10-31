@@ -7,6 +7,9 @@
  * failure, a stubbed endpoint, an HTML error page) is reported as a synthetic ERR_INTERNAL event so
  * the console always ends on a terminal line.
  *
+ * `onResponse` fires once the response headers are in, before any event: a 2xx with a task id means the
+ * server already committed the dispatch (node locked, escrow taken), even if the stream is aborted later.
+ *
  * Aborting `signal` rejects with the signal's AbortError and emits nothing further.
  */
 import type { ApiErrorBody, DispatchEvent, DispatchPhase, DispatchReceipt, ErrorCode, StepStatus } from '../../shared/types'
@@ -141,6 +144,7 @@ export async function executeDispatch(
   body: string,
   onEvent: (e: DispatchEvent) => void,
   signal: AbortSignal,
+  onResponse?: (status: number, taskId: string | null) => void,
 ): Promise<{ httpStatus: number }> {
   if (signal.aborted) throw abortError(signal)
 
@@ -160,6 +164,7 @@ export async function executeDispatch(
   }
 
   const status = res.status
+  onResponse?.(status, res.headers.get('x-meatspace-task-id') || null)
   const ct = (res.headers.get('content-type') ?? '').toLowerCase()
 
   if (ct.includes('application/x-ndjson')) {

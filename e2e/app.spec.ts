@@ -11,6 +11,16 @@ const execute = (page: Page) => page.getByRole('button', { name: /EXECUTE CALL/ 
 const orderbook = (page: Page) => page.locator('#orderbook')
 const row = (page: Page, id: string) => orderbook(page).locator('tbody tr').filter({ hasText: id })
 
+/**
+ * Each test is its own client: the Worker keys rate limits and the 2-lock quota on cf-connecting-ip,
+ * which Cloudflare sets in production and local preview passes through.
+ */
+let client = 0
+test.beforeEach(async ({ page }) => {
+  client++
+  await page.setExtraHTTPHeaders({ 'cf-connecting-ip': `10.0.${Math.floor(client / 250)}.${client % 250}` })
+})
+
 async function noHorizontalScroll(page: Page) {
   const { scrollWidth, innerWidth } = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
@@ -125,7 +135,7 @@ test.describe('zone C // orderbook', () => {
     await expect(page.getByRole('tab', { name: /SUBSTATION_THERMAL_SWEEP/ })).toHaveAttribute('aria-selected', 'true')
     const panel = page.getByRole('tabpanel')
     await expect(panel).toContainText('"node_id": "SPOT-SUB-44"')
-    await expect(panel).toContainText('-95.19')
+    await expect(panel).toContainText('[-95.201, 29.731]')
     await expect(row(page, 'SPOT-SUB-44')).toHaveAttribute('aria-current', 'true')
     await execute(page).click()
     const log = consoleLog(page)
@@ -139,6 +149,22 @@ test.describe('zone C // orderbook', () => {
     await expect(consoleLog(page)).not.toContainText('SPOT-SUB-44')
     await execute(page).click()
     await expect(consoleLog(page)).toContainText('Locking escrow ($37.80 USDC) & bidding on Node ARM-CELL-12...')
+    await expect(consoleLog(page)).toContainText('ACCEPTED')
+    await expect(consoleLog(page)).toContainText(/Returning TPM-signed telemetry stream hash/)
+  })
+
+  test('one client holds at most 2 task locks; the third is rejected at ESCROW', async ({ page }) => {
+    await page.goto('/')
+    for (const id of ['ORK-VTOL-09', 'QDR-B2-17']) {
+      await row(page, id).getByRole('button', { name: /TASK NODE/ }).click()
+      await execute(page).click()
+      await expect(consoleLog(page)).toContainText(/Returning TPM-signed telemetry stream hash/)
+    }
+    await row(page, 'CNC-5AX-03').getByRole('button', { name: /TASK NODE/ }).click()
+    await execute(page).click()
+    await expect(consoleLog(page)).toContainText('REJECTED')
+    await expect(consoleLog(page)).toContainText('ERR_LOCK_QUOTA')
+    await expect(row(page, 'CNC-5AX-03').getByRole('button', { name: /TASK NODE/ })).toBeEnabled()
   })
 })
 
@@ -261,6 +287,12 @@ test.describe('design system audit', () => {
 })
 
 test.describe('responsive @mobile', () => {
+  test('status bar keeps the exact handoff labels on phones @mobile', async ({ page }) => {
+    await page.goto('/')
+    const labels = (await page.getByRole('banner').getByRole('button').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ').trim())
+    expect(labels).toEqual(['[ DOCS ]', '[ CONNECT HARDWARE (meatspaced) ]', '[ API KEYS ]'])
+  })
+
   test('no horizontal page scroll on home and docs @mobile', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
@@ -272,9 +304,9 @@ test.describe('responsive @mobile', () => {
 
   test('task node from the table on a phone @mobile', async ({ page }) => {
     await page.goto('/')
-    await row(page, 'QDR-B2-17').getByRole('button', { name: /TASK NODE/ }).click()
+    await row(page, 'AMR-V50-08').getByRole('button', { name: /TASK NODE/ }).click()
     await expect(page.getByRole('tab', { name: /SUBSTATION_THERMAL_SWEEP/ })).toHaveAttribute('aria-selected', 'true')
-    await expect(page.getByRole('tabpanel')).toContainText('"node_id": "QDR-B2-17"')
+    await expect(page.getByRole('tabpanel')).toContainText('"node_id": "AMR-V50-08"')
     await noHorizontalScroll(page)
   })
 })

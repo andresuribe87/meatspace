@@ -4,10 +4,13 @@ import type { ApiErrorBody, DispatchEvent, NetworkSnapshot } from '../../shared/
 
 export const ORIGIN = 'https://meatspace.sh'
 
-/** A fresh client IP per call keeps the per-IP rate limiters (20/min, 5/min) out of unrelated tests. */
+/**
+ * A fresh client per call keeps the per-client rate limiters (20/min, 5/min) and the lock quota out of unrelated
+ * tests. Clients are IPv6 /64s, so the randomness goes in the network half of the address.
+ */
 export function randomIp(): string {
   const [a, b] = crypto.getRandomValues(new Uint16Array(2))
-  return `2001:db8::${a.toString(16)}:${b.toString(16)}`
+  return `2001:db8:${a.toString(16)}:${b.toString(16)}::1`
 }
 
 export interface CallInit extends RequestInit {

@@ -3,17 +3,24 @@
  * Every walk is small, mean-reverting and clamped so the ticker reads like live telemetry, never jumpy.
  */
 import { TICK_MS } from '../shared/constants'
+import { canonicalChargeFloorPct } from '../shared/dispatch'
 import { SEED_STATS } from '../shared/nodes'
 import type { HardwareNode, NetworkStats, NodeStatus } from '../shared/types'
 
 export { TICK_MS }
 /**
- * The simulation runs ~10x real time while a node is TASKED, so a 30 s lock drains ~5 minutes' worth of battery:
- * enough to see the bar move, little enough that the default demo node stays dispatchable call after call.
+ * The simulation runs ~5x real time while a node is TASKED, so a 30 s lock drains ~2.5 minutes' worth of battery:
+ * enough to see the bar move, little enough that the default demo node survives several back-to-back re-dispatches.
  */
-const SIM_SPEEDUP = 10
+const SIM_SPEEDUP = 5
 /** Dock charge rate, % per tick (~30 s from a typical post-task level back to DOCKED). */
 const CHARGE_PER_TICK = 1
+/** CHARGING turns DOCKED at this charge. */
+const DOCKED_AT_PCT = 95
+/** A fully charged DOCKED node leaves its dock with this probability per tick (~200 s on average). */
+const UNDOCK_PER_TICK = 0.01
+/** IDLE nodes head back to the charger this far above the charge their own canonical payload needs. */
+const IDLE_MARGIN_PCT = 1
 
 export type Rng = () => number
 
@@ -41,20 +48,30 @@ export function driftStats(s: NetworkStats, rng: Rng): NetworkStats {
 }
 
 export function driftNode(n: HardwareNode, rng: Rng): HardwareNode {
-  return n.power === 'BATTERY' ? driftBattery(n) : { ...n, charge: driftHeadroom(n.charge, n.status, rng) }
+  return n.power === 'BATTERY' ? driftBattery(n, rng) : { ...n, charge: driftHeadroom(n.charge, n.status, rng) }
 }
 
-function driftBattery(n: HardwareNode): HardwareNode {
+/** A task lock ends: battery nodes go back on charge, mains cells straight back to IDLE. */
+export function releaseNode(n: HardwareNode): HardwareNode {
+  return { ...n, status: n.power === 'BATTERY' ? 'CHARGING' : 'IDLE', taskedUntil: null, taskId: null }
+}
+
+/**
+ * Battery cycle: TASKED -> CHARGING -> DOCKED -> (occasionally) IDLE -> CHARGING. IDLE and DOCKED nodes always
+ * hold at least canonicalChargeFloorPct(), so a node the orderbook shows as available can run its canonical payload.
+ */
+function driftBattery(n: HardwareNode, rng: Rng): HardwareNode {
   switch (n.status) {
     case 'DOCKED':
-      return { ...n, charge: Math.min(100, n.charge + 0.3) }
+      if (n.charge < 100) return { ...n, charge: Math.min(100, n.charge + 0.3) }
+      return { ...n, status: rng() < UNDOCK_PER_TICK ? 'IDLE' : 'DOCKED' }
     case 'CHARGING': {
       const charge = Math.min(100, n.charge + CHARGE_PER_TICK)
-      return { ...n, charge, status: charge >= 95 ? 'DOCKED' : 'CHARGING' }
+      return { ...n, charge, status: charge >= DOCKED_AT_PCT ? 'DOCKED' : 'CHARGING' }
     }
     case 'IDLE': {
       const charge = n.charge - 0.02
-      return { ...n, charge, status: charge < 30 ? 'CHARGING' : 'IDLE' }
+      return { ...n, charge, status: charge < canonicalChargeFloorPct(n) + IDLE_MARGIN_PCT ? 'CHARGING' : 'IDLE' }
     }
     case 'TASKED':
       return { ...n, charge: Math.max(5, n.charge - n.drainPctPerMin * (TICK_MS / 60_000) * SIM_SPEEDUP) }

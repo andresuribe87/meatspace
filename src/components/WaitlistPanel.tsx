@@ -97,7 +97,7 @@ export function WaitlistPanel({ kind, onClose }: WaitlistPanelProps) {
  * ------------------------------------------------------------------------- */
 
 const INPUT =
-  'block w-full border border-line bg-bg px-2 py-1.5 text-base text-fg placeholder:text-muted focus:border-emerald focus-visible:outline-hidden aria-invalid:border-amber sm:text-xs'
+  'block w-full border border-line bg-bg px-2 py-1.5 text-base text-fg placeholder:text-muted focus:border-emerald focus-visible:outline-hidden aria-invalid:not-focus:border-amber sm:text-xs'
 
 const Code = ({ children }: { children: string }) => <code className="text-emerald">{children}</code>
 
@@ -220,6 +220,7 @@ function WaitlistBody({ kind, titleId, onClose }: { kind: WaitlistKind; titleId:
   const uid = useId()
   const ids = {
     email: `${uid}-email`,
+    emailError: `${uid}-email-error`,
     handle: `${uid}-handle`,
     protocol: `${uid}-protocol`,
     fleet: `${uid}-fleet`,
@@ -293,7 +294,13 @@ function WaitlistBody({ kind, titleId, onClose }: { kind: WaitlistKind; titleId:
         {hardware ? <InstallSnippet /> : null}
 
         {queued ? null : (
-          <form noValidate onSubmit={onSubmit} aria-busy={pending} aria-describedby={error ? ids.feedback : undefined} className="relative grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <form
+            noValidate
+            onSubmit={onSubmit}
+            aria-busy={pending}
+            aria-describedby={error ? (error.email ? ids.emailError : ids.feedback) : undefined}
+            className="relative grid grid-cols-1 gap-3 sm:grid-cols-2"
+          >
             <Field id={ids.email} label="EMAIL" hint="required">
               <input
                 ref={emailRef}
@@ -313,9 +320,13 @@ function WaitlistBody({ kind, titleId, onClose }: { kind: WaitlistKind; titleId:
                   if (error?.email) setError(null)
                 }}
                 aria-invalid={error?.email ? 'true' : undefined}
-                aria-describedby={error?.email ? ids.feedback : undefined}
+                aria-describedby={error?.email ? ids.emailError : undefined}
                 className={INPUT}
               />
+              {/* Right under the field, so it is on screen when focus returns here (phones included). */}
+              <p id={ids.emailError} aria-live="polite" className="text-xs leading-relaxed wrap-anywhere text-amber empty:hidden">
+                {error?.email ? `error ${error.code}: ${error.message}` : null}
+              </p>
             </Field>
             <Field id={ids.handle} label="HANDLE / ORG" hint="optional">
               <input
@@ -372,7 +383,13 @@ function WaitlistBody({ kind, titleId, onClose }: { kind: WaitlistKind; titleId:
               <span className="text-[11px] text-muted">
                 <span aria-hidden="true">→ </span>POST /v1/waitlist
               </span>
-              <BracketButton type="submit" tone="primary" disabled={pending}>
+              {/* aria-disabled, not disabled: disabling the focused button would drop focus to <body>. onSubmit ignores repeats. */}
+              <BracketButton
+                type="submit"
+                tone="primary"
+                aria-disabled={pending}
+                className="aria-disabled:cursor-not-allowed aria-disabled:border-line aria-disabled:bg-transparent! aria-disabled:text-muted!"
+              >
                 {hardware ? 'REGISTER INTEREST' : 'REQUEST KEY'}
               </BracketButton>
             </div>
@@ -386,7 +403,7 @@ function WaitlistBody({ kind, titleId, onClose }: { kind: WaitlistKind; titleId:
             </p>
           ) : pending ? (
             <p className="text-muted">sending...</p>
-          ) : error ? (
+          ) : error && !error.email ? (
             <p className="text-amber">
               error {error.code}: {error.message}
             </p>

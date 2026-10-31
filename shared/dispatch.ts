@@ -4,8 +4,8 @@
  *  - planDispatch(): runs the VALIDATE -> ESCROW -> COMPILE state machine against a node snapshot.
  * The ATTEST step (hash + receipt) is appended by the Durable Object, which owns randomness and time.
  */
-import { CANONICAL_RTL_RESERVE_PCT } from './constants'
-import { centsToDecimal, formatUsd } from './format'
+import { CANONICAL_RTL_RESERVE_PCT, MAX_ACTIVE_LOCKS_PER_CLIENT } from './constants'
+import { formatUsd } from './format'
 import { haversineKm, isLat, isLon } from './geo'
 import { COMPILE_TARGETS, escrowCents, PRIMITIVES, primitiveForCategory, VALIDATE_MESSAGES } from './primitives'
 import type {
@@ -33,6 +33,8 @@ export const AGL_CEILING_LIMIT_M = 120
 export const MIN_RTL_RESERVE_PCT = 20
 /** Ground rovers keep a fixed return-to-dock reserve. */
 export const GROUND_RESERVE_PCT = 20
+/** Tasks bill per minute: anything shorter would escrow (next to) nothing for a 30 s lock. */
+export const MIN_DURATION_MIN = 1
 export const MAX_DURATION_MIN = 240
 export const MAX_SPEND_USDC = 10_000
 
@@ -140,7 +142,7 @@ export function parseDispatchPayload(input: unknown): ParseResult {
     const node_id = str(o.node_id, '$.node_id', 32)
     if (!NODE_ID_RE.test(node_id)) throw new SchemaError('$.node_id', 'expected uppercase node id, e.g. "VTOL-260-TX-04"')
     const intent = literal(o.intent, '$.intent', [def.intent])
-    const est_duration_min = num(o.est_duration_min, '$.est_duration_min', 0, MAX_DURATION_MIN, { exclusiveMin: true })
+    const est_duration_min = num(o.est_duration_min, '$.est_duration_min', MIN_DURATION_MIN, MAX_DURATION_MIN)
     const max_spend_usdc = num(o.max_spend_usdc, '$.max_spend_usdc', 0, MAX_SPEND_USDC, { exclusiveMin: true })
     const proofObj = obj(o.proof, '$.proof')
     const proof = {
@@ -221,14 +223,16 @@ export interface PlanFailure {
   phase: DispatchPhase
   code: ErrorCode
   message: string
-  httpStatus: 404 | 409 | 422
+  httpStatus: 404 | 409 | 422 | 429
+  /** ERR_LOCK_QUOTA: seconds until the client's earliest lock releases (the retry-after header). */
+  retryAfterS?: number
 }
 
 export interface DispatchPlan {
   /** Steps that completed (or failed) in order, with handoff timing offsets. */
   events: DispatchEvent[]
   /** HTTP status for the streamed response. */
-  httpStatus: 200 | 404 | 409 | 422
+  httpStatus: 200 | 404 | 409 | 422 | 429
   failure: PlanFailure | null
   escrowCents: number
   /** COMPILE output summary, present when the plan reaches COMPILE. */
@@ -369,10 +373,45 @@ export function compiledCount(p: DispatchPayload): number {
 }
 
 /**
+ * VALIDATE step copy for a failure. Geometry failures keep the primitive's handoff line; every other check
+ * names itself, so the console never shows a geofence check failing when something else did.
+ */
+function validateFailMessage(code: ErrorCode, p: DispatchPayload): string {
+  switch (code) {
+    case 'ERR_NODE_NOT_FOUND':
+      return `Resolving node ${p.node_id} in clearinghouse registry...`
+    case 'ERR_PRIMITIVE_UNSUPPORTED':
+      return `Resolving node ${p.node_id} capabilities for ${p.primitive}...`
+    case 'ERR_ALTITUDE_ENVELOPE':
+      return 'Validating altitude band against node firmware envelope...'
+    case 'ERR_RTL_RESERVE':
+    case 'ERR_INSUFFICIENT_CHARGE':
+      return p.primitive === 'AERIAL_ISR_SORTIE'
+        ? 'Validating battery reserve against node firmware RTL envelope...'
+        : 'Validating battery reserve against node firmware return-to-dock envelope...'
+    case 'ERR_TOLERANCE':
+      return 'Validating tolerance against cell capability...'
+    case 'ERR_SITE_MISMATCH':
+      return 'Validating site against cell location...'
+    default:
+      return VALIDATE_MESSAGES[p.primitive]
+  }
+}
+
+const secondsUntil = (t: number, now: number) => Math.max(1, Math.ceil((t - now) / 1000))
+
+export interface PlanOptions {
+  /** Task locks the calling client already holds (see MAX_ACTIVE_LOCKS_PER_CLIENT). */
+  clientActiveLocks?: number
+  /** Epoch ms when the earliest of those locks releases. */
+  clientNextReleaseAt?: number
+}
+
+/**
  * Run VALIDATE -> ESCROW -> COMPILE for `payload` against `node` (undefined when unknown).
  * `now` is epoch ms, used only for lock-release messaging.
  */
-export function planDispatch(payload: DispatchPayload, node: HardwareNode | undefined, now: number): DispatchPlan {
+export function planDispatch(payload: DispatchPayload, node: HardwareNode | undefined, now: number, opts: PlanOptions = {}): DispatchPlan {
   const events: DispatchEvent[] = []
   const fail = (f: PlanFailure, status: 'FAIL' | 'REJECTED', stepMessage: string): DispatchPlan => {
     const t = PHASE_OFFSETS_MS[f.phase]
@@ -382,23 +421,24 @@ export function planDispatch(payload: DispatchPayload, node: HardwareNode | unde
   }
 
   // VALIDATE
-  const validateMsg = VALIDATE_MESSAGES[payload.primitive]
   if (!node) {
-    return fail(
-      { phase: 'VALIDATE', code: 'ERR_NODE_NOT_FOUND', httpStatus: 404, message: `node ${payload.node_id} is not registered with the clearinghouse` },
-      'FAIL',
-      validateMsg,
-    )
+    const f: PlanFailure = {
+      phase: 'VALIDATE',
+      code: 'ERR_NODE_NOT_FOUND',
+      httpStatus: 404,
+      message: `node ${payload.node_id} is not registered with the clearinghouse`,
+    }
+    return fail(f, 'FAIL', validateFailMessage(f.code, payload))
   }
   const invalid = validateAgainstNode(payload, node)
-  if (invalid) return fail({ phase: 'VALIDATE', ...invalid }, 'FAIL', validateMsg)
-  events.push({ type: 'step', t_ms: PHASE_OFFSETS_MS.VALIDATE, phase: 'VALIDATE', message: validateMsg, status: 'PASS' })
+  if (invalid) return fail({ phase: 'VALIDATE', ...invalid }, 'FAIL', validateFailMessage(invalid.code, payload))
+  events.push({ type: 'step', t_ms: PHASE_OFFSETS_MS.VALIDATE, phase: 'VALIDATE', message: VALIDATE_MESSAGES[payload.primitive], status: 'PASS' })
 
   // ESCROW
   const escrow = escrowCents(node.rateCents, payload.est_duration_min)
   const escrowMsg = `Locking escrow (${formatUsd(escrow)} USDC) & bidding on Node ${node.id}...`
   if (node.status === 'TASKED') {
-    const secs = node.taskedUntil ? Math.max(1, Math.ceil((node.taskedUntil - now) / 1000)) : null
+    const secs = node.taskedUntil ? secondsUntil(node.taskedUntil, now) : null
     return fail(
       {
         phase: 'ESCROW',
@@ -410,10 +450,25 @@ export function planDispatch(payload: DispatchPayload, node: HardwareNode | unde
       escrowMsg,
     )
   }
-  const capCents = Math.round(payload.max_spend_usdc * 100)
-  if (escrow > capCents) {
+  const held = opts.clientActiveLocks ?? 0
+  if (held >= MAX_ACTIVE_LOCKS_PER_CLIENT) {
+    const secs = opts.clientNextReleaseAt === undefined ? undefined : secondsUntil(opts.clientNextReleaseAt, now)
     return fail(
-      { phase: 'ESCROW', code: 'ERR_SPEND_CAP', httpStatus: 422, message: `escrow ${formatUsd(escrow)} exceeds max_spend_usdc ${centsToDecimal(capCents)}` },
+      {
+        phase: 'ESCROW',
+        code: 'ERR_LOCK_QUOTA',
+        httpStatus: 429,
+        message: `client already holds ${held} active task locks (limit ${MAX_ACTIVE_LOCKS_PER_CLIENT}); retry when one releases${secs ? ` in ${secs}s` : ''}`,
+        retryAfterS: secs,
+      },
+      'REJECTED',
+      escrowMsg,
+    )
+  }
+  // Exact comparison against the cap as sent: a cap of 37.799 must not round up to cover a $37.80 escrow.
+  if (escrow / 100 > payload.max_spend_usdc) {
+    return fail(
+      { phase: 'ESCROW', code: 'ERR_SPEND_CAP', httpStatus: 422, message: `escrow ${formatUsd(escrow)} exceeds max_spend_usdc ${payload.max_spend_usdc}` },
       'REJECTED',
       escrowMsg,
     )

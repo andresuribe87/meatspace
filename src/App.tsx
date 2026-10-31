@@ -11,7 +11,7 @@ import { StatusBar } from './components/StatusBar'
 import { Thesis } from './components/Thesis'
 import { WaitlistPanel } from './components/WaitlistPanel'
 import { formatPayload } from './lib/payload'
-import { navigate, useRoute } from './lib/router'
+import { navigate, useRoute, type Route } from './lib/router'
 import { useNetwork } from './lib/useNetwork'
 import { DocsPage } from './pages/DocsPage'
 
@@ -29,6 +29,12 @@ function draftNodeId(draft: string): string | null {
   }
 }
 
+/** '/' matches index.html, so a direct load and a client-side return read the same. */
+const TITLES: Record<Route, string> = {
+  '/': 'meatspace.sh // stdout to reality.',
+  '/docs': 'MEATSPACE(1) // meatspace.sh',
+}
+
 const PANEL_HASH: Record<WaitlistKind, string> = { hardware: '#connect', api_keys: '#api-keys' }
 
 function panelFromHash(hash: string): WaitlistKind | null {
@@ -39,7 +45,7 @@ function panelFromHash(hash: string): WaitlistKind | null {
 
 export default function App() {
   const route = useRoute()
-  const { snapshot, connection } = useNetwork()
+  const { snapshot, connection, clockOffsetMs } = useNetwork()
 
   const [primitive, setPrimitive] = useState<PrimitiveId>('AERIAL_ISR_SORTIE')
   const [drafts, setDrafts] = useState<Record<PrimitiveId, string>>(initialDrafts)
@@ -47,11 +53,20 @@ export default function App() {
   const [panel, setPanel] = useState<WaitlistKind | null>(() => panelFromHash(window.location.hash))
   const consoleRef = useRef<HTMLDivElement>(null)
 
-  // Deep links: meatspace.sh/#connect and /#api-keys open the waitlist panels.
+  useEffect(() => {
+    document.title = TITLES[route]
+  }, [route])
+
+  // Deep links: meatspace.sh/#connect and /#api-keys open the waitlist panels. Back/forward does not always fire
+  // hashchange (e.g. returning across a pushState entry), so popstate re-syncs the panel too.
   useEffect(() => {
     const onHash = () => setPanel(panelFromHash(window.location.hash))
     window.addEventListener('hashchange', onHash)
-    return () => window.removeEventListener('hashchange', onHash)
+    window.addEventListener('popstate', onHash)
+    return () => {
+      window.removeEventListener('hashchange', onHash)
+      window.removeEventListener('popstate', onHash)
+    }
   }, [])
 
   const openPanel = useCallback((kind: WaitlistKind) => {
@@ -78,8 +93,10 @@ export default function App() {
     const el = consoleRef.current
     if (el) {
       const top = el.getBoundingClientRect().top
+      // Height the sticky status bar covers (--header-h, set as html scroll-padding-top, which scrollIntoView honours).
+      const headerH = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0
       // Only scroll when the console is not already comfortably on screen.
-      if (top < 0 || top > window.innerHeight * 0.5) {
+      if (top < headerH || top > window.innerHeight * 0.5) {
         const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
         el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
       }
@@ -106,7 +123,7 @@ export default function App() {
           {/* Zone B: split hero */}
           <div className="grid grid-cols-1 gap-4 sm:gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
             <Thesis />
-            <div ref={consoleRef} className="min-w-0 scroll-mt-14">
+            <div ref={consoleRef} className="min-w-0">
               <DispatchConsole
                 primitive={primitive}
                 onPrimitiveChange={setPrimitive}
@@ -119,7 +136,7 @@ export default function App() {
           </div>
 
           {/* Zone C */}
-          <Orderbook nodes={snapshot.nodes} targetNodeId={targetNodeId} onTaskNode={taskNode} />
+          <Orderbook nodes={snapshot.nodes} targetNodeId={targetNodeId} onTaskNode={taskNode} clockOffsetMs={clockOffsetMs} />
 
           {/* Zone D */}
           <ArchitectureStrip />

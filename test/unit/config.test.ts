@@ -47,7 +47,9 @@ describe('config stays in sync with shared/constants.ts', () => {
     expect(pkg.version).toBe(VERSION)
   })
 
-  it('every Worker route is listed in run_worker_first', () => {
-    expect(wrangler.assets.run_worker_first).toEqual(expect.arrayContaining(['/v1', '/v1/*', '/install.sh', '/docs', '/healthz']))
+  it('every Worker route is listed in run_worker_first, trailing-slash redirects included', () => {
+    expect([...wrangler.assets.run_worker_first].sort()).toEqual(
+      ['/v1', '/v1/*', '/install.sh', '/docs', '/healthz', '/install.sh/', '/docs/', '/healthz/'].sort(),
+    )
   })
 })

@@ -13,10 +13,13 @@ export const REPO_URL = 'https://github.com/andresuribe87/meatspace'
 /** A successful dispatch locks its node for this long. */
 export const TASK_LOCK_MS = 30_000
 
+/** Task locks one client (IPv4 address or IPv6 /64) may hold at once, so nobody can keep the whole orderbook TASKED. */
+export const MAX_ACTIVE_LOCKS_PER_CLIENT = 2
+
 /** NetworkState tick interval while anyone is watching (or a node is locked / charging). */
 export const TICK_MS = 2_000
 
-/** Workers Rate Limiting bindings (wrangler.jsonc), per client IP per 60 s window. */
+/** Workers Rate Limiting bindings (wrangler.jsonc), per client (IPv4 address or IPv6 /64) per 60 s window. */
 export const RATE_LIMITS = {
   dispatchPerMin: 20,
   waitlistPerMin: 5,

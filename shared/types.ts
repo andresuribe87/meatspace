@@ -61,7 +61,10 @@ export interface NetworkStats {
 export interface NetworkSnapshot {
   /** Monotonic sequence number; clients drop snapshots with seq <= last seen. */
   seq: number
-  /** Server epoch ms. */
+  /**
+   * Server epoch ms when this snapshot was produced: the read time for GET responses and the stream's
+   * connect frame, the tick or state-change time for frames pushed afterwards.
+   */
   ts: number
   stats: NetworkStats
   nodes: HardwareNode[]
@@ -166,6 +169,7 @@ export type ErrorCode =
   | 'ERR_TOLERANCE'
   | 'ERR_SITE_MISMATCH'
   | 'ERR_NODE_BUSY'
+  | 'ERR_LOCK_QUOTA'
   | 'ERR_SPEND_CAP'
   | 'ERR_INTERNAL'
 

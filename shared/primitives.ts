@@ -107,13 +107,17 @@ export const VALIDATE_MESSAGES: Readonly<Record<PrimitiveId, string>> = {
 
 const PROOF = { attestation: 'TPM2_QUOTE' as const }
 
+/** The node's home position as a GeoJSON [lon, lat]. */
+const homePosition = (node: HardwareNode): [number, number] => [round5(node.lon), round5(node.lat)]
+
 function aerialPayload(node: HardwareNode): AerialIsrPayload {
   const def = PRIMITIVES.AERIAL_ISR_SORTIE
-  // 6 km x 0.6 km E-W corridor, centred 2 km north of the node's home pad.
-  const sw = offsetKm(node.lat, node.lon, 1.7, -3)
-  const se = offsetKm(node.lat, node.lon, 1.7, 3)
-  const ne = offsetKm(node.lat, node.lon, 2.3, 3)
-  const nw = offsetKm(node.lat, node.lon, 2.3, -3)
+  // 6 km x 0.6 km corridor running east from the home pad, which is its SW corner: the payload carries the node's
+  // own coordinates, and the far corner (~6.03 km) stays inside the smallest aerial geofence (8 km).
+  const sw = homePosition(node)
+  const se = offsetKm(node.lat, node.lon, 0, 6)
+  const ne = offsetKm(node.lat, node.lon, 0.6, 6)
+  const nw = offsetKm(node.lat, node.lon, 0.6, 0)
   return {
     primitive: 'AERIAL_ISR_SORTIE',
     node_id: node.id,
@@ -133,7 +137,7 @@ function substationPayload(node: HardwareNode): SubstationSweepPayload {
     primitive: 'SUBSTATION_THERMAL_SWEEP',
     node_id: node.id,
     intent: 'INSPECT_ASSET',
-    site: { type: 'Point', coordinates: offsetKm(node.lat, node.lon, 0.18, 0.18) },
+    site: { type: 'Point', coordinates: homePosition(node) },
     assets: ['XFMR-T1', 'XFMR-T2', 'BRKR-138KV-A', 'BUS-138KV-N'],
     route: 'PATROL_LOOP_B',
     thresholds: { delta_t_alarm_c: 15, emissivity: 0.95 },
@@ -149,7 +153,7 @@ function cncPayload(node: HardwareNode): CncSynthesisPayload {
     primitive: 'AUTOMATED_CNC_SYNTHESIS',
     node_id: node.id,
     intent: 'FABRICATE_PART',
-    site: { type: 'Point', coordinates: [round5(node.lon), round5(node.lat)] },
+    site: { type: 'Point', coordinates: homePosition(node) },
     artifact: { format: 'STEP', uri: 'r2://meatspace-jobs/bracket-7075-t6.step', bbox_mm: [120, 80, 35] },
     material: 'AL-7075-T6',
     tolerance_mm: Math.max(0.01, node.minToleranceMm ?? 0),

@@ -8,18 +8,26 @@ export async function copyText(text: string): Promise<boolean> {
   } catch {
     /* fall through to legacy path */
   }
+  const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  const ta = document.createElement('textarea')
   try {
-    const ta = document.createElement('textarea')
     ta.value = text
     ta.setAttribute('readonly', '')
     ta.style.position = 'fixed'
+    ta.style.top = '0'
+    ta.style.left = '0'
     ta.style.opacity = '0'
-    document.body.appendChild(ta)
+    // An open modal <dialog> makes the rest of the document inert: a textarea outside it cannot be selected,
+    // and execCommand would report success after copying nothing.
+    const host = previous?.closest('dialog[open]') ?? document.querySelector('dialog[open]') ?? document.body
+    host.appendChild(ta)
+    ta.focus({ preventScroll: true })
     ta.select()
-    const ok = document.execCommand('copy')
-    document.body.removeChild(ta)
-    return ok
+    return document.execCommand('copy')
   } catch {
     return false
+  } finally {
+    ta.remove()
+    previous?.focus({ preventScroll: true })
   }
 }

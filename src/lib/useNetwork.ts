@@ -23,6 +23,12 @@ export type ConnectionState = 'connecting' | 'live' | 'reconnecting' | 'offline'
 export interface NetworkState {
   snapshot: NetworkSnapshot
   connection: ConnectionState
+  /**
+   * Estimated server clock minus client clock (ms): server time ~= Date.now() + clockOffsetMs. Derived from
+   * snapshot.ts (stamped when the server produced it) at receipt, so it includes the one-way delivery delay.
+   * 0 until the first live snapshot.
+   */
+  clockOffsetMs: number
 }
 
 const PING_INTERVAL_MS = 25_000
@@ -32,6 +38,9 @@ const BACKOFF_BASE_MS = 1_000
 const BACKOFF_MAX_MS = 15_000
 /** A seq this far below the last one means the server's counter was reset; accept and re-sync. */
 const SEQ_RESET_WINDOW = 1_000
+/** Clock offset smoothing: each sample moves the estimate this far; a jump beyond OFFSET_RESET_MS (clock change) is taken as is. */
+const OFFSET_SMOOTHING = 0.25
+const OFFSET_RESET_MS = 1_000
 
 /* ----------------------------------------------------------------------------
  * Defensive decoding of server frames
@@ -115,7 +124,7 @@ export function decodeStreamMessage(raw: unknown): NetworkSnapshot | null {
 const hasDom = typeof window !== 'undefined' && typeof document !== 'undefined'
 const isOffline = () => hasDom && navigator.onLine === false
 
-let state: NetworkState = { snapshot: seedSnapshot(), connection: isOffline() ? 'offline' : 'connecting' }
+let state: NetworkState = { snapshot: seedSnapshot(), connection: isOffline() ? 'offline' : 'connecting', clockOffsetMs: 0 }
 const listeners = new Set<() => void>()
 
 let running = false
@@ -127,6 +136,7 @@ let awaitingFirstFrame = true
 /** True once any socket has dropped or been closed; selects 'reconnecting' over 'connecting'. */
 let hasDropped = false
 let lastFrameAt = 0
+let hasClockOffset = false
 let reconnectTimer: ReturnType<typeof setTimeout> | undefined
 let pingTimer: ReturnType<typeof setInterval> | undefined
 let stopTimer: ReturnType<typeof setTimeout> | undefined
@@ -134,9 +144,19 @@ let stopTimer: ReturnType<typeof setTimeout> | undefined
 function setState(next: Partial<NetworkState>): void {
   const snapshot = next.snapshot ?? state.snapshot
   const connection = next.connection ?? state.connection
-  if (snapshot === state.snapshot && connection === state.connection) return
-  state = { snapshot, connection }
+  const clockOffsetMs = next.clockOffsetMs ?? state.clockOffsetMs
+  if (snapshot === state.snapshot && connection === state.connection && clockOffsetMs === state.clockOffsetMs) return
+  state = { snapshot, connection, clockOffsetMs }
   listeners.forEach((l) => l())
+}
+
+function estimateClockOffset(sample: number): number {
+  const prev = state.clockOffsetMs
+  if (!hasClockOffset || Math.abs(sample - prev) > OFFSET_RESET_MS) {
+    hasClockOffset = true
+    return sample
+  }
+  return Math.round(prev + (sample - prev) * OFFSET_SMOOTHING)
 }
 
 const pendingState = (): ConnectionState => (isOffline() ? 'offline' : hasDropped ? 'reconnecting' : 'connecting')
@@ -187,7 +207,8 @@ function scheduleReconnect(): void {
 }
 
 function onFrame(data: unknown): void {
-  lastFrameAt = Date.now()
+  const receivedAt = Date.now()
+  lastFrameAt = receivedAt
   if (typeof data !== 'string' || data === 'pong') return
   let parsed: unknown
   try {
@@ -202,7 +223,7 @@ function onFrame(data: unknown): void {
   awaitingFirstFrame = false
   lastSeq = snap.seq
   attempt = 0
-  setState({ snapshot: snap, connection: 'live' })
+  setState({ snapshot: snap, connection: 'live', clockOffsetMs: estimateClockOffset(snap.ts - receivedAt) })
 }
 
 function connect(): void {

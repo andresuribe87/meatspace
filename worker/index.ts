@@ -54,6 +54,11 @@ const app = new Hono<AppEnv>()
 app.use(securityHeaders)
 app.use('/v1/*', apiHeaders)
 
+// run_worker_first sends the trailing-slash forms here too (assets would answer with the SPA shell).
+for (const path of ['/docs', '/install.sh', '/healthz']) {
+  app.all(`${path}/`, (c) => c.redirect(`${path}${new URL(c.req.url).search}`, 301))
+}
+
 app.get('/healthz', () => textResponse('ok', 'no-store'))
 
 app.get('/install.sh', () => textResponse(INSTALL_SH, 'public, max-age=300'))

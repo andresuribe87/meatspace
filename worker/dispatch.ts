@@ -1,6 +1,6 @@
 import { MAX_BODY_BYTES, parseDispatchPayload } from '../shared/dispatch'
 import type { DispatchEvent } from '../shared/types'
-import { ApiError, type AppContext, rateLimit, readJson } from './http'
+import { ApiError, type AppContext, clientKey, rateLimit, readJson } from './http'
 
 /**
  * POST /v1/dispatch. Pre-stream failures are plain JSON errors; once the Durable Object has run the
@@ -12,12 +12,13 @@ export async function handleDispatch(c: AppContext): Promise<Response> {
   const parsed = parseDispatchPayload(await readJson(c.req.raw, MAX_BODY_BYTES))
   if (!parsed.ok) throw new ApiError(400, parsed.code, parsed.message, { path: parsed.path })
 
-  const result = await c.env.NETWORK.getByName('global').dispatch(parsed.payload)
+  const result = await c.env.NETWORK.getByName('global').dispatch(parsed.payload, await clientKey(c.req.raw))
   const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>()
   c.executionCtx.waitUntil(writeTimed(writable, result.events, startedAt))
 
   const headers = new Headers({ 'content-type': 'application/x-ndjson; charset=utf-8' })
   if (result.taskId) headers.set('x-meatspace-task-id', result.taskId)
+  if (result.retryAfterS) headers.set('retry-after', String(result.retryAfterS))
   return new Response(readable, { status: result.httpStatus, headers })
 }
 

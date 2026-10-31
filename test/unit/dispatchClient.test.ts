@@ -41,8 +41,8 @@ function streamOf(chunks: Uint8Array[], delayMs = 0): ReadableStream<Uint8Array>
   })
 }
 
-const ndjson = (chunks: Uint8Array[], status = 200, delayMs = 0) =>
-  new Response(streamOf(chunks, delayMs), { status, headers: { 'content-type': 'application/x-ndjson; charset=utf-8' } })
+const ndjson = (chunks: Uint8Array[], status = 200, delayMs = 0, headers: Record<string, string> = {}) =>
+  new Response(streamOf(chunks, delayMs), { status, headers: { 'content-type': 'application/x-ndjson; charset=utf-8', ...headers } })
 
 function mockFetch(make: () => Response | Promise<Response>) {
   vi.stubGlobal('fetch', async (_url: string, init: RequestInit) => {
@@ -145,6 +145,47 @@ describe('executeDispatch pre-stream and transport errors', () => {
     )
     await expect(p).rejects.toMatchObject({ name: 'AbortError' })
     expect(events).toHaveLength(2)
+  })
+})
+
+describe('executeDispatch onResponse', () => {
+  it('reports status and task id once, as soon as the headers arrive and before any event', async () => {
+    mockFetch(() => ndjson([enc.encode(NDJSON)], 200, 0, { 'x-meatspace-task-id': RECEIPT.task_id }))
+    const calls: string[] = []
+    await executeDispatch(
+      '{}',
+      (e) => calls.push(`event:${e.type}`),
+      new AbortController().signal,
+      (status, taskId) => calls.push(`response:${status}:${taskId}`),
+    )
+    expect(calls[0]).toBe(`response:200:${RECEIPT.task_id}`)
+    expect(calls.filter((c) => c.startsWith('response:'))).toHaveLength(1)
+    expect(calls).toHaveLength(1 + SUCCESS.length)
+  })
+
+  it('passes a null task id when the header is absent (pre-stream JSON error)', async () => {
+    mockFetch(() => new Response(JSON.stringify({ error: { code: 'ERR_SCHEMA', message: 'bad' } }), { status: 400, headers: { 'content-type': 'application/json' } }))
+    const onResponse = vi.fn()
+    await executeDispatch('{}', () => {}, new AbortController().signal, onResponse)
+    expect(onResponse).toHaveBeenCalledExactlyOnceWith(400, null)
+  })
+
+  it('has already fired when the stream is aborted after commit', async () => {
+    const ac = new AbortController()
+    const onResponse = vi.fn()
+    mockFetch(() => ndjson(NDJSON.split('\n').filter(Boolean).map((l) => enc.encode(`${l}\n`)), 200, 30, { 'x-meatspace-task-id': RECEIPT.task_id }))
+    const p = executeDispatch('{}', () => ac.abort(), ac.signal, onResponse)
+    await expect(p).rejects.toMatchObject({ name: 'AbortError' })
+    expect(onResponse).toHaveBeenCalledExactlyOnceWith(200, RECEIPT.task_id)
+  })
+
+  it('is not called when the request never got a response', async () => {
+    vi.stubGlobal('fetch', async () => {
+      throw new TypeError('fetch failed')
+    })
+    const onResponse = vi.fn()
+    await executeDispatch('{}', () => {}, new AbortController().signal, onResponse)
+    expect(onResponse).not.toHaveBeenCalled()
   })
 })
 

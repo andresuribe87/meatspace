@@ -4,6 +4,7 @@
  */
 import { DurableObject } from 'cloudflare:workers'
 
+import { canonicalJson } from '../shared/canonical'
 import { TASK_LOCK_MS } from '../shared/constants'
 import { attestMessage, PHASE_OFFSETS_MS, planDispatch } from '../shared/dispatch'
 import { centsToDecimal, shortHash } from '../shared/format'
@@ -16,9 +17,12 @@ import type {
   NetworkSnapshot,
   StreamMessage,
 } from '../shared/types'
-import { driftNode, driftStats, round1, TICK_MS } from './drift'
+import { hex, sha256Hex } from './crypto'
+import { driftNode, driftStats, releaseNode, round1, TICK_MS } from './drift'
 
 const STORAGE_KEY = 'snapshot'
+/** Lock holders, stored apart from the snapshot so they are never published. */
+const OWNERS_KEY = 'owners'
 /** Ticks persist at most this often; dispatches, lock releases and going idle always persist. */
 const PERSIST_EVERY_TICKS = 15
 
@@ -26,40 +30,57 @@ export interface DispatchResult {
   httpStatus: number
   events: DispatchEvent[]
   taskId: string | null
+  /** ERR_LOCK_QUOTA: the retry-after header. */
+  retryAfterS: number | null
 }
 
 export class NetworkState extends DurableObject<Env> {
   private state: NetworkSnapshot
+  /** Node id -> client key holding its task lock (the per-client lock quota). */
+  private owners: Map<string, string>
   private unsavedTicks = 0
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
-    // Re-runs on every wake from hibernation, so it only does a synchronous local read.
+    // Re-runs on every wake from hibernation, so it only does synchronous local reads and writes.
     this.state = restore(ctx.storage.kv.get<NetworkSnapshot>(STORAGE_KEY))
+    this.owners = new Map(ctx.storage.kv.get<[string, string][]>(OWNERS_KEY))
+    // Make the bumped seq durable before anything is broadcast, so back-to-back restarts never reuse a seq.
+    this.persist()
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'))
   }
 
+  /** ts is the read time: when this view of the network was produced. */
   snapshot(): NetworkSnapshot {
-    this.releaseExpired(Date.now())
-    return this.view()
+    const now = Date.now()
+    this.releaseExpired(now)
+    return { ...this.view(), ts: now }
   }
 
   node(id: string): HardwareNode | null {
     return this.snapshot().nodes.find((n) => n.id === id) ?? null
   }
 
-  async dispatch(payload: DispatchPayload): Promise<DispatchResult> {
+  async dispatch(payload: DispatchPayload, clientKey: string): Promise<DispatchResult> {
     const now = Date.now()
     this.releaseExpired(now)
     const node = this.state.nodes.find((n) => n.id === payload.node_id)
-    const plan = planDispatch(payload, node, now)
-    if (!node || !plan.compiled) return { httpStatus: plan.httpStatus, events: plan.events, taskId: null }
+    const held = this.state.nodes.filter((n) => n.status === 'TASKED' && this.owners.get(n.id) === clientKey)
+    // Planned against the published charge, so a node that reads as dispatchable on GET /v1/nodes is.
+    const plan = planDispatch(payload, node && publish(node), now, {
+      clientActiveLocks: held.length,
+      clientNextReleaseAt: held.length ? Math.min(...held.map((n) => n.taskedUntil ?? now)) : undefined,
+    })
+    if (!node || !plan.compiled) {
+      return { httpStatus: plan.httpStatus, events: plan.events, taskId: null, retryAfterS: plan.failure?.retryAfterS ?? null }
+    }
 
     // Check-and-lock completes before the first await, so a concurrent dispatch already sees TASKED.
     const taskId = `tsk_${hex(crypto.getRandomValues(new Uint8Array(8)))}`
     node.status = 'TASKED'
     node.taskedUntil = now + TASK_LOCK_MS
     node.taskId = taskId
+    this.owners.set(node.id, clientKey)
     this.state.stats.settled24hCents += plan.escrowCents
     this.commit(now)
     await this.ensureTicking()
@@ -72,7 +93,7 @@ export class NetworkState extends DurableObject<Env> {
       escrowCents: plan.escrowCents,
       compiled: plan.compiled,
     })
-    return { httpStatus: plan.httpStatus, events: [...plan.events, ...attest], taskId }
+    return { httpStatus: plan.httpStatus, events: [...plan.events, ...attest], taskId, retryAfterS: null }
   }
 
   /** GET /v1/stream (forwarded by the Worker): hibernatable WebSocket that receives every snapshot. */
@@ -107,20 +128,15 @@ export class NetworkState extends DurableObject<Env> {
     if (keepTicking) await this.ctx.storage.setAlarm(now + TICK_MS)
   }
 
-  /**
-   * Returns true when at least one expired lock was released. Battery nodes return to their dock and recharge
-   * (so the default demo node is dispatchable again within ~30 s); mains cells go straight back to IDLE.
-   */
+  /** Returns true when at least one expired lock was released (see releaseNode). */
   private releaseLocks(now: number): boolean {
     let released = false
-    for (const n of this.state.nodes) {
-      if (n.status === 'TASKED' && n.taskedUntil !== null && n.taskedUntil <= now) {
-        n.status = n.power === 'BATTERY' ? 'CHARGING' : 'IDLE'
-        n.taskedUntil = null
-        n.taskId = null
-        released = true
-      }
-    }
+    this.state.nodes = this.state.nodes.map((n) => {
+      if (n.status !== 'TASKED' || n.taskedUntil === null || n.taskedUntil > now) return n
+      released = true
+      this.owners.delete(n.id)
+      return releaseNode(n)
+    })
     return released
   }
 
@@ -138,6 +154,7 @@ export class NetworkState extends DurableObject<Env> {
 
   private persist(): void {
     this.ctx.storage.kv.put(STORAGE_KEY, this.view())
+    this.ctx.storage.kv.put(OWNERS_KEY, [...this.owners])
     this.unsavedTicks = 0
   }
 
@@ -162,13 +179,11 @@ export class NetworkState extends DurableObject<Env> {
 
   /** Published form: charge rounded to 0.1. The walk itself keeps full precision so small per-tick drains accumulate. */
   private view(): NetworkSnapshot {
-    return {
-      ...this.state,
-      stats: { ...this.state.stats },
-      nodes: this.state.nodes.map((n) => ({ ...n, charge: round1(n.charge) })),
-    }
+    return { ...this.state, stats: { ...this.state.stats }, nodes: this.state.nodes.map(publish) }
   }
 }
+
+const publish = (n: HardwareNode): HardwareNode => ({ ...n, charge: round1(n.charge) })
 
 /** Static node data always comes from the current seed, so a deploy can change it; only live fields survive restarts. */
 function restore(stored: NetworkSnapshot | undefined): NetworkSnapshot {
@@ -196,10 +211,9 @@ interface Attestation {
   compiled: { artifact: string; count: number }
 }
 
-/** ATTEST step + receipt. The telemetry hash commits to the task, node, payload and issue time. */
+/** ATTEST step + receipt. The telemetry hash commits to the task, node, validated payload and issue time (recipe: man page). */
 async function attestEvents(a: Attestation): Promise<DispatchEvent[]> {
-  const preimage = JSON.stringify({ task_id: a.taskId, node_id: a.node.id, payload: a.payload, issued_at: a.issuedAt })
-  const hash = `0x${hex(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(preimage))))}`
+  const hash = `0x${await sha256Hex(canonicalJson({ issued_at: a.issuedAt, node_id: a.node.id, payload: a.payload, task_id: a.taskId }))}`
   const receipt: DispatchReceipt = {
     task_id: a.taskId,
     status: 'DISPATCHED',
@@ -223,5 +237,3 @@ async function attestEvents(a: Attestation): Promise<DispatchEvent[]> {
 }
 
 const frame = (data: NetworkSnapshot) => JSON.stringify({ type: 'snapshot', data } satisfies StreamMessage)
-
-const hex = (bytes: Uint8Array) => Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')

@@ -1,11 +1,12 @@
-import { runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test'
+import { evictDurableObject, runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test'
 import { describe, expect, it } from 'vitest'
 
+import { canonicalChargeFloorPct, planDispatch } from '../../shared/dispatch'
 import { SEED_NODES, SEED_STATS } from '../../shared/nodes'
 import { buildPayload } from '../../shared/primitives'
 import { TASK_LOCK_MS, TICK_MS } from '../../shared/constants'
 import type { HardwareNode, NetworkSnapshot, NetworkStats, StreamMessage } from '../../shared/types'
-import { driftNode, driftStats, type Rng } from '../../worker/drift'
+import { driftNode, driftStats, releaseNode, round1, type Rng } from '../../worker/drift'
 import { call, network, postJson, snapshot } from './helpers'
 
 const seedNode = (id: string) => ({ ...(SEED_NODES.find((n) => n.id === id) as HardwareNode) })
@@ -63,21 +64,39 @@ describe('drift model', () => {
     expect(driftStats({ ...SEED_STATS, settled24hCents: 13_400_000 }, () => 0.99).settled24hCents).toBe(13_500_000)
   })
 
-  it('battery: DOCKED charges to 100, CHARGING docks at 95, IDLE drains slowly and starts charging below 30', () => {
+  it('battery: DOCKED charges to 100, CHARGING docks at 95, IDLE drains slowly and starts charging 1% above its canonical floor', () => {
     const rng = seeded(3)
     expect(driftNode({ ...seedNode('VTOL-260-TX-04'), charge: 94 }, rng).charge).toBeCloseTo(94.3)
     expect(driftNode({ ...seedNode('VTOL-260-TX-04'), charge: 99.9 }, rng).charge).toBe(100)
     expect(driftNode({ ...seedNode('VTOL-260-TX-04'), status: 'CHARGING', charge: 94.6 }, rng)).toMatchObject({ status: 'DOCKED' })
     expect(driftNode({ ...seedNode('VTOL-260-TX-04'), status: 'CHARGING', charge: 50 }, rng)).toMatchObject({ status: 'CHARGING', charge: 51 })
     expect(driftNode(seedNode('SPOT-SUB-44'), rng).charge).toBeCloseTo(77.98)
-    expect(driftNode({ ...seedNode('SPOT-SUB-44'), charge: 30.01 }, rng)).toMatchObject({ status: 'CHARGING' })
+    // SPOT-SUB-44's canonical sweep needs 1.2 %/min x 18 min + 20% reserve.
+    const floor = canonicalChargeFloorPct(seedNode('SPOT-SUB-44'))
+    expect(floor).toBeCloseTo(41.6)
+    expect(driftNode({ ...seedNode('SPOT-SUB-44'), charge: floor + 1.03 }, rng)).toMatchObject({ status: 'IDLE' })
+    expect(driftNode({ ...seedNode('SPOT-SUB-44'), charge: floor + 1.01 }, rng)).toMatchObject({ status: 'CHARGING' })
   })
 
-  it('battery: TASKED drains at 10x real time and never below 5%', () => {
+  it('battery: a full DOCKED node undocks to IDLE with probability 0.01 per tick', () => {
+    const full: HardwareNode = { ...seedNode('VTOL-180-AB-11'), status: 'DOCKED', charge: 100 }
+    expect(driftNode(full, () => 0.0099)).toMatchObject({ status: 'IDLE', charge: 100 })
+    expect(driftNode(full, () => 0.01)).toMatchObject({ status: 'DOCKED', charge: 100 })
+    // Still topping up: never undocks before 100%.
+    expect(driftNode({ ...full, charge: 99 }, () => 0)).toMatchObject({ status: 'DOCKED', charge: 99.3 })
+  })
+
+  it('battery: TASKED drains at 5x real time and never below 5%', () => {
     const tasked = { ...seedNode('VTOL-260-TX-04'), status: 'TASKED' as const }
-    // 2.5 %/min x (2 s / 60 s) x 10
-    expect(driftNode(tasked, Math.random).charge).toBeCloseTo(94 - 2.5 * (2 / 60) * 10)
-    expect(driftNode({ ...tasked, charge: 5.5 }, Math.random).charge).toBe(5)
+    // 2.5 %/min x (2 s / 60 s) x 5
+    expect(driftNode(tasked, Math.random).charge).toBeCloseTo(94 - 2.5 * (2 / 60) * 5)
+    expect(driftNode({ ...tasked, charge: 5.2 }, Math.random).charge).toBe(5)
+  })
+
+  it('lock release: battery nodes go back on charge, mains cells straight to IDLE', () => {
+    const lock = { status: 'TASKED' as const, taskedUntil: 1, taskId: 'tsk_x' }
+    expect(releaseNode({ ...seedNode('SPOT-SUB-44'), ...lock })).toMatchObject({ status: 'CHARGING', taskedUntil: null, taskId: null })
+    expect(releaseNode({ ...seedNode('ARM-CELL-12'), ...lock })).toMatchObject({ status: 'IDLE', taskedUntil: null, taskId: null })
   })
 
   it('mains: idle headroom walks within [80, 100], decays toward 35 under load and recovers smoothly', () => {
@@ -161,6 +180,7 @@ const snapshotFrame = (frame: string) => (JSON.parse(frame) as StreamMessage).da
 
 describe('GET /v1/stream', () => {
   it('upgrades, sends a snapshot immediately, answers ping, and pushes ticks and dispatches', async () => {
+    const t0 = Date.now()
     const res = await call('/v1/stream', { headers: { upgrade: 'websocket' } })
     expect(res.status).toBe(101)
     const ws = res.webSocket
@@ -170,7 +190,12 @@ describe('GET /v1/stream', () => {
 
     const first = JSON.parse(await next()) as StreamMessage
     expect(first.type).toBe('snapshot')
-    expect(first.data).toEqual(await snapshot())
+    // Same state as a read, each stamped with the time it was produced.
+    const { ts: connectTs, ...connected } = first.data
+    const { ts: readTs, ...read } = await snapshot()
+    expect(connected).toEqual(read)
+    expect(connectTs).toBeGreaterThanOrEqual(t0)
+    expect(readTs).toBeGreaterThanOrEqual(connectTs)
 
     const stub = network()
     expect(await runInDurableObject(stub, (_, state) => state.storage.getAlarm())).not.toBeNull()
@@ -205,6 +230,20 @@ describe('demo availability', () => {
     return x
   }
 
+  it('the default node survives five back-to-back re-dispatches, each the moment the previous lock releases', () => {
+    expect(canonicalChargeFloorPct(seedNode('VTOL-260-TX-04'))).toBe(required)
+    const rng = seeded(8)
+    let n = seedNode('VTOL-260-TX-04')
+    const charges: number[] = []
+    for (let d = 0; d <= 5; d++) {
+      charges.push(n.charge)
+      n = run(n, 'TASKED', LOCK_TICKS, rng)
+    }
+    // Each 30 s lock drains 2.5 %/min x 0.5 min x 5.
+    expect(charges[5]).toBeCloseTo(94 - 5 * 6.25)
+    for (const c of charges) expect(c).toBeGreaterThanOrEqual(required)
+  })
+
   it('re-dispatching the default node every ~30 s after release never trips its charge check', () => {
     const rng = seeded(9)
     let n = seedNode('VTOL-260-TX-04')
@@ -221,5 +260,88 @@ describe('demo availability', () => {
     while (n.charge >= required) n = run(n, 'TASKED', LOCK_TICKS, rng)
     n = run(n, 'CHARGING', LOCK_TICKS, rng)
     expect(n.charge).toBeGreaterThanOrEqual(required)
+  })
+})
+
+describe('long-horizon availability', () => {
+  const TICKS = 10_000
+  const isBattery = (n: HardwareNode) => n.power === 'BATTERY'
+  const shownAvailable = (n: HardwareNode) => n.status === 'IDLE' || n.status === 'DOCKED'
+
+  /** One NetworkState tick, in alarm() order: release expired locks, then drift. */
+  const tick = (nodes: HardwareNode[], now: number, rng: Rng) =>
+    nodes.map((n) => (n.status === 'TASKED' && (n.taskedUntil ?? 0) <= now ? releaseNode(n) : n)).map((n) => driftNode(n, rng))
+
+  /** IDLE / DOCKED battery nodes holding less than their canonical payload needs. */
+  const shortfalls = (nodes: HardwareNode[], t: number) =>
+    nodes.filter((n) => isBattery(n) && shownAvailable(n) && n.charge < canonicalChargeFloorPct(n)).map((n) => `tick ${t}: ${n.id} ${n.status} ${n.charge}`)
+
+  it('nobody dispatching: every battery node keeps cycling through DOCKED -> IDLE and never shows IDLE / DOCKED below its floor', () => {
+    const rng = seeded(11)
+    let nodes = SEED_NODES.map((n) => ({ ...n }))
+    const undocked = new Set<string>()
+    const bad: string[] = []
+    for (let t = 1; t <= TICKS; t++) {
+      const next = tick(nodes, t * TICK_MS, rng)
+      next.forEach((n, i) => {
+        if (nodes[i].status === 'DOCKED' && n.status === 'IDLE') undocked.add(n.id)
+      })
+      nodes = next
+      bad.push(...shortfalls(nodes, t))
+    }
+    expect(bad).toEqual([])
+    // DOCKED is not a dead end: every battery node left its dock at least once.
+    expect([...undocked].sort()).toEqual(SEED_NODES.filter(isBattery).map((n) => n.id).sort())
+  })
+
+  it('random canonical dispatches: a canonical payload on an IDLE / DOCKED node always passes, and both statuses persist', () => {
+    const rng = seeded(12)
+    let nodes = SEED_NODES.map((n) => ({ ...n }))
+    const bad: string[] = []
+    let dispatched = 0
+    for (let t = 1; t <= TICKS; t++) {
+      const now = t * TICK_MS
+      nodes = tick(nodes, now, rng)
+      // About one [ TASK NODE ] dispatch every 20 ticks, on a random node, planned against the published charge.
+      if (rng() < 0.05) {
+        const i = Math.floor(rng() * nodes.length)
+        const n = nodes[i]
+        const { failure } = planDispatch(buildPayload(n), { ...n, charge: round1(n.charge) }, now)
+        if (failure && shownAvailable(n)) bad.push(`tick ${t}: ${n.id} ${n.status} ${n.charge} ${failure.code}`)
+        if (!failure) {
+          nodes[i] = { ...n, status: 'TASKED', taskedUntil: now + TASK_LOCK_MS, taskId: `tsk_${t}` }
+          dispatched++
+        }
+      }
+      bad.push(...shortfalls(nodes, t))
+    }
+    expect(bad).toEqual([])
+    expect(dispatched).toBeGreaterThan(300)
+    expect(nodes.filter(isBattery).map((n) => n.status)).toEqual(expect.arrayContaining(['IDLE', 'DOCKED']))
+  })
+})
+
+describe('NetworkState restarts', () => {
+  it('seq never goes backwards, even across back-to-back evictions', async () => {
+    const stub = network()
+    // A held lock keeps the object ticking, and those ticks are only persisted every few seconds.
+    const res = await postJson('/v1/dispatch', buildPayload(seedNode('AMR-V50-08')))
+    expect(res.status).toBe(200)
+    await res.arrayBuffer()
+
+    const seqs = [(await snapshot()).seq]
+    const tickAndRead = async () => {
+      await runInDurableObject(stub, (instance) => instance.alarm())
+      seqs.push((await snapshot()).seq)
+    }
+    await tickAndRead()
+    await evictDurableObject(stub)
+    seqs.push((await snapshot()).seq)
+    await tickAndRead()
+    await evictDurableObject(stub)
+    seqs.push((await snapshot()).seq)
+    await tickAndRead()
+
+    for (let i = 1; i < seqs.length; i++) expect(seqs[i], seqs.join(' ')).toBeGreaterThan(seqs[i - 1])
   })
 })

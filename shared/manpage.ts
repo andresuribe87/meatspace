@@ -7,7 +7,17 @@
  * primitives, compile targets, the seed orderbook, the state machine itself) so the manual cannot
  * drift from the API. Pure string functions only: this module runs in workerd and in the browser.
  */
-import { ORIGIN, RATE_LIMITS as LIMITS, REPO_URL, TASK_LOCK_MS, TICK_MS, VERSION, WAITLIST_MAX_BYTES, WS_ORIGIN } from './constants'
+import {
+  MAX_ACTIVE_LOCKS_PER_CLIENT as LOCK_QUOTA,
+  ORIGIN,
+  RATE_LIMITS as LIMITS,
+  REPO_URL,
+  TASK_LOCK_MS,
+  TICK_MS,
+  VERSION,
+  WAITLIST_MAX_BYTES,
+  WS_ORIGIN,
+} from './constants'
 import {
   AGL_CEILING_LIMIT_M,
   attestMessage,
@@ -15,6 +25,7 @@ import {
   MAX_BODY_BYTES,
   MAX_DURATION_MIN,
   MAX_SPEND_USDC,
+  MIN_DURATION_MIN,
   MIN_RTL_RESERVE_PCT,
   parseDispatchPayload,
   PHASE_OFFSETS_MS,
@@ -229,6 +240,12 @@ const JQ_SUMMARY = [
   JSON.stringify([PHASE_OFFSETS_MS.ATTEST, 'receipt', null, null]),
 ]
 
+/** A cap just under the default sortie's escrow, which the exact spend-cap comparison rejects. */
+const UNDER_CAP = num((SORTIE_PLAN.escrowCents - 0.1) / 100)
+
+/** VALIDATE step copy when the node is unknown (no geometry check ran). */
+const NOT_FOUND_STEP = planDispatch({ ...SORTIE, node_id: 'NOPE-404' }, undefined, 0).events.find(isStep)?.message ?? ''
+
 /** A real failure from the state machine: rtl_reserve_pct below the firmware minimum. */
 const LOW_RESERVE = 10
 const LOW_RESERVE_PLAN = planDispatch({ ...SORTIE, constraints: { ...SORTIE.constraints, rtl_reserve_pct: LOW_RESERVE } }, SORTIE_NODE, 0)
@@ -270,7 +287,7 @@ const DESCRIPTION: ManBlock[] = [
 
 const ENDPOINTS: ManBlock[] = [
   p(
-    `Base URL ${ORIGIN}. There is no authentication in v0.1. /v1 responses are JSON unless noted and never cached (cache-control: no-store); every /v1 endpoint except /v1/waitlist allows cross-origin calls (access-control-allow-origin: *). A known path called with the wrong method gets 405 ERR_METHOD_NOT_ALLOWED and an allow header; an unknown /v1 path gets 404 ERR_NOT_FOUND.`,
+    `Base URL ${ORIGIN}. There is no authentication in v0.1. /v1 responses are JSON unless noted and never cached (cache-control: no-store); every /v1 endpoint except /v1/waitlist allows cross-origin calls (access-control-allow-origin: *) and exposes the x-meatspace-task-id and retry-after headers. A known path called with the wrong method gets 405 ERR_METHOD_NOT_ALLOWED and an allow header; an unknown /v1 path gets 404 ERR_NOT_FOUND. /docs/, /install.sh/ and /healthz/ redirect (301) to the same path without the trailing slash, keeping the query string.`,
   ),
   dl([
     item('GET /v1', p('Endpoint index: name, version, sandbox flag, docs URL and the list of endpoints.'), pre(['-> 200: { name, version, sandbox, docs, endpoints[] }'], true)),
@@ -296,7 +313,7 @@ const ENDPOINTS: ManBlock[] = [
       p(
         `Task a node. The body is a primitive payload (application/json, at most ${MAX_BODY_BYTES} bytes; see PRIMITIVES). Runs VALIDATE, ESCROW, COMPILE and ATTEST; see DISPATCH LIFECYCLE and RESPONSE FORMAT.`,
       ),
-      pre(['-> 200, 404, 409, 422: application/x-ndjson DispatchEvent lines', '-> 400, 413, 429, 500: ApiErrorBody, before any stream'], true),
+      pre(['-> 200, 404, 409, 422, 429: application/x-ndjson DispatchEvents', '-> 400, 413, 429, 500: ApiErrorBody, before any stream'], true),
     ),
     item(
       'POST /v1/waitlist',
@@ -317,7 +334,7 @@ const ENDPOINTS: ManBlock[] = [
   table([
     ['FIELD', 'TYPE', 'MEANING'],
     ['seq', 'number', 'monotonic; drop snapshots with seq <= last seen'],
-    ['ts', 'number', 'server time, epoch ms'],
+    ['ts', 'number', 'server epoch ms when produced: read time for GET and the first stream frame, tick or change time for later frames'],
     ['stats', 'NetworkStats', 'ticker, below'],
     ['nodes', 'HardwareNode[]', 'orderbook, below'],
   ]),
@@ -351,6 +368,9 @@ const ENDPOINTS: ManBlock[] = [
     ['taskedUntil', 'number|null', 'epoch ms when the task lock releases'],
     ['taskId', 'string|null', 'task holding the lock'],
   ]),
+  p(
+    `Node status follows the simulated network. TASKED: a task lock is held for ${LOCK_S}${NBSP}s. When it releases, a BATTERY node goes to CHARGING, then DOCKED once nearly full; a fully charged DOCKED node now and then undocks to IDLE, and an IDLE node goes back to CHARGING before its charge drops below what its primitive's default est_duration_min and reserve need. So an IDLE or DOCKED node always passes the battery check with its default payload (see SAFETY ENVELOPES). A MAINS cell goes straight back to IDLE.`,
+  ),
 ]
 
 const PRIMITIVE_FIELDS: Readonly<Record<PrimitiveId, readonly (readonly string[])[]>> = {
@@ -403,7 +423,7 @@ function primitiveBlocks(id: PrimitiveId): ManBlock[] {
 
 const PRIMITIVES_SECTION: ManBlock[] = [
   p(
-    'A primitive binds one intent to one node category; tasking a node of another category fails VALIDATE with ERR_PRIMITIVE_UNSUPPORTED. Positions are GeoJSON [lon, lat] in WGS84 decimal degrees; units are minutes, USDC, km, metres AGL and mm. Strings must be non-empty and unknown fields are ignored.',
+    'A primitive binds one intent to one node category; tasking a node of another category fails VALIDATE with ERR_PRIMITIVE_UNSUPPORTED. Positions are GeoJSON [lon, lat] in WGS84 decimal degrees; units are minutes, USDC, km, metres AGL and mm. Strings must be non-empty; unknown fields are ignored and dropped.',
   ),
   p('Fields common to every primitive:'),
   table([
@@ -411,7 +431,7 @@ const PRIMITIVES_SECTION: ManBlock[] = [
     ['primitive', 'string', orList(PRIMITIVE_IDS)],
     ['node_id', 'string', '^[A-Z0-9][A-Z0-9-]{1,31}$'],
     ['intent', 'string', "the primitive's intent, below"],
-    ['est_duration_min', 'number', `> 0, <= ${MAX_DURATION_MIN}`],
+    ['est_duration_min', 'number', `>= ${MIN_DURATION_MIN}, <= ${MAX_DURATION_MIN}; billable minutes`],
     ['max_spend_usdc', 'number', `> 0, <= ${MAX_SPEND_USDC}; caps the escrow`],
     ['proof.attestation', 'string', '"TPM2_QUOTE"'],
     ['proof.artifacts', 'string[]', '1-16 items, 1-64 chars each'],
@@ -429,13 +449,13 @@ const LIFECYCLE: ManBlock[] = [
     item(
       phaseTerm('VALIDATE'),
       p(
-        "The node must be registered (ERR_NODE_NOT_FOUND, 404) and of the primitive's category (ERR_PRIMITIVE_UNSUPPORTED). The payload must then fit the node's firmware envelope: geofence, altitude, RTL reserve and battery for aircraft; geofence and battery for rovers; site, work envelope and tolerance for cells. See SAFETY ENVELOPES. PASS, or FAIL and an error event.",
+        `The node must be registered (ERR_NODE_NOT_FOUND, 404) and of the primitive's category (ERR_PRIMITIVE_UNSUPPORTED). The payload must then fit the node's firmware envelope: geofence, altitude, RTL reserve and battery for aircraft; geofence and battery for rovers; site, work envelope and tolerance for cells. See SAFETY ENVELOPES. PASS, or FAIL and an error event. On PASS, and on a geofence or work-envelope failure, the step message is the primitive's own check (the trace below shows the sortie's); any other failure names the check that failed instead, e.g. "${NOT_FOUND_STEP}" for an unknown node.`,
       ),
     ),
     item(
       phaseTerm('ESCROW'),
       p(
-        "A node that is already TASKED rejects the bid (ERR_NODE_BUSY, 409). Otherwise escrow is the node's spot rate x est_duration_min, rounded to the cent, and must not exceed max_spend_usdc (ERR_SPEND_CAP). ACCEPTED, or REJECTED and an error event.",
+        `A node that is already TASKED rejects the bid (ERR_NODE_BUSY, 409), and so does a client that already holds ${LOCK_QUOTA} active task locks (ERR_LOCK_QUOTA, 429; see RATE LIMITS). Otherwise escrow is the node's spot rate x est_duration_min, rounded to the cent, and must not exceed max_spend_usdc (ERR_SPEND_CAP). The cap is compared exactly as sent: against the default sortie's ${formatUsd(SORTIE_PLAN.escrowCents)} escrow, ${UNDER_CAP} is rejected and ${num(SORTIE_PLAN.escrowCents / 100)} accepted. ACCEPTED, or REJECTED and an error event.`,
       ),
     ),
     item(
@@ -468,6 +488,7 @@ const RESPONSE_FORMAT: ManBlock[] = [
     '404  ERR_NODE_NOT_FOUND at VALIDATE',
     '409  ERR_NODE_BUSY at ESCROW',
     '422  any other VALIDATE or ESCROW failure',
+    '429  ERR_LOCK_QUOTA at ESCROW, with a retry-after header',
   ]),
   p('A successful dispatch also returns its task id in the x-meatspace-task-id response header.'),
   dl([
@@ -550,7 +571,7 @@ const ERROR_DOCS: Readonly<Record<ErrorCode, { http: number; phase: DispatchPhas
   ERR_INVALID_JSON: { http: 400, phase: '-', meaning: 'body is not valid JSON' },
   ERR_SCHEMA: { http: 400, phase: '-', meaning: 'fails schema; see error.path' },
   ERR_PAYLOAD_TOO_LARGE: { http: 413, phase: '-', meaning: `body too large (dispatch: ${MAX_BODY_BYTES} bytes, waitlist: ${WAITLIST_MAX_BYTES} bytes)` },
-  ERR_RATE_LIMITED: { http: 429, phase: '-', meaning: `per-IP limit; retry-after ${RETRY_AFTER_S}` },
+  ERR_RATE_LIMITED: { http: 429, phase: '-', meaning: `per-client limit; retry-after${NBSP}${RETRY_AFTER_S}` },
   ERR_NOT_FOUND: { http: 404, phase: '-', meaning: 'no such /v1 endpoint' },
   ERR_METHOD_NOT_ALLOWED: { http: 405, phase: '-', meaning: 'wrong method for the path; see the allow header' },
   ERR_FORBIDDEN: { http: 403, phase: '-', meaning: 'cross-origin waitlist sign-up' },
@@ -569,6 +590,7 @@ const ERROR_DOCS: Readonly<Record<ErrorCode, { http: number; phase: DispatchPhas
   ERR_TOLERANCE: { http: 422, phase: 'VALIDATE', meaning: 'tolerance_mm < cell minimum' },
   ERR_SITE_MISMATCH: { http: 422, phase: 'VALIDATE', meaning: 'CNC site is not at the cell' },
   ERR_NODE_BUSY: { http: 409, phase: 'ESCROW', meaning: 'node is TASKED (locked)' },
+  ERR_LOCK_QUOTA: { http: 429, phase: 'ESCROW', meaning: `client holds ${LOCK_QUOTA} task locks` },
   ERR_SPEND_CAP: { http: 422, phase: 'ESCROW', meaning: 'escrow exceeds max_spend_usdc' },
   ERR_INTERNAL: { http: 500, phase: '-', meaning: 'unexpected server error' },
 }
@@ -584,7 +606,7 @@ const ERRORS: ManBlock[] = [
 function batteryExample(): string {
   const draw = SORTIE_NODE.drainPctPerMin * SORTIE.est_duration_min
   const reserve = SORTIE.constraints.rtl_reserve_pct
-  return `${SORTIE_NODE.id}, default sortie: ${num(SORTIE_NODE.drainPctPerMin)} x ${num(SORTIE.est_duration_min)} + ${num(reserve)} = ${num(draw + reserve)}% required. The node starts at ${num(SORTIE_NODE.charge)}%, so it passes until its live charge drops below that.`
+  return `${SORTIE_NODE.id}, default sortie: ${num(SORTIE_NODE.drainPctPerMin)} x ${num(SORTIE.est_duration_min)} + ${num(reserve)} = ${num(draw + reserve)}% required. The node starts ${SORTIE_NODE.status} at ${num(SORTIE_NODE.charge)}%, and an IDLE or DOCKED node never holds less than its default payload needs (see Node status under ENDPOINTS).`
 }
 
 const dash = (v: string | undefined) => v ?? '-'
@@ -641,7 +663,7 @@ const PROOF: ManBlock[] = [
   ),
   table([['PRIMITIVE', 'ARTIFACTS'], ...PRIMITIVE_IDS.map((id) => [id, defaultPayload(id, SEED_NODES).proof.artifacts.join(', ')])]),
   p(
-    `At ATTEST the receipt carries telemetry_stream_hash: "0x" + the lowercase hex SHA-256 of the JSON object {task_id, node_id, payload, issued_at}, where payload is the validated request. The ATTEST step prints it shortened, e.g. ${SAMPLE_HASH}, and receipt.attestation is "TPM2_QUOTE".`,
+    `At ATTEST the receipt carries telemetry_stream_hash: "0x" + the lowercase hex SHA-256 of the UTF-8 canonical JSON of the object {issued_at, node_id, payload, task_id}. issued_at, node_id and task_id are the receipt's; payload is the request body after validation, so unknown fields are dropped. Canonical JSON sorts object keys at every level, keeps array order, has no whitespace and writes strings and numbers as JSON.stringify does (RFC 8785). The ATTEST step prints the hash shortened, e.g. ${SAMPLE_HASH}, and receipt.attestation is "TPM2_QUOTE".`,
   ),
   p(
     `v0.1 sandbox: no hardware runs, so there is no telemetry stream, TPM quote or artifact yet. The hash is computed by the clearinghouse over the request alone and every receipt carries "sandbox":${NBSP}true; treat it as a task fingerprint, not as proof of work.`,
@@ -651,11 +673,14 @@ const PROOF: ManBlock[] = [
 const RATE_LIMITS: ManBlock[] = [
   table([
     ['ENDPOINT', 'LIMIT'],
-    ['POST /v1/dispatch', `${DISPATCH_LIMIT} requests per minute per client IP`],
-    ['POST /v1/waitlist', `${String(WAITLIST_LIMIT).padStart(String(DISPATCH_LIMIT).length, NBSP)} requests per minute per client IP`],
+    ['POST /v1/dispatch', `${DISPATCH_LIMIT} requests per minute per client`],
+    ['POST /v1/waitlist', `${String(WAITLIST_LIMIT).padStart(String(DISPATCH_LIMIT).length, NBSP)} requests per minute per client`],
   ]),
   p(
-    `Every request counts, valid or not. Over the limit a request is refused before its body is read: HTTP 429, ERR_RATE_LIMITED and a retry-after:${NBSP}${RETRY_AFTER_S} header. Counting is approximate.`,
+    `A client is an IPv4 address or an IPv6 /64: every address in one /64 shares its limits. Every request counts, valid or not. Over the limit a request is refused before its body is read: HTTP 429, ERR_RATE_LIMITED and a retry-after:${NBSP}${RETRY_AFTER_S} header. Counting is approximate.`,
+  ),
+  p(
+    `A client may also hold at most ${LOCK_QUOTA} task locks at once. A dispatch beyond that is rejected at ESCROW: HTTP 429 with an NDJSON stream ending in ERR_LOCK_QUOTA, and a retry-after header with the seconds until the client's earliest lock releases.`,
   ),
 ]
 
@@ -665,7 +690,7 @@ const STREAM: ManBlock[] = [
   ),
   code(['{"type":"snapshot","data":{"seq":N,"ts":N,"stats":{...},"nodes":[...]}}']),
   p(
-    'Each frame is a full NetworkSnapshot, not a diff. seq is monotonic: drop any frame whose seq is not greater than the last one applied. Send the text frame "ping" (exactly, no newline) and the server answers "pong"; other client frames are ignored. A request without Upgrade: websocket gets 426 ERR_UPGRADE_REQUIRED.',
+    'Each frame is a full NetworkSnapshot, not a diff. seq is monotonic, across server restarts too: drop any frame whose seq is not greater than the last one applied. ts is when the server produced the frame: the connect time for the first frame, the tick or state-change time for the rest. Send the text frame "ping" (exactly, no newline) and the server answers "pong"; other client frames are ignored. A request without Upgrade: websocket gets 426 ERR_UPGRADE_REQUIRED.',
   ),
   code([`$ websocat ${WS_ORIGIN}/v1/stream | jq -c '.data.stats'`]),
 ]
@@ -692,7 +717,7 @@ const BUGS: ManBlock[] = [
     `${MAN_VERSION}: everything physical is simulated. No machine moves, no USDC settles, the ticker is synthetic, and telemetry hashes and attestations come from the clearinghouse instead of node hardware.`,
   ),
   p(
-    `There are no API keys yet: every endpoint is anonymous and limited per IP only, so clients behind one NAT share a limit. Request a key with [${NBSP}API${NBSP}KEYS${NBSP}] at ${ORIGIN}/#api-keys or POST /v1/waitlist with kind "api_keys".`,
+    `There are no API keys yet: every endpoint is anonymous and limited per client network only (an IPv4 address or an IPv6 /64), so clients behind one NAT or in one /64 share rate limits and a lock quota. Request a key with [${NBSP}API${NBSP}KEYS${NBSP}] at ${ORIGIN}/#api-keys or POST /v1/waitlist with kind "api_keys".`,
   ),
 ]
 

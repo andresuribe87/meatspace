@@ -1,10 +1,11 @@
 /**
- * Zone A: sticky status bar. Brand | live ticker | [ DOCS ] [ CONNECT HARDWARE (meatspaced) ] [ API KEYS ].
+ * Zone A: status bar. Brand | live ticker | [ DOCS ] [ CONNECT HARDWARE (meatspaced) ] [ API KEYS ].
  *
  * >= 1600px: one row (the full ticker only fits beside the brand and buttons from there). Narrower: brand + buttons,
- * then the ticker on its own full-width row.
+ * then the ticker on its own full-width row. Phones: the buttons wrap under the brand and the bar scrolls away;
+ * from sm up it is sticky (its height is --header-h in index.css).
  * The ticker crawls (marquee) only when its slot is narrower than the text, so it never overflows;
- * hovering pauses it and prefers-reduced-motion turns it into a static, scrollable strip.
+ * hovering pauses it and prefers-reduced-motion stops it as a static line clipped at the slot edge.
  */
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type Ref } from 'react'
 
@@ -98,7 +99,7 @@ function Ticker({ stats, connection }: { stats: NetworkStats; connection: Connec
       <div aria-hidden="true" className="h-3 w-px shrink-0 bg-line" />
       {/* Screen readers get the whole ticker once, as plain text; the moving copy is hidden and nothing is aria-live. */}
       <span className="sr-only">{tickerText(stats)}</span>
-      <div ref={viewportRef} aria-hidden="true" className="min-w-0 flex-1 overflow-hidden motion-reduce:overflow-x-auto">
+      <div ref={viewportRef} aria-hidden="true" className="min-w-0 flex-1 overflow-hidden">
         <div className={crawl ? 'ticker-track hover:[animation-play-state:paused]' : 'flex justify-center'}>
           <TickerLine fields={fields} lineRef={lineRef} />
           {crawl ? (
@@ -127,7 +128,7 @@ export function StatusBar({ stats, connection, route, onNavigate, onOpenPanel }:
   const onDocs = route === '/docs'
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-bg">
+    <header className="border-b border-line bg-bg sm:sticky sm:top-0 sm:z-40">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-6 px-4 sm:px-6 min-[1600px]:h-10 min-[1600px]:flex-nowrap">
         <a
           href="/"
@@ -142,7 +143,10 @@ export function StatusBar({ stats, connection, route, onNavigate, onOpenPanel }:
           <Ticker stats={stats} connection={connection} />
         </div>
 
-        <nav aria-label="Primary" className="-mx-2 flex w-[calc(100%+1rem)] shrink-0 items-center justify-between pb-1 sm:-mr-2 sm:ml-auto sm:w-auto sm:justify-end sm:gap-1 sm:pb-0">
+        <nav
+          aria-label="Primary"
+          className="-mx-2 flex w-[calc(100%+1rem)] shrink-0 flex-wrap items-center gap-y-0.5 pb-1 sm:-mr-2 sm:ml-auto sm:w-auto sm:flex-nowrap sm:justify-end sm:gap-1 sm:pb-0"
+        >
           <BracketButton
             onClick={() => onNavigate('/docs')}
             aria-current={onDocs ? 'page' : undefined}
@@ -150,15 +154,11 @@ export function StatusBar({ stats, connection, route, onNavigate, onOpenPanel }:
           >
             DOCS
           </BracketButton>
-          <BracketButton onClick={() => onOpenPanel('hardware')} aria-label="CONNECT HARDWARE (meatspaced)" aria-haspopup="dialog">
-            <span className="sm:hidden">CONNECT HW</span>
-            <span className="hidden sm:inline">
-              CONNECT HARDWARE (<span className="normal-case">meatspaced</span>)
-            </span>
+          <BracketButton onClick={() => onOpenPanel('hardware')} aria-haspopup="dialog">
+            CONNECT HARDWARE (<span className="normal-case">meatspaced</span>)
           </BracketButton>
-          <BracketButton onClick={() => onOpenPanel('api_keys')} aria-label="API KEYS" aria-haspopup="dialog">
-            <span className="sm:hidden">KEYS</span>
-            <span className="hidden sm:inline">API KEYS</span>
+          <BracketButton onClick={() => onOpenPanel('api_keys')} aria-haspopup="dialog">
+            API KEYS
           </BracketButton>
         </nav>
       </div>

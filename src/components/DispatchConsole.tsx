@@ -5,7 +5,7 @@
  * (body syntax-highlighted, editable as raw JSON); [ EXECUTE CALL ] POSTs the draft to the real
  * /v1/dispatch and renders the NDJSON state machine as it streams in at the server's offsets.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 
 import { formatOffset, formatUsd } from '../../shared/format'
 import { PRIMITIVE_IDS, PRIMITIVES } from '../../shared/primitives'
@@ -36,6 +36,8 @@ const TARGET_ID = 'dispatch-target'
 const ENDPOINT = `${PUBLIC_ORIGIN}/v1/dispatch`
 
 const OK_STATUSES: ReadonlySet<StepStatus> = new Set<StepStatus>(['PASS', 'ACCEPTED', 'DISPATCHED', 'SIGNED'])
+/** The response log follows new output while its bottom edge is at most this far out of view. */
+const FOLLOW_SLACK_PX = 24
 
 type Run =
   | { phase: 'idle' }
@@ -46,12 +48,20 @@ type Run =
       startedAt: number
       events: DispatchEvent[]
       httpStatus: number | null
+      /** x-meatspace-task-id, known as soon as the response headers arrive. */
+      taskId: string | null
       elapsedMs: number | null
       /** Rejected client-side (invalid JSON): nothing was sent. */
       local: boolean
     }
 
 const IDLE: Run = { phase: 'idle' }
+
+/** Task id of a dispatch the server has already committed (2xx with a task id), whatever happens to the stream. */
+function committedTask(run: Exclude<Run, { phase: 'idle' }>): string | null {
+  const { httpStatus, taskId } = run
+  return taskId && httpStatus !== null && httpStatus >= 200 && httpStatus < 300 ? taskId : null
+}
 
 type ParsedDraft = { ok: true; nodeId: string | null } | { ok: false; error: string }
 
@@ -149,6 +159,7 @@ function Cursor({ className = '' }: { className?: string }) {
 }
 
 function OutputLines({ run }: { run: Exclude<Run, { phase: 'idle' }> }) {
+  const committed = committedTask(run)
   const receipt = run.events.find((e): e is Extract<DispatchEvent, { type: 'receipt' }> => e.type === 'receipt')?.receipt
   const lastError = [...run.events].reverse().find((e): e is Extract<DispatchEvent, { type: 'error' }> => e.type === 'error')
 
@@ -172,7 +183,15 @@ function OutputLines({ run }: { run: Exclude<Run, { phase: 'idle' }> }) {
         </div>
       ) : null}
 
-      {run.phase === 'aborted' ? <div className="mt-1 text-muted">^C aborted by client</div> : null}
+      {run.phase === 'aborted' ? (
+        committed ? (
+          <div className="mt-1 text-amber wrap-anywhere">
+            ^C stream detached · task {committed} committed (HTTP {run.httpStatus})
+          </div>
+        ) : (
+          <div className="mt-1 text-muted">^C aborted by client</div>
+        )
+      ) : null}
 
       {run.phase === 'done' && run.local ? <div className={`${ROW} text-muted`}><span aria-hidden="true" />request not sent</div> : null}
 
@@ -192,7 +211,15 @@ function OutputLines({ run }: { run: Exclude<Run, { phase: 'idle' }> }) {
 function ResponseStatus({ run }: { run: Run }) {
   if (run.phase === 'idle') return <span className="text-muted">—</span>
   if (run.phase === 'running') return <span className="text-amber">streaming...</span>
-  if (run.phase === 'aborted') return <span className="text-muted">aborted</span>
+  if (run.phase === 'aborted') {
+    if (!committedTask(run)) return <span className="text-muted">aborted</span>
+    return (
+      <span className="tabular">
+        <span className="text-emerald">HTTP {run.httpStatus}</span>
+        <span className="text-muted"> · detached</span>
+      </span>
+    )
+  }
   if (run.local) return <span className="text-amber">not sent</span>
   const ms = run.elapsedMs !== null ? <span className="text-muted"> · {Math.round(run.elapsedMs)}ms</span> : null
   if (!run.httpStatus) return <span className="text-amber">no response{ms}</span>
@@ -217,9 +244,14 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
 
   const runSeq = useRef(0)
   const abortRef = useRef<AbortController | null>(null)
+  const tabListRef = useRef<HTMLDivElement>(null)
   const tabRefs = useRef<Partial<Record<PrimitiveId, HTMLButtonElement | null>>>({})
   const editorRef = useRef<HTMLTextAreaElement>(null)
+  const requestRef = useRef<HTMLPreElement>(null)
+  /** Esc left edit mode: focus the read-only request view instead of dropping to <body>. */
+  const focusRequestOnExit = useRef(false)
   const logRef = useRef<HTMLDivElement>(null)
+  const followLog = useRef(true)
   const execWrapRef = useRef<HTMLSpanElement>(null)
   const abortWrapRef = useRef<HTMLSpanElement>(null)
   const restoreFocusToExec = useRef(false)
@@ -247,21 +279,40 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
     if (prev.primitive === primitive && prev.loadNonce === loadNonce) return
     prevKey.current = { primitive, loadNonce }
     cancelRun()
-    setRun(IDLE)
+    // A dispatch the server already committed keeps its log and says so; anything else is stale output.
+    setRun((r) => (r.phase === 'running' && committedTask(r) ? { ...r, phase: 'aborted' } : IDLE))
     if (prev.loadNonce !== loadNonce) setEditing(false)
   }, [primitive, loadNonce, cancelRun])
+
+  // Phone tab strip scrolls sideways: keep the active tab fully in it. Only scrollLeft moves; scrollIntoView
+  // would also scroll the page, fighting [ TASK NODE ]'s own scroll to the console.
+  useLayoutEffect(() => {
+    const list = tabListRef.current
+    const tab = tabRefs.current[primitive]
+    if (!list || !tab) return
+    const l = list.getBoundingClientRect()
+    const t = tab.getBoundingClientRect()
+    if (t.left < l.left) list.scrollLeft -= l.left - t.left
+    else if (t.right > l.right) list.scrollLeft += t.right - l.right
+  }, [primitive, loadNonce])
+
+  // The response log follows the stream unless the reader scrolled up.
+  useLayoutEffect(() => {
+    const el = logRef.current
+    if (el && run.phase !== 'idle' && followLog.current) el.scrollTop = el.scrollHeight
+  }, [run])
 
   // Unmount: never leave a request streaming into a dead component.
   useEffect(() => () => cancelRun(), [cancelRun])
 
-  // Escape aborts while a call is streaming.
+  // Escape aborts while a call is streaming, unless something else owns it: an open dialog (Esc closes it) or a
+  // handler that already acted on it.
   useEffect(() => {
     if (!running) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !e.defaultPrevented) {
-        e.preventDefault()
-        abort()
-      }
+      if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('dialog[open]')) return
+      e.preventDefault()
+      abort()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
@@ -279,9 +330,11 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
     }
   }, [running])
 
-  // Entering edit mode focuses the editor.
+  // Entering edit mode focuses the editor; leaving it with Esc focuses the request view.
   useEffect(() => {
     if (editing) editorRef.current?.focus()
+    else if (focusRequestOnExit.current) requestRef.current?.focus()
+    focusRequestOnExit.current = false
   }, [editing])
 
   const execute = useCallback(async () => {
@@ -291,6 +344,7 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
     const t0 = performance.now()
     restoreFocusToExec.current = !!execWrapRef.current?.contains(document.activeElement)
     logRef.current?.scrollTo({ top: 0 })
+    followLog.current = true
 
     try {
       JSON.parse(draft)
@@ -302,6 +356,7 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
         startedAt,
         events: [{ type: 'error', t_ms: 0, phase: null, code: 'ERR_INVALID_JSON', message: e instanceof Error ? e.message : String(e), http_status: 400 }],
         httpStatus: null,
+        taskId: null,
         elapsedMs: null,
         local: true,
       })
@@ -310,14 +365,19 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
 
     const ac = new AbortController()
     abortRef.current = ac
-    setRun({ phase: 'running', id, startedAt, events: [], httpStatus: null, elapsedMs: null, local: false })
+    setRun({ phase: 'running', id, startedAt, events: [], httpStatus: null, taskId: null, elapsedMs: null, local: false })
     const update = (fn: (r: Exclude<Run, { phase: 'idle' }>) => Run) => {
       if (runSeq.current !== id) return
       setRun((r) => (r.phase === 'idle' || r.id !== id ? r : fn(r)))
     }
 
     try {
-      const { httpStatus } = await executeDispatch(draft, (ev) => update((r) => ({ ...r, events: [...r.events, ev] })), ac.signal)
+      const { httpStatus } = await executeDispatch(
+        draft,
+        (ev) => update((r) => ({ ...r, events: [...r.events, ev] })),
+        ac.signal,
+        (status, taskId) => update((r) => ({ ...r, httpStatus: status, taskId })),
+      )
       update((r) => ({ ...r, phase: 'done', httpStatus, elapsedMs: performance.now() - t0 }))
     } catch (e) {
       if (ac.signal.aborted) {
@@ -347,9 +407,7 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
     e.preventDefault()
     const p = PRIMITIVE_IDS[next]
     onPrimitiveChange(p)
-    const el = tabRefs.current[p]
-    el?.focus()
-    el?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    tabRefs.current[p]?.focus({ preventScroll: true })
   }
 
   const onEditorKeyDown = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
@@ -358,6 +416,7 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
       void execute()
     } else if (e.key === 'Escape' && !running) {
       e.preventDefault()
+      focusRequestOnExit.current = true
       setEditing(false)
     }
   }
@@ -375,7 +434,13 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
       bodyClassName="flex min-h-0 flex-1 flex-col"
     >
       {/* Primitive tabs */}
-      <div role="tablist" aria-label="Robotics primitives" onKeyDown={onTabKeyDown} className="flex overflow-x-auto border-b border-line md:grid md:grid-cols-3 md:overflow-visible">
+      <div
+        ref={tabListRef}
+        role="tablist"
+        aria-label="Robotics primitives"
+        onKeyDown={onTabKeyDown}
+        className="flex overflow-x-auto border-b border-line md:grid md:grid-cols-3 md:overflow-visible"
+      >
         {PRIMITIVE_IDS.map((p) => {
           const active = p === primitive
           return (
@@ -392,7 +457,7 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
               tabIndex={active ? 0 : -1}
               onClick={() => onPrimitiveChange(p)}
               className={[
-                'min-w-0 shrink-0 border-t-2 border-r border-line px-3 py-2 text-left transition-none last:border-r-0 focus-visible:-outline-offset-2',
+                'flex min-w-0 shrink-0 flex-col border-t-2 border-r border-line px-3 py-2 text-left transition-none last:border-r-0 focus-visible:-outline-offset-2',
                 active ? 'border-t-emerald bg-panel text-emerald' : 'border-t-transparent bg-bg text-muted hover:text-fg',
               ].join(' ')}
             >
@@ -416,13 +481,13 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
                   {node ? (
                     <>
                       {' · '}
-                      {node.iface}
-                      {node.status === 'TASKED' ? (
-                        <>
-                          {' '}
-                          <StatusTag tone="amber">TASKED</StatusTag>
-                        </>
-                      ) : null}
+                      <span className="whitespace-nowrap">
+                        {node.iface}{' '}
+                        {/* The slot is reserved while untasked, so the line never reflows when a dispatch locks the node. */}
+                        <StatusTag tone="amber" className={node.status === 'TASKED' ? '' : 'invisible'}>
+                          TASKED
+                        </StatusTag>
+                      </span>
                     </>
                   ) : parsed.nodeId ? (
                     <span className="text-amber"> · not in orderbook</span>
@@ -461,7 +526,12 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
                 className="block h-full w-full resize-none bg-bg p-3 text-xs leading-[1.6] whitespace-pre text-fg focus-visible:-outline-offset-1"
               />
             ) : (
-              <pre tabIndex={0} aria-label="curl request" className="h-full overflow-auto p-3 text-xs leading-[1.6] focus-visible:-outline-offset-1">
+              <pre
+                ref={requestRef}
+                tabIndex={0}
+                aria-label="curl request"
+                className="h-full overflow-auto p-3 text-xs leading-[1.6] focus-visible:-outline-offset-1"
+              >
                 <code>
                   <span className="text-muted select-none">$ </span>
                   <span className="text-fg">curl -sN -X POST {ENDPOINT}</span>
@@ -495,7 +565,10 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
               </BracketButton>
             </span>
           ) : null}
-          <span className="ml-auto text-[11px] text-muted">{running ? 'esc to abort' : editing ? 'ctrl+enter to execute' : null}</span>
+          {/* Keyboard hints: not on phones / touch, where there is no Esc and the line would only wrap. */}
+          <span className="ml-auto hidden text-[11px] text-muted sm:pointer-fine:inline">
+            {running ? 'esc to abort' : editing ? 'ctrl+enter to execute' : null}
+          </span>
         </div>
 
         {/* RESPONSE */}
@@ -511,6 +584,10 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
               aria-live="polite"
               aria-label="Dispatch output"
               tabIndex={0}
+              onScroll={(e) => {
+                const el = e.currentTarget
+                followLog.current = el.scrollHeight - el.scrollTop - el.clientHeight <= FOLLOW_SLACK_PX
+              }}
               className="absolute inset-0 overflow-y-auto p-3 text-xs leading-[1.6] focus-visible:-outline-offset-1"
             >
               {run.phase === 'idle' ? (

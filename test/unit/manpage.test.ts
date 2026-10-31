@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
-import { MAX_BODY_BYTES, MAX_DURATION_MIN, MAX_SPEND_USDC, parseDispatchPayload } from '../../shared/dispatch'
+import { MAX_ACTIVE_LOCKS_PER_CLIENT } from '../../shared/constants'
+import { MAX_BODY_BYTES, MAX_DURATION_MIN, MAX_SPEND_USDC, MIN_DURATION_MIN, parseDispatchPayload } from '../../shared/dispatch'
 import { MAN_DATE, MAN_SECTIONS, MAN_TITLE, MAN_VERSION, MAN_WIDTH, manBlocks, manSlug, renderManText, type ManBlock } from '../../shared/manpage'
 import { SEED_NODES } from '../../shared/nodes'
 import { defaultPayload, PRIMITIVE_IDS, PRIMITIVES } from '../../shared/primitives'
@@ -133,11 +134,25 @@ describe('man page content matches the contract', () => {
 
   it('interpolates the shared limits', () => {
     expect(flat).toContain(`at most ${MAX_BODY_BYTES} bytes`)
-    expect(flat).toContain(`> 0, <= ${MAX_DURATION_MIN}`)
+    expect(flat).toContain(`>= ${MIN_DURATION_MIN}, <= ${MAX_DURATION_MIN}; billable minutes`)
     expect(flat).toContain(`> 0, <= ${MAX_SPEND_USDC}`)
-    expect(flat).toContain('20 requests per minute per client IP')
-    expect(flat).toContain('5 requests per minute per client IP')
+    expect(flat).toContain('20 requests per minute per client')
+    expect(flat).toContain('5 requests per minute per client')
+    expect(flat).toContain('A client is an IPv4 address or an IPv6 /64')
     expect(flat).toContain('retry-after: 60')
+    expect(flat).toContain(`A client may also hold at most ${MAX_ACTIVE_LOCKS_PER_CLIENT} task locks at once`)
+  })
+
+  it('documents the reviewed semantics: spend cap, ts, hash recipe, redirects, node status', () => {
+    expect(flat).toContain('The cap is compared exactly as sent: against the default sortie\'s $42.50 escrow, 42.499 is rejected and 42.5 accepted.')
+    expect(flat).toContain('ts is when the server produced the frame')
+    expect(flat).toContain('read time for GET')
+    expect(flat).toContain('canonical JSON of the object {issued_at, node_id, payload, task_id}')
+    expect(flat).toContain('unknown fields are dropped')
+    expect(flat).toContain('/docs/, /install.sh/ and /healthz/ redirect (301)')
+    expect(flat).toContain('exposes the x-meatspace-task-id and retry-after headers')
+    expect(flat).toContain('an IDLE or DOCKED node always passes the battery check with its default payload')
+    expect(flat).toContain('"Resolving node NOPE-404 in clearinghouse registry..."')
   })
 
   it('documents the node_id pattern the parser enforces', () => {

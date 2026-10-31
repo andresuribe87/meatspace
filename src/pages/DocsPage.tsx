@@ -26,7 +26,6 @@ export interface DocsPageProps {
   onNavigate: (to: string) => void
 }
 
-const DOC_TITLE = 'MEATSPACE(1) // meatspace.sh'
 const CURL_DOCS = `curl ${PUBLIC_ORIGIN}/docs`
 
 const SECTIONS = MAN_SECTIONS.map((s) => ({ title: s.title, slug: manSlug(s.title), blocks: manBlocks(s) }))
@@ -103,7 +102,10 @@ function codeContent(lines: readonly string[], style: CodeStyle | undefined): Re
  * Blocks
  * ------------------------------------------------------------------------- */
 
-/** <pre> that becomes a focusable, labelled region only while it actually scrolls sideways. */
+/**
+ * <pre> that becomes a scrollable, focusable, labelled region only while it actually scrolls sideways. Otherwise it
+ * clips: a sub-pixel overflow would still make an `overflow: auto` box an unlabelled keyboard stop in Chromium.
+ */
 function ScrollPre({ label, children }: { label: string; children: ReactNode }) {
   const ref = useRef<HTMLPreElement>(null)
   const [scrolls, setScrolls] = useState(false)
@@ -129,7 +131,7 @@ function ScrollPre({ label, children }: { label: string; children: ReactNode }) 
       tabIndex={scrolls ? 0 : undefined}
       role={scrolls ? 'region' : undefined}
       aria-label={scrolls ? `${label} (scrolls horizontally)` : undefined}
-      className="overflow-x-auto whitespace-pre"
+      className={`whitespace-pre ${scrolls ? 'overflow-x-auto' : 'overflow-x-hidden'}`}
     >
       {children}
     </pre>
@@ -257,14 +259,6 @@ const LINK_BUTTON = 'inline-flex items-center gap-1.5 whitespace-nowrap px-2 py-
 export function DocsPage({ onNavigate }: DocsPageProps) {
   const active = useActiveSection()
 
-  useEffect(() => {
-    const previous = document.title
-    document.title = DOC_TITLE
-    return () => {
-      document.title = previous
-    }
-  }, [])
-
   // Deep links (/docs#errors): the browser tried to scroll before the SPA rendered the target.
   useEffect(() => {
     const id = decodeURIComponent(window.location.hash.slice(1))
@@ -289,7 +283,7 @@ export function DocsPage({ onNavigate }: DocsPageProps) {
         </div>
 
         <nav aria-label="Manual sections" className="border-y border-line py-2 xl:col-start-1 xl:row-span-2 xl:row-start-1 xl:border-0 xl:py-0">
-          <div className="xl:sticky xl:top-14">
+          <div className="xl:sticky xl:top-[var(--header-h)]">
             <p className="mb-2 hidden text-[11px] tracking-[0.14em] text-muted xl:block">SECTIONS</p>
             <ul className="flex flex-wrap gap-x-[2ch] gap-y-1 text-xs xl:block xl:space-y-1">
               {SECTIONS.map((s) => (
@@ -313,7 +307,7 @@ export function DocsPage({ onNavigate }: DocsPageProps) {
           </header>
 
           {SECTIONS.map((s) => (
-            <section key={s.slug} id={s.slug} aria-labelledby={`${s.slug}-title`} className="mt-[1lh] scroll-mt-28 sm:scroll-mt-24 xl:scroll-mt-14">
+            <section key={s.slug} id={s.slug} aria-labelledby={`${s.slug}-title`} className="mt-[1lh]">
               <h2 id={`${s.slug}-title`} className="font-bold text-fg">
                 {s.title}
               </h2>

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { renderManText } from '../../shared/manpage'
 import { SEED_NODES, SEED_STATS } from '../../shared/nodes'
 import type { HardwareNode, NetworkSnapshot, NetworkStats } from '../../shared/types'
+import { clientKey, normalizeIp } from '../../worker/http'
 import worker from '../../worker/index'
 import { INSTALL_SH } from '../../worker/install'
 import { call, expectApiError, getJson, ORIGIN, snapshot } from './helpers'
@@ -69,6 +70,16 @@ describe('read endpoints', () => {
     expect(err.message).toBe('node NOPE-404 is not registered with the clearinghouse')
   })
 
+  it('stamps ts with the time of the read, not of the last tick', async () => {
+    await scheduler.wait(5)
+    const t0 = Date.now()
+    for (const path of ['/v1/snapshot', '/v1/nodes', '/v1/stats']) {
+      const { ts } = await getJson<{ ts: number }>(path)
+      expect(ts, path).toBeGreaterThanOrEqual(t0)
+      expect(ts, path).toBeLessThanOrEqual(Date.now())
+    }
+  })
+
   it('GET /v1/stats returns ticker stats with a timestamp', async () => {
     const body = await getJson<{ stats: NetworkStats; ts: number }>('/v1/stats')
     expect(body.stats).toEqual((await snapshot()).stats)
@@ -124,6 +135,12 @@ describe('CORS', () => {
     expectSecurityHeaders(res)
   })
 
+  it('exposes the task id and retry-after headers to cross-origin callers', async () => {
+    const res = await call('/v1/stats', { headers: { origin: 'https://agent.example' } })
+    expect(res.headers.get('access-control-expose-headers')).toBe('x-meatspace-task-id, retry-after')
+    await res.arrayBuffer()
+  })
+
   it('keeps /v1/waitlist same-origin: no preflight, no CORS headers', async () => {
     const res = await call('/v1/waitlist', { method: 'OPTIONS', headers: { origin: 'https://agent.example' } })
     expect(res.headers.get('access-control-allow-origin')).toBeNull()
@@ -166,6 +183,19 @@ describe('non-API routes', () => {
     expect(await res.text()).toBe(renderManText())
   })
 
+  it.each([
+    ['/docs/', '/docs'],
+    ['/docs/?format=txt', '/docs?format=txt'],
+    ['/install.sh/', '/install.sh'],
+    ['/install.sh/?a=1&b=2', '/install.sh?a=1&b=2'],
+    ['/healthz/', '/healthz'],
+  ])('GET %s -> 301 to %s', async (from, to) => {
+    const res = await call(from, { redirect: 'manual' })
+    expect(res.status).toBe(301)
+    expect(res.headers.get('location')).toBe(to)
+    expectSecurityHeaders(res)
+  })
+
   // The ASSETS binding is only wired up by the Vite plugin, so a stub stands in for the SPA's index.html.
   it('GET /docs from a browser defers to the SPA asset, re-pointing canonical/og:url/title at /docs', async () => {
     const shell =
@@ -182,5 +212,38 @@ describe('non-API routes', () => {
     expect(await res.text()).toBe(
       '<!doctype html><title>MEATSPACE(1) // meatspace.sh</title><link rel="canonical" href="https://meatspace.sh/docs" /><meta property="og:url" content="https://meatspace.sh/docs" />',
     )
+  })
+})
+
+describe('client identity (rate limits and lock quota)', () => {
+  it.each([
+    ['203.0.113.7', '203.0.113.7'],
+    ['2001:db8::1', '2001:db8:0:0::/64'],
+    ['2001:DB8:0:0:ffff::1', '2001:db8:0:0::/64'],
+    ['2001:0db8:0000:0000:0000:0000:0000:0001', '2001:db8:0:0::/64'],
+    ['2001:db8:1:2:3:4:5:6', '2001:db8:1:2::/64'],
+    ['2001:db8:1::', '2001:db8:1:0::/64'],
+    ['::1', '0:0:0:0::/64'],
+    ['fe80::1%eth0', 'fe80:0:0:0::/64'],
+    ['64:ff9b::203.0.113.7', '64:ff9b:0:0::/64'],
+    ['::ffff:203.0.113.7', '203.0.113.7'],
+    ['::ffff:cb00:7107', '203.0.113.7'],
+    ['anon', 'anon'],
+    ['1::2::3', '1::2::3'],
+    ['2001:db8:1:2:3:4:5:6:7', '2001:db8:1:2:3:4:5:6:7'],
+    ['12345::1', '12345::1'],
+    ['::ffff:203.0.113.256', '::ffff:203.0.113.256'],
+  ])('%s -> %s', (ip, network) => {
+    expect(normalizeIp(ip)).toBe(network)
+  })
+
+  it('derives one opaque 16-hex key per client network', async () => {
+    const key = (ip: string) => clientKey(new Request(ORIGIN, { headers: { 'cf-connecting-ip': ip } }))
+    const a = await key('2001:db8:5:6::1')
+    expect(a).toMatch(/^[0-9a-f]{16}$/)
+    expect(await key('2001:0db8:0005:0006:ffff:ffff:ffff:ffff')).toBe(a)
+    expect(await key('2001:db8:5:7::1')).not.toBe(a)
+    expect(await key('203.0.113.7')).toBe(await key('::ffff:203.0.113.7'))
+    expect(await key('203.0.113.7')).not.toBe(await key('203.0.113.8'))
   })
 })
