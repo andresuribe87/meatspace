@@ -1,0 +1,43 @@
+/**
+ * meatspace.sh — single Worker: SPA (static assets) + /v1 API + NetworkState Durable Object.
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "meatspace",
+	"main": "worker/index.ts",
+	"compatibility_date": "2026-10-23",
+	"upload_source_maps": true,
+	"observability": { "enabled": true },
+
+	"assets": {
+		"binding": "ASSETS",
+		"not_found_handling": "single-page-application",
+		// Everything else is served straight from the asset store without invoking the Worker.
+		"run_worker_first": ["/v1", "/v1/*", "/install.sh", "/docs", "/healthz"]
+	},
+
+	// Apex custom domain (zone must be active on this account). workers.dev stays on as a fallback origin.
+	"routes": [{ "pattern": "meatspace.sh", "custom_domain": true }],
+	"workers_dev": true,
+	"preview_urls": false,
+
+	"durable_objects": {
+		"bindings": [{ "name": "NETWORK", "class_name": "NetworkState" }]
+	},
+	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["NetworkState"] }],
+
+	// No database_id: wrangler auto-provisions the database on first deploy and links it.
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "meatspace-waitlist",
+			"migrations_dir": "migrations"
+		}
+	],
+
+	"ratelimits": [
+		{ "name": "DISPATCH_LIMITER", "namespace_id": "4701", "simple": { "limit": 20, "period": 60 } },
+		{ "name": "WAITLIST_LIMITER", "namespace_id": "4702", "simple": { "limit": 5, "period": 60 } }
+	]
+}
