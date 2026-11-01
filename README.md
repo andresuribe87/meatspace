@@ -23,6 +23,8 @@ browser ──► Workers Static Assets (React SPA, /assets/*, /docs HTML)
               ├── POST /v1/dispatch ─► parse ─► DO.dispatch() (atomic check-and-lock, 2 locks per client) ─► NDJSON stream @ 0/140/380/800 ms
               ├── POST /v1/waitlist ─► D1 (meatspace-waitlist)
               └── /install.sh, /docs (text/plain for curl)
+
+www.meatspace.sh ──► meatspace-www Worker (www/) ──► 301 https://meatspace.sh/<path>?<query>
 ```
 
 | Piece | Where |

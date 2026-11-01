@@ -2,7 +2,7 @@
   "name": "meatspace",
   "private": true,
   "version": "0.1.4-alpha",
-  "description": "meatspace.sh — stdout to reality. Dispatch tasks to physical hardware.",
+  "description": "meatspace.sh \u2014 stdout to reality. Dispatch tasks to physical hardware.",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -15,8 +15,9 @@
     "test:e2e": "playwright test",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
-    "deploy": "npm run build && wrangler deploy && npm run db:migrate:remote",
-    "cf-typegen": "wrangler types"
+    "deploy": "npm run build && wrangler deploy && npm run db:migrate:remote && npm run deploy:www",
+    "cf-typegen": "wrangler types",
+    "deploy:www": "wrangler deploy -c www/wrangler.jsonc"
   },
   "dependencies": {
     "hono": "^4.13.14",

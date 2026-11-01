@@ -7,7 +7,7 @@ Choices made on top of [`handoff-v0.1.md`](./handoff-v0.1.md), confirmed with th
 - **Durable Object `NetworkState`** (SQLite-backed, single global instance) owns live network state: ticker stats, node battery/duty drift, task locks, settled volume. It ticks every 2 s while a viewer is connected, a node is TASKED, or a battery node is CHARGING, pushing a full snapshot to every viewer over a hibernatable WebSocket (`/v1/stream`) on each tick and state change, and idles (no alarms) otherwise.
 - **D1** stores waitlist sign-ups from `[ API KEYS ]` and `[ CONNECT HARDWARE (meatspaced) ]`.
 - **Workers Rate Limiting** bindings throttle `POST /v1/dispatch` (20/min) and `POST /v1/waitlist` (5/min) per client, where a client is an IPv4 address or an IPv6 /64 (one subscriber's allocation, so rotating addresses inside it buys nothing).
-- Custom domain: apex `meatspace.sh` via Workers Custom Domains.
+- Custom domain: apex `meatspace.sh` via Workers Custom Domains. `www.meatspace.sh` is a second, tiny Worker (`www/`, Custom Domain) that 301s to the apex with path and query preserved; the main Worker serves assets before running, so it could only redirect www by running on every asset request.
 
 ## API is real, hardware is simulated
 - `POST /v1/dispatch` is a real endpoint: the curl shown in the console works from any terminal. It validates the payload, runs the VALIDATE → ESCROW → COMPILE → ATTEST state machine against live node state, and streams `application/x-ndjson` events at the handoff's offsets (00 / 140 / 380 / 800 ms).

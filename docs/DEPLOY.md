@@ -31,11 +31,11 @@ npm ci
 npm run deploy
 ```
 
-`npm run deploy` runs `vite build`, then `wrangler deploy` on the build output, then `wrangler d1 migrations apply DB --remote`.
+`npm run deploy` runs `vite build`, then `wrangler deploy` on the build output, then `wrangler d1 migrations apply DB --remote`, then `npm run deploy:www` (the `meatspace-www` redirect Worker in `www/`, Custom Domain `www.meatspace.sh` → 301 to the apex).
 
 On the first deploy, wrangler auto-provisions the D1 database `meatspace-waitlist` because `wrangler.jsonc` declares the binding without a `database_id`. It also creates the `NetworkState` SQLite Durable Object class (migration tag `v1`) and binds `meatspace.sh` as a Custom Domain, which creates the DNS record and certificate.
 
-Precondition: `meatspace.sh` must have no existing A/AAAA/CNAME record at the apex. A Custom Domain cannot be created over an existing record.
+Precondition: neither `meatspace.sh` nor `www.meatspace.sh` may have an existing A/AAAA/CNAME record. A Custom Domain cannot be created over an existing record.
 
 ## 3. Verify
 

@@ -1,0 +1,10 @@
+// www.meatspace.sh -> meatspace.sh (301). Deploy: npm run deploy:www
+{
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	"name": "meatspace-www",
+	"main": "index.ts",
+	"compatibility_date": "2026-10-23",
+	"routes": [{ "pattern": "www.meatspace.sh", "custom_domain": true }],
+	"workers_dev": false,
+	"preview_urls": false
+}
