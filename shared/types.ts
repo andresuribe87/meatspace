@@ -90,7 +90,8 @@ export interface GeoJsonPolygon {
 }
 
 export interface ProofSpec {
-  attestation: 'TPM2_QUOTE'
+  /** v0.1 only, withdrawn: accepted for old scripts and ignored. */
+  attestation?: 'TPM2_QUOTE'
   artifacts: string[]
 }
 
@@ -148,7 +149,7 @@ export type DispatchPayload = AerialIsrPayload | SubstationSweepPayload | CncSyn
  * ------------------------------------------------------------------------- */
 
 export type DispatchPhase = 'VALIDATE' | 'ESCROW' | 'COMPILE' | 'ATTEST'
-export type StepStatus = 'PASS' | 'ACCEPTED' | 'DISPATCHED' | 'SIGNED' | 'FAIL' | 'REJECTED'
+export type StepStatus = 'PASS' | 'ACCEPTED' | 'DISPATCHED' | 'HASHED' | 'FAIL' | 'REJECTED'
 
 export type ErrorCode =
   | 'ERR_INVALID_JSON'
@@ -171,6 +172,10 @@ export type ErrorCode =
   | 'ERR_NODE_BUSY'
   | 'ERR_LOCK_QUOTA'
   | 'ERR_SPEND_CAP'
+  | 'ERR_REPORT_NOT_FOUND'
+  | 'ERR_FILE_NOT_FOUND'
+  | 'ERR_CELL_NOT_FOUND'
+  | 'ERR_NOT_IMPLEMENTED'
   | 'ERR_INTERNAL'
 
 export interface DispatchReceipt {
@@ -190,7 +195,6 @@ export interface DispatchReceipt {
   }
   /** "0x" + 64 lowercase hex chars (SHA-256). */
   telemetry_stream_hash: string
-  attestation: 'TPM2_QUOTE'
   /** ISO-8601 UTC. */
   issued_at: string
   /** v0.1: hardware, settlement and attestation are simulated. */

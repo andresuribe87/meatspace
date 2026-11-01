@@ -1,5 +1,7 @@
 # v0.1 implementation decisions
 
+> **Superseded by v0.2 on 2026-11-01.** Kept as history. The marketplace below was a simulation: its ticker, settled volume, escrow and attestation were never real and are not product claims. It lives on, labelled, at `/concept`, and its API under `/v1/concept` (the v0.1 paths answer 308 to it). v0.2 is twin-first sim-to-real verification: see [`strategy/2026-11-01-pmf-memo.md`](./strategy/2026-11-01-pmf-memo.md), `lab/README.md` and [`DEPLOY.md`](./DEPLOY.md).
+
 Choices made on top of [`handoff-v0.1.md`](./handoff-v0.1.md), confirmed with the product owner before build.
 
 ## Platform

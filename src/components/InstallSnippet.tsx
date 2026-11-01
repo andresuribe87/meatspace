@@ -4,15 +4,16 @@ import { Fragment } from 'react'
 
 import { CopyButton } from './ui'
 
-export const INSTALL_COMMENT = '# Register idle ROS 2 / MAVLink hardware node to the clearinghouse'
-export const INSTALL_COMMAND = 'curl -sSL https://meatspace.sh/install.sh | sudo sh -s -- --protocol=mavlink --rtk-verify'
+/** v0.1 showed this with sudo and a "register with the clearinghouse" line. Both are gone: the script is inert and needs no root. */
+export const INSTALL_COMMENT = '# meatspaced was never released: this script prints a dry run and exits'
+export const INSTALL_COMMAND = 'curl -sSL https://meatspace.sh/install.sh | sh'
 
 export function InstallSnippet({ className = '' }: { className?: string }) {
   return (
     <div className={className}>
       <div className="border border-line bg-bg">
         <div className="flex min-h-9 items-center justify-between gap-3 border-b border-line py-1 pr-1 pl-3">
-          <h2 className="text-[11px] font-medium tracking-[0.14em] text-muted">INSTALL // meatspaced</h2>
+          <h2 className="text-[11px] font-medium tracking-[0.14em] text-muted">INSTALL // meatspaced // NOT RELEASED</h2>
           <CopyButton text={INSTALL_COMMAND} ariaLabel="install command" />
         </div>
         <pre className="px-3 py-3 text-xs leading-relaxed whitespace-pre-wrap sm:text-[13px]">
@@ -45,7 +46,7 @@ export function InstallSnippet({ className = '' }: { className?: string }) {
           <span className="sr-only"> (opens in a new tab)</span>
         </a>
         <span aria-hidden="true"> · </span>
-        <span>v0.1: prints a dry-run and exits; no changes are made</span>
+        <span>prints a dry run and exits; no changes are made</span>
       </p>
     </div>
   )

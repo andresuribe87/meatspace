@@ -109,7 +109,7 @@ export const CAPABILITY_STATUS: Record<CapabilityStatus, CapabilityStatusDef> = 
     status: 'CONCEPT',
     api: 'concept',
     kind: 'concept',
-    meaning: 'A simulation of an idea. No hardware, no nodes, no money. Lives under /concept only.',
+    meaning: 'A simulation of an idea. No hardware, no machines, no money. Lives under /concept only.',
   },
   REFUSED: {
     status: 'REFUSED',
@@ -176,8 +176,15 @@ export function fromApiStatus(api: string): CapabilityStatus | null {
 
 /* ------------------------------------------------------------------------------------------------
  * Capability ledger (C-14). Part numbers label the signal-chain steps too.
- * Changing a status is a one-line edit here; the UI, /v1 and the man page follow.
- * The Twin Gap Report stays PREVIEW until v1 is published.
+ * Changing a status is a one-line edit here; the UI, /v1 (`GET /v1` endpoint statuses, `/v1/cells` lanes) and the
+ * STATUS section of the man page follow. v0.2 status truth:
+ *   Twin Gap Reports            LIVE        published at launch, JSON at /v1/reports
+ *   calibrated twin packages    LIVE        downloadable at /v1/reports/:id/twin
+ *   gap report on your dataset  ON REQUEST  intake is live (POST /v1/requests); a person runs it by hand
+ *   hosted twin trials          PLANNED     POST /v1/trials answers 501
+ *   real SO-101 cell            WAITLIST    nothing purchased; gated on $3k committed
+ *   MCP server                  PLANNED
+ *   v0.1 industrial dispatch    CONCEPT     simulated, /concept and /v1/concept only
  * ---------------------------------------------------------------------------------------------- */
 
 export interface Capability {
@@ -192,27 +199,45 @@ export interface Capability {
 export const CAPABILITIES = [
   {
     part: 'MS-TGR-1',
-    name: 'Twin Gap Report',
-    status: 'PREVIEW',
-    scope: 'public LeRobot SO-100 / SO-101 data · JSON + twin package',
+    name: 'Twin Gap Reports',
+    status: 'LIVE',
+    scope: 'public LeRobot SO-100 / SO-101 data · open-loop joint replay · held-out RMSE with 95% intervals',
+  },
+  {
+    part: 'MS-TWIN-PKG',
+    name: 'Calibrated twin packages',
+    status: 'LIVE',
+    scope: 'calibrated_twin.json per report · models the unit that recorded the data, not the robot model',
+  },
+  {
+    part: 'MS-TGR-REQ',
+    name: 'Gap report on your dataset',
+    status: 'ON REQUEST',
+    scope: 'intake is live · a person runs the same pipeline by hand · LeRobot SO-100 / SO-101 data',
   },
   {
     part: 'MS-TT-SIM',
     name: 'Hosted twin trials',
     status: 'PLANNED',
-    scope: 'mode "sim" · Wilson interval · spend cap',
+    scope: 'mode "sim" · Wilson interval · spend cap · POST /v1/trials answers 501',
   },
   {
     part: 'MS-RV-SO101',
     name: 'Real verification',
     status: 'WAITLIST',
-    scope: 'physical SO-101 cell · not built · requests decide',
+    scope: 'physical SO-101 cell · not built, nothing purchased · gated on $3k committed',
   },
   {
     part: 'MS-MCP',
     name: 'MCP server for agents',
     status: 'PLANNED',
     scope: 'reports as tools · caps an agent cannot raise',
+  },
+  {
+    part: 'MS-CONCEPT',
+    name: 'v0.1 industrial dispatch',
+    status: 'CONCEPT',
+    scope: 'simulated end to end · no hardware, no money · /concept and /v1/concept only',
   },
 ] as const satisfies readonly Capability[]
 

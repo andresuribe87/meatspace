@@ -146,7 +146,8 @@ export function parseDispatchPayload(input: unknown): ParseResult {
     const max_spend_usdc = num(o.max_spend_usdc, '$.max_spend_usdc', 0, MAX_SPEND_USDC, { exclusiveMin: true })
     const proofObj = obj(o.proof, '$.proof')
     const proof = {
-      attestation: literal(proofObj.attestation, '$.proof.attestation', ['TPM2_QUOTE'] as const),
+      // v0.1 payloads carried attestation: "TPM2_QUOTE". The claim is withdrawn; the field is still accepted (and ignored) so old scripts keep working.
+      ...(proofObj.attestation === undefined ? {} : { attestation: literal(proofObj.attestation, '$.proof.attestation', ['TPM2_QUOTE'] as const) }),
       artifacts: strArray(proofObj.artifacts, '$.proof.artifacts'),
     }
     const base = { node_id, est_duration_min, max_spend_usdc, proof }
@@ -379,7 +380,7 @@ export function compiledCount(p: DispatchPayload): number {
 function validateFailMessage(code: ErrorCode, p: DispatchPayload): string {
   switch (code) {
     case 'ERR_NODE_NOT_FOUND':
-      return `Resolving node ${p.node_id} in clearinghouse registry...`
+      return `Resolving node ${p.node_id} in the simulator...`
     case 'ERR_PRIMITIVE_UNSUPPORTED':
       return `Resolving node ${p.node_id} capabilities for ${p.primitive}...`
     case 'ERR_ALTITUDE_ENVELOPE':
@@ -426,7 +427,7 @@ export function planDispatch(payload: DispatchPayload, node: HardwareNode | unde
       phase: 'VALIDATE',
       code: 'ERR_NODE_NOT_FOUND',
       httpStatus: 404,
-      message: `node ${payload.node_id} is not registered with the clearinghouse`,
+      message: `node ${payload.node_id} does not exist in the simulator`,
     }
     return fail(f, 'FAIL', validateFailMessage(f.code, payload))
   }
@@ -436,7 +437,7 @@ export function planDispatch(payload: DispatchPayload, node: HardwareNode | unde
 
   // ESCROW
   const escrow = escrowCents(node.rateCents, payload.est_duration_min)
-  const escrowMsg = `Locking escrow (${formatUsd(escrow)} USDC) & bidding on Node ${node.id}...`
+  const escrowMsg = `Checking ${formatUsd(escrow)} against max_spend_usdc on node ${node.id} (simulated; nothing is charged)...`
   if (node.status === 'TASKED') {
     const secs = node.taskedUntil ? secondsUntil(node.taskedUntil, now) : null
     return fail(
@@ -468,7 +469,7 @@ export function planDispatch(payload: DispatchPayload, node: HardwareNode | unde
   // Exact comparison against the cap as sent: a cap of 37.799 must not round up to cover a $37.80 escrow.
   if (escrow / 100 > payload.max_spend_usdc) {
     return fail(
-      { phase: 'ESCROW', code: 'ERR_SPEND_CAP', httpStatus: 422, message: `escrow ${formatUsd(escrow)} exceeds max_spend_usdc ${payload.max_spend_usdc}` },
+      { phase: 'ESCROW', code: 'ERR_SPEND_CAP', httpStatus: 422, message: `price ${formatUsd(escrow)} exceeds max_spend_usdc ${payload.max_spend_usdc}` },
       'REJECTED',
       escrowMsg,
     )
@@ -488,7 +489,7 @@ export function planDispatch(payload: DispatchPayload, node: HardwareNode | unde
   }
 }
 
-/** ATTEST step copy: "Returning TPM-signed telemetry stream hash (0x9f8c...3a1b)." */
+/** ATTEST step copy: a sha256 fingerprint of the request, nothing more ("Returning sha256 request fingerprint (0x9f8c...3a1b). ..."). */
 export function attestMessage(shortHashText: string): string {
-  return `Returning TPM-signed telemetry stream hash (${shortHashText}).`
+  return `Returning sha256 request fingerprint (${shortHashText}). Not a proof of execution.`
 }

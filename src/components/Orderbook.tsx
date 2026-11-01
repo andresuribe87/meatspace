@@ -1,5 +1,5 @@
 /**
- * Zone C: live hardware orderbook. Dense, client-side filtered table of the nodes in the latest snapshot.
+ * /concept: the v0.1 fictional orderbook (simulated nodes). Dense, client-side filtered table of the nodes in the latest snapshot.
  * [ TASK NODE ] hands the node to App, which loads its canonical payload into the dispatch console.
  *
  * Layout is fixed-width wherever live values change (charge %, status tag, lock countdown) so a new
@@ -129,7 +129,7 @@ export function Orderbook({ nodes, targetNodeId, onTaskNode, clockOffsetMs }: Or
       id="orderbook"
       title={
         <>
-          LIVE HARDWARE ORDERBOOK // <span className="whitespace-nowrap normal-case">WS /v1/stream</span>
+          FICTIONAL ORDERBOOK // <span className="whitespace-nowrap normal-case">WS /v1/concept/stream</span> // SIMULATED
         </>
       }
       actions={
@@ -165,7 +165,7 @@ export function Orderbook({ nodes, targetNodeId, onTaskNode, clockOffsetMs }: Or
       <div ref={scrollRef} className="max-h-[80vh] overflow-auto overscroll-x-contain">
         <table className="w-full min-w-[1120px] border-separate border-spacing-0 text-xs tabular">
           <caption className="sr-only">
-            Live hardware orderbook, category {filterLabel}: {visible.length} nodes. TASK NODE loads the node into the dispatch console.
+            Fictional hardware orderbook (simulated), category {filterLabel}: {visible.length} nodes. TASK NODE loads the node into the concept console.
           </caption>
           <thead>
             <tr>
@@ -205,7 +205,8 @@ export function Orderbook({ nodes, targetNodeId, onTaskNode, clockOffsetMs }: Or
         </table>
       </div>
       <p className="px-3 py-2 text-[11px] leading-relaxed text-muted">
-        spot rates in USDC · escrow = rate × est_duration_min · simulated sandbox
+        fictional nodes at real place names, picked for flavor: no operator, site or vendor is involved · rates are illustrative USDC and nothing is
+        billed · escrow = rate × est_duration_min · simulated
         {overflowing ? (
           <>
             {' · '}

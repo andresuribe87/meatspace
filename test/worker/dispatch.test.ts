@@ -13,7 +13,7 @@ const NDJSON = 'application/x-ndjson; charset=utf-8'
 const seedNode = (id: string) => SEED_NODES.find((n) => n.id === id) as HardwareNode
 const defaultSortie = defaultPayload('AERIAL_ISR_SORTIE', SEED_NODES) as AerialIsrPayload
 
-const dispatch = (body: unknown, ip = randomIp()) => postJson('/v1/dispatch', body, { ip })
+const dispatch = (body: unknown, ip = randomIp()) => postJson('/v1/concept/dispatch', body, { ip })
 
 const steps = (events: DispatchEvent[]) =>
   events.flatMap((e) => (e.type === 'step' ? [{ t_ms: e.t_ms, phase: e.phase, status: e.status, message: e.message }] : []))
@@ -65,9 +65,9 @@ describe('POST /v1/dispatch: success', () => {
 
     expect(steps(events)).toEqual([
       { t_ms: 0, phase: 'VALIDATE', status: 'PASS', message: 'Validating GeoJSON polygon against node firmware geofence...' },
-      { t_ms: 140, phase: 'ESCROW', status: 'ACCEPTED', message: 'Locking escrow ($42.50 USDC) & bidding on Node VTOL-260-TX-04...' },
+      { t_ms: 140, phase: 'ESCROW', status: 'ACCEPTED', message: 'Checking $42.50 against max_spend_usdc on node VTOL-260-TX-04 (simulated; nothing is charged)...' },
       { t_ms: 380, phase: 'COMPILE', status: 'DISPATCHED', message: 'Compiling intent to MAVLink waypoint primitive...' },
-      { t_ms: 800, phase: 'ATTEST', status: 'SIGNED', message: expect.any(String) },
+      { t_ms: 800, phase: 'ATTEST', status: 'HASHED', message: expect.any(String) },
     ])
     expect(events).toHaveLength(5)
     const last = events[4]
@@ -90,7 +90,6 @@ describe('POST /v1/dispatch: success', () => {
       est_duration_min: 12.5,
       compiled: { target: 'MAVLink v2', artifact: 'MISSION_ITEM_INT', count: 18 },
       telemetry_stream_hash: expect.stringMatching(/^0x[0-9a-f]{64}$/),
-      attestation: 'TPM2_QUOTE',
       issued_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
       sandbox: true,
     })
@@ -131,7 +130,7 @@ describe('POST /v1/dispatch: success', () => {
 
 describe('POST /v1/dispatch: lock release without viewers', () => {
   it('the tick alarm releases the lock, recharges the node to DOCKED, then stops rescheduling', async () => {
-    const node = 'SPOT-SUB-44'
+    const node = 'QDR-SUB-44'
     const res = await dispatch(buildPayload(seedNode(node)))
     expect(res.status).toBe(200)
     await res.arrayBuffer()
@@ -172,13 +171,13 @@ describe('POST /v1/dispatch: state-machine failures stream with the matching HTT
     expect(res.headers.get('content-type')).toBe(NDJSON)
     const events = (await readNdjson(res)).map((t) => t.event)
     expect(events).toEqual([
-      { type: 'step', t_ms: 0, phase: 'VALIDATE', status: 'FAIL', message: 'Resolving node NOPE-404 in clearinghouse registry...' },
+      { type: 'step', t_ms: 0, phase: 'VALIDATE', status: 'FAIL', message: 'Resolving node NOPE-404 in the simulator...' },
       {
         type: 'error',
         t_ms: 0,
         phase: 'VALIDATE',
         code: 'ERR_NODE_NOT_FOUND',
-        message: 'node NOPE-404 is not registered with the clearinghouse',
+        message: 'node NOPE-404 does not exist in the simulator',
         http_status: 404,
       },
     ])
@@ -213,7 +212,7 @@ describe('POST /v1/dispatch: pre-stream errors are JSON', () => {
   })
 
   it('empty body -> 400 ERR_INVALID_JSON', async () => {
-    await expectApiError(await call('/v1/dispatch', { method: 'POST' }), 400, 'ERR_INVALID_JSON')
+    await expectApiError(await call('/v1/concept/dispatch', { method: 'POST' }), 400, 'ERR_INVALID_JSON')
   })
 
   it('schema violation -> 400 ERR_SCHEMA with the JSON path', async () => {
@@ -227,7 +226,7 @@ describe('POST /v1/dispatch: pre-stream errors are JSON', () => {
   })
 
   it('accepts JSON sent without a JSON content-type (curl -d)', async () => {
-    const res = await call('/v1/dispatch', {
+    const res = await call('/v1/concept/dispatch', {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: JSON.stringify({ ...defaultSortie, node_id: 'NOPE-404' }),
@@ -250,7 +249,7 @@ describe('POST /v1/dispatch: pre-stream errors are JSON', () => {
         else controller.close()
       },
     })
-    const res = await call('/v1/dispatch', { method: 'POST', body })
+    const res = await call('/v1/concept/dispatch', { method: 'POST', body })
     await expectApiError(res, 413, 'ERR_PAYLOAD_TOO_LARGE')
   })
 
@@ -308,7 +307,7 @@ describe('POST /v1/dispatch: per-client lock quota', () => {
   it(`a client already holding ${MAX_ACTIVE_LOCKS_PER_CLIENT} locks -> 429 ESCROW REJECTED / ERR_LOCK_QUOTA; other clients are unaffected`, async () => {
     const ip = randomIp()
     await lock('ORK-VTOL-09', ip)
-    await lock('QDR-B2-17', ip)
+    await lock('QDR-GH-17', ip)
     await expectQuotaRejection(await dispatch(buildPayload(seedNode('ARM-CELL-27')), ip))
     const after = await snapshot()
     expect(after.nodes.find((n) => n.id === 'ARM-CELL-27')?.status).toBe('IDLE')
@@ -334,7 +333,7 @@ describe('POST /v1/dispatch: per-client lock quota', () => {
       .map((g) => g.padStart(4, '0'))
       .join(':')
     await lock('ORK-VTOL-09', `${prefix}::1`)
-    await lock('QDR-B2-17', `${longhand}:0000:0000:0000:0002`)
+    await lock('QDR-GH-17', `${longhand}:0000:0000:0000:0002`)
     await expectQuotaRejection(await dispatch(buildPayload(seedNode('ARM-CELL-27')), `${prefix}:ffff:ffff:ffff:fffe`))
   })
 

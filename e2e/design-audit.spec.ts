@@ -204,8 +204,11 @@ test.describe('design system // pure helpers', () => {
     expect(apiStatus('ON REQUEST')).toBe('on_request')
     expect(lampKindOf('MARGINAL')).toBe('gap')
     expect(lampKindOf('UNCAL')).toBe('uncal')
-    // Nothing is LIVE until it works at that URL; the Twin Gap Report stays PREVIEW until v1 is published.
-    expect(CAPABILITIES.find((c) => c.part === 'MS-TGR-1')?.status).toBe('PREVIEW')
+    // Nothing is LIVE until it works at that URL. v0.2 status truth: the Twin Gap Reports are published (LIVE), hosted
+    // twin trials are PLANNED and the real SO-101 cell is a WAITLIST.
+    expect(CAPABILITIES.find((c) => c.part === 'MS-TGR-1')?.status).toBe('LIVE')
+    expect(CAPABILITIES.find((c) => c.part === 'MS-TT-SIM')?.status).toBe('PLANNED')
+    expect(CAPABILITIES.find((c) => c.part === 'MS-RV-SO101')?.status).toBe('WAITLIST')
   })
 })
 

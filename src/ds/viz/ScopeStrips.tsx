@@ -27,6 +27,11 @@ export interface ScopeStripsProps {
   initialFrame?: number
   /** Joint selected on phones and in the table view. Default: the first. */
   defaultJoint?: string
+  /**
+   * Per-joint RMSE printed under each joint name, from the source (e.g. trace.json rmse_deg, over every frame and the
+   * lab's definition). Without it the strip computes RMSE from the drawn series, which can differ from a published value.
+   */
+  rmse?: Record<string, { stock?: number | null; cal?: number | null }>
   number?: number | string
   title?: ReactNode
   caption?: ReactNode
@@ -46,6 +51,7 @@ export function ScopeStrips({
   prov,
   initialFrame,
   defaultJoint,
+  rmse: rmseGiven,
   number = 1,
   title,
   caption,
@@ -79,9 +85,9 @@ export function ScopeStrips({
         caption ??
         `Open-loop replay of one held-out episode. The recorded command drives each twin; the real follower's measured state is the reference, drawn on top inside its ±${fmt(tolerance, 1)}° mask. Each strip has a Δ lane underneath: amber ticks mark the frames where a twin leaves the mask.`
       }
-      keys="Focus the plot, then ← → one frame · shift ½ s · page up/down 1 s · home / end"
+      keys="Focus the plot, then ← → one frame · shift ½ s · page up/down 1 s · home / end"
     >
-      <Strips joints={joints} fps={fps} tolerance={tolerance} episode={episode} prov={prov} ch={ch} sel={selected?.joint} onSel={setSel} initialFrame={initialFrame} allViol={allViol} />
+      <Strips joints={joints} fps={fps} tolerance={tolerance} episode={episode} prov={prov} ch={ch} sel={selected?.joint} onSel={setSel} initialFrame={initialFrame} allViol={allViol} rmseGiven={rmseGiven} />
     </Figure>
   )
 }
@@ -97,7 +103,9 @@ function Strips({
   onSel,
   initialFrame,
   allViol,
+  rmseGiven,
 }: {
+  rmseGiven?: ScopeStripsProps['rmse']
   joints: JointTraces[]
   fps: number
   tolerance: number
@@ -171,11 +179,11 @@ function Strips({
         dCal: j.cal ? resid(j.cal) : '',
         combStock: j.stock ? combPath(j.stock) : '',
         combCal: j.cal ? combPath(j.cal) : '',
-        rmseStock: j.stock ? rmse(j.stock, j.real) : null,
-        rmseCal: j.cal ? rmse(j.cal, j.real) : null,
+        rmseStock: rmseGiven?.[j.joint]?.stock ?? (j.stock ? rmse(j.stock, j.real) : null),
+        rmseCal: rmseGiven?.[j.joint]?.cal ?? (j.cal ? rmse(j.cal, j.real) : null),
       }
     })
-  }, [joints, plotW, H, tolerance, xs, w, fullFrames])
+  }, [joints, plotW, H, tolerance, xs, w, fullFrames, rmseGiven])
 
   const i = ph.idx
   const x = px(xs(i))
@@ -357,8 +365,12 @@ function Strips({
           <span className="nw">M {tb.sPerDiv.toFixed(2)} s/div</span> · <span className="nw">{fps} fps</span> ·{' '}
           <span className="nw">each strip: own °/div and Δ scale</span>
         </span>
-        <span className="nw">
-          out of ±{fmt(tolerance, 1)}°: stock {allViol.s} · cal {allViol.c} of {allViol.total} fr
+        {/* Wraps between items, never inside one (320px at 400% zoom). */}
+        <span>
+          <span className="nw">out of ±{fmt(tolerance, 1)}°:</span> <span className="nw">stock {allViol.s}</span> ·{' '}
+          <span className="nw">
+            cal {allViol.c} of {allViol.total} fr
+          </span>
         </span>
       </div>
     </div>

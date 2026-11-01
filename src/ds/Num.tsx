@@ -61,6 +61,8 @@ export function Num({ value, digits = 2, signed, ascii, unit, prov, placeholder,
   }, [ref, placeholder, value])
 
   const cls = ['num', className].filter(Boolean).join(' ')
+  // "133 ms" never breaks: spaces inside a string unit become no-break spaces.
+  unit = typeof unit === 'string' ? unit.replace(/ /g, '\u00a0') : unit
   if (!ref) {
     return (
       <span className={cls} data-uncal="" title="Placeholder: not measured">

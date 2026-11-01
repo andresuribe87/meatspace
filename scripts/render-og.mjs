@@ -2,12 +2,13 @@
 /**
  * Regenerates the raster brand assets in public/ with headless Chromium:
  *
- *   public/og.png                1200x630  Open Graph / Twitter card, from scripts/og.html
+ *   public/og.png                1200x630  Open Graph / Twitter card, from scripts/og.html (design system "Instrument").
+ *                                          Every number and the trace on it come from lab/reports: the future-block
+ *                                          table of lab/reports/INDEX.md and the hero report's trace.json. None is typed.
  *   public/apple-touch-icon.png  180x180   the favicon's ">_" glyph, unframed (iOS applies its own mask)
  *   public/favicon.ico           16/32/48  PNG-in-ICO fallback for clients that ignore the SVG icon
  *
- * public/favicon.svg is the source of truth for the glyph. Fonts come from the same
- * @fontsource-variable packages the SPA bundles, so run `npm install` first.
+ * public/favicon.svg is the source of truth for the glyph. Fonts are the self-hosted files in public/fonts.
  *
  *   node scripts/render-og.mjs
  *
@@ -29,6 +30,103 @@ const BG = '#090A0C'
 const EMERALD = '#10B981'
 const OG_MAX_BYTES = 300 * 1024
 const ICO_SIZES = [16, 32, 48]
+
+const REPORTS = join(ROOT, 'lab', 'reports')
+/** The hero: the official LeRobot SO-101 dataset (chosen for that reason, as on the home page). */
+const HERO = 'lerobot/svla_so101_pickplace'
+const HERO_JOINT = 'shoulder_lift'
+const MINUS = '\u2212'
+
+/** Rows of the markdown table under `## <heading>` in INDEX.md, as arrays of cell strings. */
+function tableRows(md, heading) {
+  const start = md.indexOf(`## ${heading}`)
+  if (start < 0) throw new Error(`lab/reports/INDEX.md: no "## ${heading}" section`)
+  const rest = md.slice(start).split('\n').slice(1)
+  const out = []
+  let seen = false
+  for (const line of rest) {
+    if (line.startsWith('## ')) break
+    if (!line.startsWith('| ')) {
+      if (seen && line.trim() === '') break
+      continue
+    }
+    seen = true
+    if (/^\|\s*-/.test(line) || /^\|\s*dataset\s*\|/.test(line)) continue
+    out.push(line.split('|').slice(1, -1).map((c) => c.trim()))
+  }
+  return out
+}
+
+/** "-91% [-92, -91]" or "5.35 [5.14, 5.54]" -> { v: "−91", ci: "[−92, −91]" } (true minus on the card). */
+function reading(cell) {
+  const m = /^([+-]?[\d.]+)%?\s*\[([+-]?[\d.]+),\s*([+-]?[\d.]+)\]$/.exec(cell)
+  if (!m) throw new Error(`INDEX.md: cannot read "${cell}" as value [lo, hi]`)
+  const t = (x) => x.replace(/^-/, MINUS)
+  return { v: t(m[1]), ci: `[${t(m[2])}, ${t(m[3])}]` }
+}
+
+/** Card facts from INDEX.md (future block) and the hero's trace.json. */
+async function cardData() {
+  const md = await readFile(join(REPORTS, 'INDEX.md'), 'utf8')
+  const ok = tableRows(md, 'Future block')
+  const refused = tableRows(md, 'Run but not reported')
+  const name = (row) => /^\[([^\]]+)\]\(([^/)]+)\//.exec(row[0])
+  const hero = ok.find((r) => name(r)?.[1] === HERO)
+  if (!hero) throw new Error(`INDEX.md: ${HERO} is not in the future-block table`)
+  const id = name(hero)[2]
+  const [, , , , eps, stock, , , cal, , vsBase] = hero
+  const n = eps.split('/')[2]
+  const trace = JSON.parse(await readFile(join(REPORTS, id, 'trace.json'), 'utf8'))
+  const series = trace.series?.[HERO_JOINT]
+  if (!series) throw new Error(`${id}/trace.json: no series for ${HERO_JOINT}`)
+  const s = reading(stock)
+  const c = reading(cal)
+  // The card's third reading is the change against the physics-free lag filter, not against stock: −91% vs stock is
+  // the best of all 18 reports, and a share must not read as "calibration cuts error 91%". Ranges vs stock per robot
+  // go in the footer, so the SO-100 results (down to no clear change) travel with the card.
+  const d = reading(vsBase)
+  const ranges = {}
+  for (const row of ok) {
+    const v = Number(/^([+-]?\d+)%/.exec(row[9])?.[1])
+    if (!Number.isFinite(v)) throw new Error(`INDEX.md: cannot read the change vs stock of ${row[0]}`)
+    const r = (ranges[row[1]] ??= { min: v, max: v })
+    r.min = Math.min(r.min, v)
+    r.max = Math.max(r.max, v)
+  }
+  const fmtPct = (v) => (v > 0 ? `+${v}` : v < 0 ? `${MINUS}${-v}` : '0')
+  const range = (twin) => {
+    if (!ranges[twin]) throw new Error(`INDEX.md: no future-block rows for ${twin}`)
+    return `${fmtPct(ranges[twin].min)} to ${fmtPct(ranges[twin].max)}%`
+  }
+  return {
+    text: {
+      dataset: HERO,
+      twin: hero[1],
+      episode: `held-out ep ${String(trace.episode.index).padStart(2, '0')}`,
+      joint: HERO_JOINT,
+      stock: s.v,
+      stock_ci: s.ci,
+      cal: c.v,
+      cal_ci: c.ci,
+      change: d.v,
+      change_ci: d.ci,
+      n,
+      n_ok: String(ok.length),
+      n_refused: String(refused.length),
+      n_run: String(ok.length + refused.length),
+      range_so101: range('robotstudio_so101'),
+      range_so100: range('trs_so_arm100'),
+    },
+    series: { real: series.real, stock: series.stock, cal: series.cal },
+  }
+}
+
+/** 1-2-5 step at or above `raw`. */
+function step125(raw) {
+  const p = 10 ** Math.floor(Math.log10(raw))
+  for (const m of [1, 2, 5, 10]) if (m * p >= raw) return m * p
+  return 10 * p
+}
 
 /** Pack PNG images into a .ico container (PNG payloads are valid ICO entries on every current platform). */
 function packIco(images) {
@@ -73,15 +171,53 @@ async function write(file, buf, expect) {
 const browser = await chromium.launch()
 try {
   // --- og.png -------------------------------------------------------------------------------
+  const card = await cardData()
   const og = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 })
   await og.goto(pathToFileURL(OG_HTML).href)
-  await og.evaluate(() => document.fonts.ready)
-  const mono = await og.evaluate(() =>
-    [...document.fonts].filter((f) => f.family.replace(/["']/g, '') === 'JetBrains Mono Variable').map((f) => f.status),
+  const all = [...card.series.real, ...card.series.stock, ...card.series.cal].filter(Number.isFinite)
+  const st = step125((Math.max(...all) - Math.min(...all)) / 6)
+  const scale = { min: Math.floor(Math.min(...all) / st) * st, max: Math.ceil(Math.max(...all) / st) * st }
+  const missing = await og.evaluate(
+    ({ text, series, scale }) => {
+      const miss = []
+      for (const el of document.querySelectorAll('[data-k]')) {
+        const k = el.getAttribute('data-k')
+        if (text[k] === undefined) miss.push(k)
+        else el.textContent = text[k]
+      }
+      // Plot: 10 x divisions, y on a 1-2-5 grid that never clips. Real is solid and drawn last; twins are dashed under it.
+      const svg = document.getElementById('plot')
+      const W = 604
+      const H = 196
+      const NS = 'http://www.w3.org/2000/svg'
+      const x = (i, n) => (i / (n - 1)) * (W - 1) + 0.5
+      const y = (v) => H - 0.5 - ((v - scale.min) / (scale.max - scale.min)) * (H - 1)
+      const line = (attrs) => {
+        const el = document.createElementNS(NS, 'path')
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v)
+        svg.appendChild(el)
+      }
+      const grid = []
+      for (let i = 0; i <= 10; i++) grid.push(`M${((i / 10) * (W - 1) + 0.5).toFixed(1)} 0V${H}`)
+      const ydivs = Math.round((scale.max - scale.min) / ((scale.max - scale.min) / 6))
+      for (let j = 0; j <= ydivs; j++) grid.push(`M0 ${(0.5 + (j / ydivs) * (H - 1)).toFixed(1)}H${W}`)
+      line({ d: grid.join(''), stroke: '#1a1d24', 'stroke-width': '1', fill: 'none' })
+      line({ d: `M0 0.5H${W}M0 ${H - 0.5}H${W}M0.5 0V${H}M${W - 0.5} 0V${H}`, stroke: '#222630', 'stroke-width': '1', fill: 'none' })
+      const path = (vals) => vals.map((v, i) => `${i ? 'L' : 'M'}${x(i, vals.length).toFixed(1)} ${y(v).toFixed(1)}`).join('')
+      line({ d: path(series.stock), stroke: '#00a2ce', 'stroke-width': '2', 'stroke-dasharray': '8 4', fill: 'none' })
+      line({ d: path(series.cal), stroke: '#b0449a', 'stroke-width': '4', 'stroke-dasharray': '6 3', fill: 'none' })
+      line({ d: path(series.real), stroke: '#e2e8f0', 'stroke-width': '1.5', fill: 'none' })
+      return miss
+    },
+    { text: card.text, series: card.series, scale },
   )
-  if (!mono.includes('loaded')) {
-    throw new Error(`JetBrains Mono did not load (font status: ${mono.join(', ') || 'none'}); run npm install first`)
+  if (missing.length) throw new Error(`scripts/og.html: no value for ${missing.join(', ')}`)
+  await og.evaluate(() => document.fonts.ready)
+  for (const family of ['JetBrains Mono Variable', 'Martian Mono Variable', 'Atkinson Hyperlegible Next Variable']) {
+    const status = await og.evaluate((fam) => [...document.fonts].filter((f) => f.family.replace(/["']/g, '') === fam).map((f) => f.status), family)
+    if (!status.includes('loaded')) throw new Error(`${family} did not load (font status: ${status.join(', ') || 'none'}); check public/fonts`)
   }
+  if ((await og.content()).includes('{{')) throw new Error('scripts/og.html: template braces survived')
   const ogPng = await og.locator('#og').screenshot({ type: 'png', animations: 'disabled' })
   const ogBytes = await write(join(PUBLIC, 'og.png'), ogPng, { width: 1200, height: 630 })
   if (ogBytes > OG_MAX_BYTES) throw new Error(`public/og.png is ${ogBytes} bytes; keep it under ${OG_MAX_BYTES}`)

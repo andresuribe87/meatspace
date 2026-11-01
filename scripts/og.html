@@ -1,9 +1,9 @@
 <!doctype html>
 <!--
-  Source for public/og.png (1200x630). Rendered by scripts/render-og.mjs; open it directly in a
-  browser from a checkout (file://) to preview. Fonts are the same @fontsource-variable files the
-  SPA bundles, loaded from node_modules. Palette is the handoff palette only; no gradients,
-  shadows, glow or radius. Copy is verbatim from docs/handoff-v0.1.md.
+  Source for public/og.png (1200x630), design system "Instrument". Rendered by scripts/render-og.mjs, which fills
+  every [data-k] slot and the trace paths from lab/reports (INDEX.md for the numbers, the hero report's trace.json
+  for the plot). Nothing in here is a number typed by hand: opened directly (file://) the slots show their keys.
+  Fonts are the self-hosted files in public/fonts. Closed palette, 0 radius, no shadows, no gradients.
 -->
 <html lang="en">
   <head>
@@ -12,27 +12,43 @@
     <style>
       @font-face {
         font-family: 'JetBrains Mono Variable';
-        font-style: normal;
         font-weight: 100 800;
-        src: url('../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2') format('woff2-variations');
+        src: url('../public/fonts/jetbrains-mono-latin-wght.woff2') format('woff2');
       }
-      /* Declared for parity with the SPA; the card itself is all mono (sans is reserved for the value proposition). */
       @font-face {
-        font-family: 'Inter Variable';
-        font-style: normal;
-        font-weight: 100 900;
-        src: url('../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2-variations');
+        font-family: 'JetBrains Mono Variable';
+        font-weight: 100 800;
+        src: url('../public/fonts/ms-glyphs.woff2') format('woff2');
+        unicode-range: U+0394, U+03A3, U+03B4, U+03BC, U+03C3, U+2190-2194, U+2212, U+2264-2265, U+25A0-25A1, U+25B2-25B3, U+25C6-25C7, U+2713, U+2715;
+      }
+      @font-face {
+        font-family: 'Martian Mono Variable';
+        font-weight: 100 800;
+        font-stretch: 75% 112.5%;
+        src: url('../public/fonts/martian-mono-latin-standard.woff2') format('woff2');
+      }
+      @font-face {
+        font-family: 'Atkinson Hyperlegible Next Variable';
+        font-weight: 200 800;
+        src: url('../public/fonts/atkinson-hyperlegible-next-latin-wght.woff2') format('woff2');
       }
 
       :root {
         --bg: #090a0c;
-        --panel: #111318;
+        --surface: #111318;
         --line: #222630;
-        --fg: #e2e8f0;
-        --muted: #64748b;
-        --emerald: #10b981;
+        --edge: #6b7588;
+        --text: #e2e8f0;
+        --muted: #8893a2;
+        --dim: #5c646f;
+        --ok: #10b981;
+        --stock: #00a2ce;
+        --cal: #b0449a;
+        --grat: #1a1d24;
+        --grat-axis: #2b303a;
         --mono: 'JetBrains Mono Variable', monospace;
-        --sans: 'Inter Variable', sans-serif;
+        --display: 'Martian Mono Variable', monospace;
+        --sans: 'Atkinson Hyperlegible Next Variable', sans-serif;
       }
 
       * {
@@ -41,7 +57,6 @@
         padding: 0;
         border-radius: 0;
       }
-
       html,
       body {
         background: var(--bg);
@@ -53,128 +68,216 @@
         height: 630px;
         overflow: hidden;
         background: var(--bg);
-        color: var(--fg);
+        color: var(--text);
         font-family: var(--mono);
         font-feature-settings: 'zero' 1, 'calt' 0;
         -webkit-font-smoothing: antialiased;
       }
-
       .frame {
         position: absolute;
         inset: 24px;
         display: grid;
-        grid-template-rows: 56px 1fr 52px;
+        grid-template-rows: 48px 1fr 46px;
         border: 1px solid var(--line);
       }
-
+      .legend {
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .legend b {
+        color: var(--text);
+        font-weight: 600;
+      }
       .bar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 0 32px;
-        font-size: 18px;
-        color: var(--muted);
-        white-space: pre;
+        gap: 16px;
+        padding: 0 28px;
       }
       .bar.top {
         border-bottom: 1px solid var(--line);
       }
       .bar.bottom {
-        justify-content: flex-start;
-        gap: 16px;
         border-top: 1px solid var(--line);
-        font-size: 14px;
-        letter-spacing: -0.01em;
       }
-
-      main {
-        padding: 44px 32px 0;
-      }
-
-      h1 {
-        font-size: 88px;
+      .brand {
+        font-size: 17px;
         font-weight: 600;
-        line-height: 1;
-        letter-spacing: -0.025em;
-        color: var(--fg);
-        white-space: pre;
+        color: var(--text);
       }
-      .cursor {
-        display: inline-block;
-        width: 0.5em;
-        height: 0.82em;
-        margin-left: 0.12em;
-        vertical-align: baseline;
-        transform: translateY(0.06em);
-        background: var(--emerald);
-      }
-
-      .sub {
-        margin-top: 22px;
-        font-size: 28px;
+      .brand span {
         color: var(--muted);
+        font-weight: 400;
       }
-
-      .console {
-        margin-top: 40px;
-        border: 1px solid var(--line);
-        background: var(--panel);
-        font-size: 18px;
-        line-height: 1.75;
-      }
-      .console .head {
-        display: flex;
-        justify-content: space-between;
-        padding: 6px 20px;
-        border-bottom: 1px solid var(--line);
-        color: var(--muted);
-      }
-      .console .rows {
-        padding: 10px 20px 12px;
-      }
-      .head span,
-      .row span {
-        white-space: pre;
-      }
-      .row {
-        display: grid;
-        grid-template-columns: 5ch 1fr;
-        column-gap: 2ch;
-      }
-      .t {
-        text-align: right;
-        color: var(--muted);
-      }
-      .ok {
-        font-weight: 700;
-        color: var(--emerald);
-      }
-
-      .ticker {
-        color: var(--fg);
-      }
-      .muted {
-        color: var(--muted);
-      }
-      .emerald {
-        color: var(--emerald);
-      }
-      .live {
+      .lamp {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        color: var(--emerald);
+        gap: 7px;
+        height: 24px;
+        padding: 0 9px;
+        border: 1px solid var(--ok);
+        color: var(--ok);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
       }
-      .live::before {
+      .lamp::before {
         content: '';
         width: 8px;
         height: 8px;
-        background: var(--emerald);
+        background: var(--ok);
       }
-      .rule {
-        width: 1px;
-        height: 14px;
-        background: var(--line);
+
+      main {
+        display: grid;
+        grid-template-columns: 430px 1fr;
+        gap: 32px;
+        padding: 30px 28px 22px;
+        min-height: 0;
+      }
+      h1 {
+        font-family: var(--display);
+        font-weight: 300;
+        font-stretch: 87.5%;
+        font-size: 64px;
+        line-height: 1;
+        letter-spacing: -0.035em;
+      }
+      .cursor {
+        display: inline-block;
+        width: 0.42em;
+        height: 0.09em;
+        margin-left: 0.06em;
+        background: var(--ok);
+      }
+      .left {
+        padding-top: 6px;
+      }
+      .sub {
+        margin-top: 22px;
+        font-size: 25px;
+        color: var(--muted);
+      }
+      .sub b {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .lede {
+        margin-top: 26px;
+        font-family: var(--sans);
+        font-feature-settings: normal;
+        font-size: 21px;
+        line-height: 1.45;
+        color: var(--text);
+      }
+
+      .pnl {
+        display: grid;
+        grid-template-rows: 34px auto 1fr auto;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        min-width: 0;
+      }
+      .pnl-h {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      .keys {
+        display: flex;
+        gap: 18px;
+        padding: 8px 14px 0;
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .keys i {
+        display: inline-block;
+        width: 22px;
+        margin-right: 7px;
+        vertical-align: middle;
+        border-top: 2px solid var(--text);
+      }
+      .keys i.stock {
+        border-top: 2px dashed var(--stock);
+      }
+      .keys i.cal {
+        border-top: 2px dashed var(--cal);
+      }
+      .keys .right {
+        margin-left: auto;
+      }
+      #plot {
+        display: block;
+        margin: 4px 14px 0;
+      }
+      .ro-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        border-top: 1px solid var(--line);
+      }
+      .ro {
+        padding: 10px 14px 12px;
+      }
+      .ro + .ro {
+        border-left: 1px solid var(--line);
+      }
+      .ro .l {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 11.5px;
+        font-weight: 500;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .ro .l i {
+        display: inline-block;
+        width: 16px;
+        border-top: 2px dashed var(--stock);
+      }
+      .ro .l i.cal {
+        border-top-color: var(--cal);
+      }
+      .ro .v {
+        margin-top: 6px;
+        font-family: var(--display);
+        font-stretch: 112.5%;
+        font-weight: 300;
+        font-size: 40px;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+      }
+      .ro .v small {
+        font-size: 0.5em;
+        color: var(--muted);
+        letter-spacing: 0;
+      }
+      .ro .ci {
+        margin-top: 6px;
+        font-size: 13px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .foot {
+        font-size: 14px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .foot b {
+        color: var(--text);
+        font-weight: 600;
       }
     </style>
   </head>
@@ -182,32 +285,51 @@
     <div id="og">
       <div class="frame">
         <header class="bar top">
-          <span>meatspace.sh // v0.1.4-alpha</span>
-          <span>MEATSPACE(1)</span>
+          <span class="brand">meatspace.sh <span>// twin gap reports</span></span>
+          <span class="lamp">live</span>
         </header>
 
         <main>
-          <h1>stdout to reality.<span class="cursor"></span></h1>
-          <p class="sub">dispatch tasks to physical hardware.</p>
-
-          <div class="console">
-            <div class="head">
-              <span>$ curl -sN -X POST https://meatspace.sh/v1/dispatch</span>
-              <span class="emerald">HTTP 200</span>
-            </div>
-            <div class="rows">
-              <div class="row"><span class="t">00ms</span><span>Validating GeoJSON polygon against node firmware geofence... <b class="ok">PASS</b></span></div>
-              <div class="row"><span class="t">140ms</span><span>Locking escrow ($42.50 USDC) &amp; bidding on Node VTOL-260-TX-04... <b class="ok">ACCEPTED</b></span></div>
-              <div class="row"><span class="t">380ms</span><span>Compiling intent to MAVLink waypoint primitive... <b class="ok">DISPATCHED</b></span></div>
-              <div class="row"><span class="t">800ms</span><span>Returning TPM-signed telemetry stream hash (<span class="emerald">0x9f8c...3a1b</span>).</span></div>
-            </div>
+          <div class="left">
+            <h1>stdout to<br />reality.<span class="cursor"></span></h1>
+            <p class="sub">sim-to-real gaps, <b>measured.</b></p>
+            <p class="lede">Public robot logs replayed in the MuJoCo twin. A calibrated twin, tested on episodes the fit never saw.</p>
           </div>
+
+          <section class="pnl">
+            <div class="pnl-h">
+              <span class="legend"><b data-k="dataset">dataset</b> × <span data-k="twin">twin</span></span>
+            </div>
+            <div class="keys">
+              <span><i></i>real</span>
+              <span><i class="stock"></i>stock</span>
+              <span><i class="cal"></i>calibrated</span>
+              <span class="right"><span data-k="joint">joint</span> · <span data-k="episode">episode</span></span>
+            </div>
+            <svg id="plot" width="604" height="196" viewBox="0 0 604 196"></svg>
+            <div class="ro-row">
+              <div class="ro">
+                <div class="l"><i></i>rmse · stock</div>
+                <div class="v"><span data-k="stock">stock</span><small>°</small></div>
+                <div class="ci">95% <span data-k="stock_ci">ci</span></div>
+              </div>
+              <div class="ro">
+                <div class="l"><i class="cal"></i>rmse · calibrated</div>
+                <div class="v"><span data-k="cal">cal</span><small>°</small></div>
+                <div class="ci">95% <span data-k="cal_ci">ci</span></div>
+              </div>
+              <div class="ro">
+                <div class="l">vs lag-filter baseline</div>
+                <div class="v"><span data-k="change">change</span><small>%</small></div>
+                <div class="ci"><span data-k="change_ci">ci</span> · n = <span data-k="n">n</span></div>
+              </div>
+            </div>
+          </section>
         </main>
 
         <footer class="bar bottom">
-          <span class="live">LIVE</span>
-          <span class="rule"></span>
-          <span class="ticker"><span class="muted">ACTIVE NODES: </span>1,408<span class="muted"> | AVAILABLE FLIGHT/ACTUATION HRS: </span>924.2<span class="muted"> | 24H SETTLED VOLUME: </span>$142,890 USDC<span class="muted"> | NETWORK LATENCY: </span>18ms</span>
+          <span class="foot"><b data-k="n_run">n</b> datasets run · <b data-k="n_ok">n</b> reported · <b data-k="n_refused">n</b> refused, reasons printed</span>
+          <span class="foot">vs stock: SO-101 <b data-k="range_so101">r</b> · SO-100 <b data-k="range_so100">r</b> · contacts off</span>
         </footer>
       </div>
     </div>

@@ -83,7 +83,7 @@ export const SEED_NODES: readonly HardwareNode[] = [
     taskId: null,
   },
   {
-    id: 'SPOT-SUB-44',
+    id: 'QDR-SUB-44',
     category: 'GROUND',
     chassis: 'Quadruped Rover',
     iface: 'ROS 2 Humble',
@@ -101,7 +101,7 @@ export const SEED_NODES: readonly HardwareNode[] = [
     taskId: null,
   },
   {
-    id: 'QDR-B2-17',
+    id: 'QDR-GH-17',
     category: 'GROUND',
     chassis: 'Quadruped Rover',
     iface: 'ROS 2 Humble',

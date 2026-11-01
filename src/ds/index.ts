@@ -56,3 +56,4 @@ export { CHANNEL_LABEL, CHANNEL_WORD, ALL_CHANNELS, type Channel, type ChannelVi
 export { useContainerWidth, useOverflowA11y, useReducedMotion, useElapsed, usePlayhead, useFocusReturn, type Playhead, type PlayheadGeometry } from './hooks'
 export * from './format'
 export * as dsMath from './math'
+export { nobr } from './Nobr'

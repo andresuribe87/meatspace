@@ -21,7 +21,7 @@ const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFin
 const isStr = (v: unknown): v is string => typeof v === 'string'
 
 const PHASES: ReadonlySet<string> = new Set<DispatchPhase>(['VALIDATE', 'ESCROW', 'COMPILE', 'ATTEST'])
-const STATUSES: ReadonlySet<string> = new Set<StepStatus>(['PASS', 'ACCEPTED', 'DISPATCHED', 'SIGNED', 'FAIL', 'REJECTED'])
+const STATUSES: ReadonlySet<string> = new Set<StepStatus>(['PASS', 'ACCEPTED', 'DISPATCHED', 'HASHED', 'FAIL', 'REJECTED'])
 
 function internalError(message: string, httpStatus: number): DispatchEvent {
   return { type: 'error', t_ms: 0, phase: null, code: 'ERR_INTERNAL', message, http_status: httpStatus }
@@ -150,7 +150,7 @@ export async function executeDispatch(
 
   let res: Response
   try {
-    res = await fetch('/v1/dispatch', {
+    res = await fetch('/v1/concept/dispatch', {
       method: 'POST',
       headers: { 'content-type': 'application/json', accept: 'application/x-ndjson, application/json' },
       body,

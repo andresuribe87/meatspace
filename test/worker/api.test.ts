@@ -19,7 +19,7 @@ function expectSecurityHeaders(res: Response) {
 
 describe('GET /v1/snapshot (first read, before any tick)', () => {
   it('serves the seed exactly, so the ticker matches the handoff', async () => {
-    const res = await call('/v1/snapshot')
+    const res = await call('/v1/concept/snapshot')
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toMatch(/^application\/json/)
     expect(res.headers.get('cache-control')).toBe('no-store')
@@ -34,46 +34,41 @@ describe('GET /v1/snapshot (first read, before any tick)', () => {
 })
 
 describe('read endpoints', () => {
-  it('GET /v1 lists the API', async () => {
+  it('GET /v1 lists the API (the full index is tested in v02.test.ts)', async () => {
     const res = await call('/v1')
     expect(res.status).toBe(200)
     expect(res.headers.get('cache-control')).toBe('no-store')
-    const index = await res.json<{ name: string; version: string; sandbox: boolean; docs: string; endpoints: { method: string; path: string; description: string }[] }>()
-    expect(index).toMatchObject({ name: 'meatspace.sh', version: '0.1.4-alpha', sandbox: true, docs: 'https://meatspace.sh/docs' })
-    expect(index.endpoints.map((e) => `${e.method} ${e.path}`)).toEqual([
-      'GET /v1',
-      'GET /v1/snapshot',
-      'GET /v1/nodes',
-      'GET /v1/nodes/:id',
-      'GET /v1/stats',
-      'GET /v1/stream',
-      'POST /v1/dispatch',
-      'POST /v1/waitlist',
-    ])
+    const index = await res.json<{ name: string; version: string; docs: string; endpoints: { method: string; path: string; description: string }[] }>()
+    expect(index).toMatchObject({ name: 'meatspace.sh', version: '0.2.0', docs: 'https://meatspace.sh/docs' })
+    const listed = index.endpoints.map((e) => `${e.method} ${e.path}`)
+    expect(listed).toEqual(expect.arrayContaining(['GET /v1/reports', 'POST /v1/requests', 'GET /v1/concept']))
+    // The concept API is listed by GET /v1/concept only.
+    expect(listed).not.toContain('POST /v1/concept/dispatch')
+    expect(listed).not.toContain('POST /v1/dispatch')
     for (const e of index.endpoints) expect(e.description.length).toBeGreaterThan(0)
   })
 
   it('GET /v1/nodes returns the orderbook with a timestamp', async () => {
-    const body = await getJson<{ nodes: HardwareNode[]; ts: number }>('/v1/nodes')
+    const body = await getJson<{ nodes: HardwareNode[]; ts: number }>('/v1/concept/nodes')
     expect(Object.keys(body).sort()).toEqual(['nodes', 'ts'])
     expect(body.nodes.map((n) => n.id)).toEqual(SEED_NODES.map((n) => n.id))
     expect(body.ts).toBeGreaterThan(0)
   })
 
   it('GET /v1/nodes/:id returns one node', async () => {
-    const node = await getJson<HardwareNode>('/v1/nodes/VTOL-260-TX-04')
+    const node = await getJson<HardwareNode>('/v1/concept/nodes/VTOL-260-TX-04')
     expect(node).toEqual(SEED_NODES_WIRE[0])
   })
 
   it('GET /v1/nodes/:id 404s with ERR_NODE_NOT_FOUND', async () => {
-    const err = await expectApiError(await call('/v1/nodes/NOPE-404'), 404, 'ERR_NODE_NOT_FOUND')
-    expect(err.message).toBe('node NOPE-404 is not registered with the clearinghouse')
+    const err = await expectApiError(await call('/v1/concept/nodes/NOPE-404'), 404, 'ERR_NODE_NOT_FOUND')
+    expect(err.message).toBe('node NOPE-404 does not exist in the simulator')
   })
 
   it('stamps ts with the time of the read, not of the last tick', async () => {
     await scheduler.wait(5)
     const t0 = Date.now()
-    for (const path of ['/v1/snapshot', '/v1/nodes', '/v1/stats']) {
+    for (const path of ['/v1/concept/snapshot', '/v1/concept/nodes', '/v1/concept/stats']) {
       const { ts } = await getJson<{ ts: number }>(path)
       expect(ts, path).toBeGreaterThanOrEqual(t0)
       expect(ts, path).toBeLessThanOrEqual(Date.now())
@@ -81,7 +76,7 @@ describe('read endpoints', () => {
   })
 
   it('GET /v1/stats returns ticker stats with a timestamp', async () => {
-    const body = await getJson<{ stats: NetworkStats; ts: number }>('/v1/stats')
+    const body = await getJson<{ stats: NetworkStats; ts: number }>('/v1/concept/stats')
     expect(body.stats).toEqual((await snapshot()).stats)
     expect(body.ts).toBeGreaterThan(0)
   })
@@ -103,9 +98,9 @@ describe('routing errors', () => {
   })
 
   it.each([
-    ['DELETE', '/v1/snapshot', 'GET, HEAD'],
-    ['POST', '/v1/nodes/VTOL-260-TX-04', 'GET, HEAD'],
-    ['GET', '/v1/dispatch', 'POST'],
+    ['DELETE', '/v1/concept/snapshot', 'GET, HEAD'],
+    ['POST', '/v1/concept/nodes/VTOL-260-TX-04', 'GET, HEAD'],
+    ['GET', '/v1/concept/dispatch', 'POST'],
     ['PUT', '/v1/waitlist', 'POST'],
     ['POST', '/install.sh', 'GET, HEAD'],
     ['POST', '/healthz', 'GET, HEAD'],
@@ -116,7 +111,7 @@ describe('routing errors', () => {
   })
 
   it('GET /v1/stream without an upgrade -> 426', async () => {
-    const res = await call('/v1/stream')
+    const res = await call('/v1/concept/stream')
     expect(res.headers.get('upgrade')).toBe('websocket')
     await expectApiError(res, 426, 'ERR_UPGRADE_REQUIRED')
   })
@@ -124,7 +119,7 @@ describe('routing errors', () => {
 
 describe('CORS', () => {
   it('answers /v1 preflight', async () => {
-    const res = await call('/v1/dispatch', {
+    const res = await call('/v1/concept/dispatch', {
       method: 'OPTIONS',
       headers: { origin: 'https://agent.example', 'access-control-request-method': 'POST', 'access-control-request-headers': 'content-type' },
     })
@@ -136,8 +131,8 @@ describe('CORS', () => {
   })
 
   it('exposes the task id and retry-after headers to cross-origin callers', async () => {
-    const res = await call('/v1/stats', { headers: { origin: 'https://agent.example' } })
-    expect(res.headers.get('access-control-expose-headers')).toBe('x-meatspace-task-id, retry-after')
+    const res = await call('/v1/concept/stats', { headers: { origin: 'https://agent.example' } })
+    expect(res.headers.get('access-control-expose-headers')).toBe('x-meatspace-task-id, retry-after, etag, x-meatspace-sha256, x-meatspace-content-sha256')
     await res.arrayBuffer()
   })
 

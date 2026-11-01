@@ -16,16 +16,15 @@ const RECEIPT = {
   est_duration_min: 12.5,
   compiled: { target: 'MAVLink v2', artifact: 'MISSION_ITEM_INT', count: 18 },
   telemetry_stream_hash: `0x9f8c${'0'.repeat(56)}3a1b`,
-  attestation: 'TPM2_QUOTE',
   issued_at: '2026-10-31T00:00:00.000Z',
   sandbox: true,
 }
 
 const SUCCESS = [
   { type: 'step', t_ms: 0, phase: 'VALIDATE', message: 'Validating GeoJSON polygon against node firmware geofence...', status: 'PASS' },
-  { type: 'step', t_ms: 140, phase: 'ESCROW', message: 'Locking escrow ($42.50 USDC) & bidding on Node VTOL-260-TX-04...', status: 'ACCEPTED' },
+  { type: 'step', t_ms: 140, phase: 'ESCROW', message: 'Checking $42.50 against max_spend_usdc on node VTOL-260-TX-04 (simulated; nothing is charged)...', status: 'ACCEPTED' },
   { type: 'step', t_ms: 380, phase: 'COMPILE', message: 'Compiling intent to MAVLink waypoint primitive...', status: 'DISPATCHED' },
-  { type: 'step', t_ms: 800, phase: 'ATTEST', message: 'Returning TPM-signed telemetry stream hash (0x9f8c...3a1b).', status: 'SIGNED' },
+  { type: 'step', t_ms: 800, phase: 'ATTEST', message: 'Returning sha256 request fingerprint (0x9f8c...3a1b). Not a proof of execution.', status: 'HASHED' },
   { type: 'receipt', t_ms: 800, receipt: RECEIPT },
 ]
 const NDJSON = SUCCESS.map((e) => JSON.stringify(e)).join('\n') + '\n'

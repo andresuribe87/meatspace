@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs'
 
 import { describe, expect, it } from 'vitest'
 
+import { ENDPOINTS } from '../../shared/api'
 import { RATE_LIMITS, VERSION } from '../../shared/constants'
+import { REPORTS_BASE_PATH } from '../../shared/reports'
 
 /** Strip // and /* *\/ comments outside strings, then parse. */
 function parseJsonc(text: string): unknown {
@@ -49,7 +51,15 @@ describe('config stays in sync with shared/constants.ts', () => {
 
   it('every Worker route is listed in run_worker_first, trailing-slash redirects included', () => {
     expect([...wrangler.assets.run_worker_first].sort()).toEqual(
-      ['/v1', '/v1/*', '/install.sh', '/docs', '/healthz', '/install.sh/', '/docs/', '/healthz/'].sort(),
+      ['/v1', '/v1/*', '/mcp', '/mcp/*', '/install.sh', '/docs', '/healthz', '/install.sh/', '/docs/', '/healthz/'].sort(),
     )
+  })
+
+  it('run_worker_first covers every endpoint of the registry, and never the static report files', () => {
+    const patterns = wrangler.assets.run_worker_first.map((p) => new RegExp(`^${p.replace(/[.]/g, '\\.').replace(/\*/g, '.*')}$`))
+    const covered = (path: string) => patterns.some((re) => re.test(path))
+    for (const e of ENDPOINTS) expect(covered(e.path.replace(/:\w+/g, 'x')), e.path).toBe(true)
+    expect(covered(`${REPORTS_BASE_PATH}/x/report.json`)).toBe(false)
+    expect(covered('/reports/x')).toBe(false)
   })
 })

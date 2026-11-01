@@ -1286,14 +1286,14 @@ function DataVizSection() {
         </div>
         <CertificateHeader
           level={3}
-          eyebrow="reports / lerobot/svla_so101_pickplace"
-          title={<Ids>lerobot/svla_so101_pickplace x robotstudio_so101</Ids>}
-          meta="owner lerobot · robot_type so100_follower · 30 fps · 50 episodes · 40 train / 10 held-out · units range_m100_100 (verified from the data)"
+          eyebrow="reports / example/so101_sample"
+          title={<Ids>example/so101_sample x robotstudio_so101</Ids>}
+          meta="owner example · robot_type so100_follower · 30 fps · 50 episodes · 40 train / 10 held-out · units range_m100_100 (read from the data)"
           fields={[
             { k: 'document', v: 'Twin Gap Report' },
             { k: 'schema', v: 'twin-gap-report/v1' },
             { k: 'status', v: <Lamp status={CAPABILITIES[0].status} size="sm" /> },
-            { k: 'dataset', v: 'lerobot/svla_so101_pickplace @ f641879', span: 3 },
+            { k: 'dataset', v: 'example/so101_sample @ f641879', span: 3 },
             { k: 'twin', v: 'robotstudio_so101 · MuJoCo Menagerie @ b065505 · mujoco 3.17.0', span: 3 },
             { k: 'split', v: 'seed 0 · 20% held out · fit never sees it', span: 3 },
             { k: 'intervals', v: '95% percentile bootstrap over episodes, 10,000 resamples', span: 4 },
@@ -1358,7 +1358,7 @@ function DataVizSection() {
                   </>
                 ),
               },
-              { k: 'dataset', datum: 'R', v: <Ids>lerobot/svla_so101_pickplace @ f641879</Ids> },
+              { k: 'dataset', datum: 'R', v: <Ids>example/so101_sample @ f641879</Ids> },
               { k: 'twin', datum: 'T', v: 'robotstudio_so101 @ b065505' },
               { k: 'split · method', v: '40 / 10 · bootstrap' },
             ]}
@@ -1388,13 +1388,13 @@ function DataVizSection() {
           heading="div"
           title={
             <>
-              Twin gap report // <b>lerobot/svla_so101_pickplace x robotstudio_so101</b>
+              Twin gap report // <b>example/so101_sample x robotstudio_so101</b>
             </>
           }
           uncal
           flush
         >
-          <CommandLine command="curl -s https://meatspace.sh/v1/reports/lerobot__svla_so101_pickplace | jq .headline" label="Report command" />
+          <CommandLine command="curl -s https://meatspace.sh/v1/reports/example__so101_sample | jq .headline" label="Report command" />
           <ScopePlot joint="shoulder_lift" traces={lift} fps={SAMPLE_FPS} episode="held-out ep 07" initialFrame={150} uncalLamp={false} />
           <div className="ro-row">
             <Reading label="stock twin · rmse" channel="stock" value={5.06} unit="°" ci={[4.71, 5.44]} n={10} nLabel="held-out eps" size="m" placeholder />
@@ -1412,7 +1412,7 @@ function DataVizSection() {
                   </>
                 ),
               },
-              { k: 'dataset', datum: 'R', v: <Ids>lerobot/svla_so101_pickplace @ f641879</Ids> },
+              { k: 'dataset', datum: 'R', v: <Ids>example/so101_sample @ f641879</Ids> },
               { k: 'twin', datum: 'T', v: <Ids>robotstudio_so101 · menagerie @ b065505 · mujoco 3.17.0</Ids> },
               {
                 k: 'report',

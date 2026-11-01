@@ -56,10 +56,11 @@ function TickerLine({ fields, lineRef }: { fields: TickerField[]; lineRef?: Ref<
   )
 }
 
+/** Connection to the simulator's stream. It never says LIVE: the numbers behind it are simulated (v0.2 word rule). */
 const CONNECTION: Record<ConnectionState, { glyph: string; label: string; tone: string; title: string }> = {
-  live: { glyph: '●', label: 'LIVE', tone: 'text-emerald', title: 'live stream connected' },
-  connecting: { glyph: '○', label: 'SYNC', tone: 'text-amber', title: 'connecting to live stream' },
-  reconnecting: { glyph: '○', label: 'SYNC', tone: 'text-amber', title: 'reconnecting to live stream' },
+  live: { glyph: '●', label: 'SIM STREAM', tone: 'text-fg', title: 'connected to the simulator stream' },
+  connecting: { glyph: '○', label: 'SYNC', tone: 'text-amber', title: 'connecting to the simulator stream' },
+  reconnecting: { glyph: '○', label: 'SYNC', tone: 'text-amber', title: 'reconnecting to the simulator stream' },
   offline: { glyph: '○', label: 'OFFLINE', tone: 'text-muted', title: 'browser is offline' },
 }
 
@@ -74,7 +75,7 @@ function ConnectionIndicator({ connection }: { connection: ConnectionState }) {
   )
 }
 
-function Ticker({ stats, connection }: { stats: NetworkStats; connection: ConnectionState }) {
+export function Ticker({ stats, connection }: { stats: NetworkStats; connection: ConnectionState }) {
   const fields = tickerFields(stats)
   const viewportRef = useRef<HTMLDivElement>(null)
   const lineRef = useRef<HTMLSpanElement>(null)
@@ -114,6 +115,24 @@ function Ticker({ stats, connection }: { stats: NetworkStats; connection: Connec
             </>
           ) : null}
         </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The v0.1 ticker as /concept shows it: a labelled strip, not a site header. Every number on it comes from
+ * the simulator (WS /v1/stream) and was invented for the concept; the label says so before the numbers.
+ */
+export function SimulatedTicker({ stats, connection }: { stats: NetworkStats; connection: ConnectionState }) {
+  return (
+    <div className="border border-line bg-bg" role="group" aria-label="v0.1 ticker, simulated numbers">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line px-3 py-1.5">
+        <p className="t-legend">v0.1 ticker // simulated // invented numbers, never real traffic</p>
+        <p className="t-legend">ws /v1/stream</p>
+      </div>
+      <div className="h-8 px-3">
+        <Ticker stats={stats} connection={connection} />
       </div>
     </div>
   )

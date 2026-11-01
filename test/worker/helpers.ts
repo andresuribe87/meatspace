@@ -35,7 +35,7 @@ export async function getJson<T>(path: string): Promise<T> {
   return res.json<T>()
 }
 
-export const snapshot = () => getJson<NetworkSnapshot>('/v1/snapshot')
+export const snapshot = () => getJson<NetworkSnapshot>('/v1/concept/snapshot')
 
 export async function expectApiError(res: Response, status: number, code: string): Promise<ApiErrorBody['error']> {
   const text = await res.text()

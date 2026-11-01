@@ -211,7 +211,7 @@ interface Attestation {
   compiled: { artifact: string; count: number }
 }
 
-/** ATTEST step + receipt. The telemetry hash commits to the task, node, validated payload and issue time (recipe: man page). */
+/** ATTEST step + receipt. The hash is a sha256 fingerprint of the task, node, validated payload and issue time (recipe: man page); it proves nothing about execution. */
 async function attestEvents(a: Attestation): Promise<DispatchEvent[]> {
   const hash = `0x${await sha256Hex(canonicalJson({ issued_at: a.issuedAt, node_id: a.node.id, payload: a.payload, task_id: a.taskId }))}`
   const receipt: DispatchReceipt = {
@@ -225,13 +225,12 @@ async function attestEvents(a: Attestation): Promise<DispatchEvent[]> {
     est_duration_min: a.payload.est_duration_min,
     compiled: { target: a.node.iface, artifact: a.compiled.artifact, count: a.compiled.count },
     telemetry_stream_hash: hash,
-    attestation: 'TPM2_QUOTE',
     issued_at: a.issuedAt,
     sandbox: true,
   }
   const t_ms = PHASE_OFFSETS_MS.ATTEST
   return [
-    { type: 'step', t_ms, phase: 'ATTEST', message: attestMessage(shortHash(hash)), status: 'SIGNED' },
+    { type: 'step', t_ms, phase: 'ATTEST', message: attestMessage(shortHash(hash)), status: 'HASHED' },
     { type: 'receipt', t_ms, receipt },
   ]
 }

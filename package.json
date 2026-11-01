@@ -1,12 +1,14 @@
 {
   "name": "meatspace",
   "private": true,
-  "version": "0.1.4-alpha",
-  "description": "meatspace.sh \u2014 stdout to reality. Dispatch tasks to physical hardware.",
+  "version": "0.2.0",
+  "description": "meatspace.sh: twin-first sim-to-real verification. Twin Gap Reports and calibrated twins from public LeRobot data.",
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/sync-reports.ts",
     "dev": "vite",
+    "prebuild": "node scripts/sync-reports.ts",
     "build": "tsc -b && vite build",
     "preview": "npm run build && vite preview",
     "typecheck": "tsc -b",
@@ -15,9 +17,11 @@
     "test:e2e": "playwright test",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
-    "deploy": "npm run build && wrangler deploy && npm run db:migrate:remote && npm run deploy:www",
+    "deploy": "npm run build && npm run db:migrate:remote && wrangler deploy && npm run deploy:www",
     "cf-typegen": "wrangler types",
-    "deploy:www": "wrangler deploy -c www/wrangler.jsonc"
+    "deploy:www": "wrangler deploy -c www/wrangler.jsonc",
+    "sync:reports": "node scripts/sync-reports.ts",
+    "check:reports": "node scripts/sync-reports.ts --check"
   },
   "dependencies": {
     "hono": "^4.13.14",

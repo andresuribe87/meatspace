@@ -71,7 +71,7 @@ export interface SectionHeaderProps {
 export function SectionHeader({ numeral, eyebrow, title, description, level = 2, id, className = '' }: SectionHeaderProps) {
   const H = `h${level}` as 'h1' | 'h2' | 'h3'
   return (
-    <div className={`sec-h ${numeral ? '' : 'no-num'} ${className}`}>
+    <div className={`sec-h ${numeral ? '' : 'no-num'} ${description ? '' : 'no-dsc'} ${className}`}>
       {numeral ? (
         <div className="sn" aria-hidden="true">
           {numeral}

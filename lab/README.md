@@ -102,7 +102,8 @@ meatspace_lab/
   report.py      pipeline + report.json / report.md writers, environment and code identity, hashes
   plots.py       dependency-free SVG plots (light/dark)
   index.py       reports/INDEX.md (all reports + the whole candidate pool)
-  cli.py         python -m meatspace_lab {report,scan,export-twin,render,index,verify}
+  trace.py       per-frame trace of a report's representative held-out episode (re-runs and checks its replay)
+  cli.py         python -m meatspace_lab {report,scan,export-twin,export-trace,render,index,verify}
 tests/           pytest (toy twin; no network needed)
 reports/         committed reports, one directory per dataset, INDEX.md, candidates.json
 scripts/         fetch_menagerie.sh (pinned twins), run_all.sh (regenerate every report)
@@ -127,6 +128,7 @@ scripts/run_all.sh                         # regenerates every committed report 
 .venv/bin/python -m meatspace_lab export-twin --twin .cache/menagerie/robotstudio_so101 \
     --package reports/lerobot__svla_so101_pickplace/calibrated_twin.json \
     --out .cache/so101_calibrated.xml      # calibrated MJCF (absolute mesh paths; keep it out of the twin dir)
+.venv/bin/python -m meatspace_lab export-trace reports/*/   # trace.json per ok report (~1 min for all 18, cached data)
 ```
 
 `requirements.lock` was generated with `uv pip compile requirements.txt --generate-hashes --python-version 3.13` and installs bit-for-bit the same 32 packages as the venv the reports were made with (checked in a fresh venv). `.venv/` and `.cache/` (Hub downloads, Menagerie clone, run log) are gitignored.
@@ -266,6 +268,7 @@ Each report directory holds:
 - `heldout_episode.svg`: a representative future-block episode (the one with the median stock error).
 - `rmse_by_joint_future.svg` and `rmse_by_joint.svg`: per-joint held-out RMSE with CIs for the future block and the interleaved set, with the baseline as a reference mark.
 - `calibrated_twin.json`.
+- `trace.json`, schema `meatspace.twin-trace/v1`, written by `export-trace` (not by `report`): the per-frame command, real state, stock-twin, baseline and calibrated-twin trajectories (degrees, 2 decimals, the 5 arm joints) of the same episode as `heldout_episode.svg`. It re-runs that episode's replay from the committed files and refuses to write unless everything matches the report: `content_sha256`, the dataset revision and every data file's sha256, the units and mapping decisions, the twin directory hash, the package hash, and the refitted baseline. The per-joint RMSE it recomputes at full resolution must equal the episode's row in `report.json` `episodes` within 0.002 deg (measured: at most 0.0005 deg on all 18). The file stays under 150 KB; a longer episode is decimated by an integer factor (every k-th frame, no filtering), recorded as `decimation` (only `apayan/so100_ball8`, 906 frames, uses 2). `provenance` holds the report's hashes and the JSON paths the numbers come from. A new `report` run deletes a stale `trace.json`; `scripts/run_all.sh` re-exports them. `trace.py` was added after the committed reports were run, so `environment.code_sha256` of a new run differs from theirs (the hash covers every module); `report` itself is unchanged apart from deleting a stale trace, and `export-trace` is the check that the committed results still reproduce.
 
 An `unsupported` report contains no sim numbers, only the reason, the checks and (for a rejected mapping) the forward-kinematics evidence.
 

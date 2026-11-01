@@ -70,12 +70,12 @@ describe('drift model', () => {
     expect(driftNode({ ...seedNode('VTOL-260-TX-04'), charge: 99.9 }, rng).charge).toBe(100)
     expect(driftNode({ ...seedNode('VTOL-260-TX-04'), status: 'CHARGING', charge: 94.6 }, rng)).toMatchObject({ status: 'DOCKED' })
     expect(driftNode({ ...seedNode('VTOL-260-TX-04'), status: 'CHARGING', charge: 50 }, rng)).toMatchObject({ status: 'CHARGING', charge: 51 })
-    expect(driftNode(seedNode('SPOT-SUB-44'), rng).charge).toBeCloseTo(77.98)
-    // SPOT-SUB-44's canonical sweep needs 1.2 %/min x 18 min + 20% reserve.
-    const floor = canonicalChargeFloorPct(seedNode('SPOT-SUB-44'))
+    expect(driftNode(seedNode('QDR-SUB-44'), rng).charge).toBeCloseTo(77.98)
+    // QDR-SUB-44's canonical sweep needs 1.2 %/min x 18 min + 20% reserve.
+    const floor = canonicalChargeFloorPct(seedNode('QDR-SUB-44'))
     expect(floor).toBeCloseTo(41.6)
-    expect(driftNode({ ...seedNode('SPOT-SUB-44'), charge: floor + 1.03 }, rng)).toMatchObject({ status: 'IDLE' })
-    expect(driftNode({ ...seedNode('SPOT-SUB-44'), charge: floor + 1.01 }, rng)).toMatchObject({ status: 'CHARGING' })
+    expect(driftNode({ ...seedNode('QDR-SUB-44'), charge: floor + 1.03 }, rng)).toMatchObject({ status: 'IDLE' })
+    expect(driftNode({ ...seedNode('QDR-SUB-44'), charge: floor + 1.01 }, rng)).toMatchObject({ status: 'CHARGING' })
   })
 
   it('battery: a full DOCKED node undocks to IDLE with probability 0.01 per tick', () => {
@@ -95,7 +95,7 @@ describe('drift model', () => {
 
   it('lock release: battery nodes go back on charge, mains cells straight to IDLE', () => {
     const lock = { status: 'TASKED' as const, taskedUntil: 1, taskId: 'tsk_x' }
-    expect(releaseNode({ ...seedNode('SPOT-SUB-44'), ...lock })).toMatchObject({ status: 'CHARGING', taskedUntil: null, taskId: null })
+    expect(releaseNode({ ...seedNode('QDR-SUB-44'), ...lock })).toMatchObject({ status: 'CHARGING', taskedUntil: null, taskId: null })
     expect(releaseNode({ ...seedNode('ARM-CELL-12'), ...lock })).toMatchObject({ status: 'IDLE', taskedUntil: null, taskId: null })
   })
 
@@ -181,7 +181,7 @@ const snapshotFrame = (frame: string) => (JSON.parse(frame) as StreamMessage).da
 describe('GET /v1/stream', () => {
   it('upgrades, sends a snapshot immediately, answers ping, and pushes ticks and dispatches', async () => {
     const t0 = Date.now()
-    const res = await call('/v1/stream', { headers: { upgrade: 'websocket' } })
+    const res = await call('/v1/concept/stream', { headers: { upgrade: 'websocket' } })
     expect(res.status).toBe(101)
     const ws = res.webSocket
     if (!ws) throw new Error('no webSocket on 101 response')
@@ -210,11 +210,11 @@ describe('GET /v1/stream', () => {
     expect(await runInDurableObject(stub, (_, state) => state.storage.getAlarm())).not.toBeNull()
 
     // A dispatch is broadcast right away, before its NDJSON stream finishes.
-    const dispatch = await postJson('/v1/dispatch', buildPayload(seedNode('QDR-B2-17')))
+    const dispatch = await postJson('/v1/concept/dispatch', buildPayload(seedNode('QDR-GH-17')))
     expect(dispatch.status).toBe(200)
     const taskId = dispatch.headers.get('x-meatspace-task-id')
     const locked = snapshotFrame(await next((f) => f.startsWith('{') && snapshotFrame(f).nodes.some((n) => n.taskId === taskId)))
-    expect(locked.nodes.find((n) => n.id === 'QDR-B2-17')?.status).toBe('TASKED')
+    expect(locked.nodes.find((n) => n.id === 'QDR-GH-17')?.status).toBe('TASKED')
     await dispatch.arrayBuffer()
 
     ws.close(1000, 'done')
@@ -325,7 +325,7 @@ describe('NetworkState restarts', () => {
   it('seq never goes backwards, even across back-to-back evictions', async () => {
     const stub = network()
     // A held lock keeps the object ticking, and those ticks are only persisted every few seconds.
-    const res = await postJson('/v1/dispatch', buildPayload(seedNode('AMR-V50-08')))
+    const res = await postJson('/v1/concept/dispatch', buildPayload(seedNode('AMR-V50-08')))
     expect(res.status).toBe(200)
     await res.arrayBuffer()
 

@@ -13,6 +13,7 @@
     border-bottom: 1px solid var(--line);
   }
   .dsr-index .brand { font-weight: 600; margin-right: var(--s-4); white-space: nowrap; }
+  @media (width < 400px) { .dsr-index .brand { white-space: normal; } }
   .dsr-index .brand span { color: var(--muted); font-weight: 400; }
   .dsr-index a { color: var(--muted); text-decoration: none; padding: 6px 8px; font-size: 12.5px; white-space: nowrap; }
   .dsr-index a:hover { color: var(--text); }

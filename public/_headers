@@ -1,7 +1,8 @@
 # Workers Static Assets custom headers: https://developers.cloudflare.com/workers/static-assets/headers/
 # Applied to responses served from the asset store (including index.html that the Worker fetches
 # through env.ASSETS for browser requests to /docs). Not applied to responses the Worker builds
-# itself (/v1/*, /install.sh, /healthz, text/plain /docs); worker/http.ts sets those headers.
+# itself (/v1/*, /install.sh, /healthz, text/plain /docs): worker/http.ts sets nosniff and the referrer
+# policy on all of them, and worker/reports.ts adds a sandboxing CSP and X-Frame-Options to report files.
 # This file is parsed at build/preview/deploy time and is never served.
 #
 # CSP notes: the production build has no inline <script> (Vite emits external module scripts and
@@ -21,3 +22,16 @@
 # Vite's content-hashed bundles.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Self-hosted fonts: byte-for-byte copies of the pinned @fontsource-variable 5.3.0 files (src/ds/README.md, Fonts).
+# They never change in place; a new font version gets a new file name.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Twin Gap Report files copied from lab/reports by scripts/sync-reports.ts (report.json, trace.json,
+# calibrated_twin.json, SVGs, index.json). Paths are stable across lab re-runs and the SPA checks each file
+# against the sha256 compiled into the bundle, so a cached copy from before a deploy would fail that check:
+# every use revalidates (ETag, a cheap 304 when unchanged), and src/lib/reports.ts fetches with cache: no-cache.
+# Long-lived, immutable copies are served by /v1/reports/:id/files/:name?sha256=<hash>.
+/data/reports/*
+  Cache-Control: public, max-age=0, must-revalidate

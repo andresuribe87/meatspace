@@ -884,7 +884,8 @@ def _provenance(rep: dict) -> list[str]:
             "```"]
 
 
-ARTIFACTS = ("heldout_episode.svg", "rmse_by_joint.svg", "rmse_by_joint_future.svg", "calibrated_twin.json")
+# trace.json is written by `export-trace` (trace.py) from a finished report; a new report run deletes a stale one.
+ARTIFACTS = ("heldout_episode.svg", "rmse_by_joint.svg", "rmse_by_joint_future.svg", "calibrated_twin.json", "trace.json")
 
 
 def write(report: dict, artifacts: dict, out_dir: str | Path) -> None:

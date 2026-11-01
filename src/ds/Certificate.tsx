@@ -158,17 +158,19 @@ export interface CertificateHeaderProps {
   seal?: ReactNode
   /** Heading level of the title. Default 1 (the report page's H1). */
   level?: 1 | 2 | 3
+  /** No frame around the header (a page, not a panel): drop the side padding so it sits on the page grid. */
+  bare?: boolean
 }
 
 /**
  * Certificate header (the /reports/:id top block): eyebrow, H1 title, facts line and title block on the
  * left, the calibration seal on the right. Stacks under a 1000px container.
  */
-export function CertificateHeader({ eyebrow, title, meta, fields, seal, level = 1 }: CertificateHeaderProps) {
+export function CertificateHeader({ eyebrow, title, meta, fields, seal, level = 1, bare }: CertificateHeaderProps) {
   const H = `h${level}` as 'h1' | 'h2' | 'h3'
   return (
-    <div className="cert">
-      <div className="cert-head">
+    <div className={bare ? 'cert cert--bare' : 'cert'}>
+      <div className={seal ? 'cert-head' : 'cert-head no-seal'}>
         <div className="ds-stack" style={{ minWidth: 0 }}>
           {eyebrow ? <p className="t-legend">{eyebrow}</p> : null}
           <H className="cert-h1">{title}</H>

@@ -1,0 +1,29 @@
+{
+ "schema": "meatspace.published/v1",
+ "note": "Publish date of each Twin Gap Report (YYYY-MM-DD). Read by scripts/sync-reports.ts; a report without a date fails the build.",
+ "dates": {
+  "00ri__so100_battery": "2026-11-01",
+  "Aneysait__so101_pick_red_all": "2026-11-01",
+  "CarolinePascal__plug_socket_moved": "2026-11-01",
+  "Chojins__chess_game_001_blue_stereo": "2026-11-01",
+  "IlyaGusev__so101_pick_gum": "2026-11-01",
+  "Jeevesh2009__so101_gray_block_lowvar_test": "2026-11-01",
+  "Loki0929__so100_lan": "2026-11-01",
+  "VoicAndrei__so100_kitchen": "2026-11-01",
+  "aaronsu11__so100_instrument": "2026-11-01",
+  "apayan__so100_ball8": "2026-11-01",
+  "cagataydev__so101-tic-tac-toe": "2026-11-01",
+  "hungho77__so101_left_arm_pick_red_cube_into_pot": "2026-11-01",
+  "jccj__so100_block_in_cup": "2026-11-01",
+  "julyfun__so100_pick_and_place_v4_50": "2026-11-01",
+  "lerobot__svla_so100_pickplace": "2026-11-01",
+  "lerobot__svla_so101_pickplace": "2026-11-01",
+  "samsitol__so100_PnPacorn": "2026-11-01",
+  "shubham4413__so100_smolvla_rc": "2026-11-01",
+  "shylee__so100_pengripG": "2026-11-01",
+  "sincostangerines__stack_cubes_100": "2026-11-01",
+  "siyavash__so101_test": "2026-11-01",
+  "xsatvik__mixer_on_off_new_1": "2026-11-01",
+  "youliangtan__so100_strawberry_grape": "2026-11-01"
+ }
+}

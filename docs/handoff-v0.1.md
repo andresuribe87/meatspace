@@ -1,3 +1,5 @@
+> **Historical v0.1 spec, superseded by v0.2 on 2026-11-01.** Its ticker numbers, USDC escrow, TPM attestation and "live hardware" wording are not product claims: v0.1 was a simulation, kept labelled at https://meatspace.sh/concept. What v0.2 is: [`strategy/2026-11-01-pmf-memo.md`](./strategy/2026-11-01-pmf-memo.md).
+
 # Project Handoff: `meatspace.sh` — Initial Web Application (v0.1)
 
 > Original product handoff, preserved as the source of truth for v0.1 (only change: a pasted markdown-link artifact in the install URL was normalised).

@@ -1,28 +1,28 @@
 import { ORIGIN, VERSION } from './meta'
 
 /**
- * GET /install.sh. POSIX sh only, no bashisms (tested under dash and bash --posix). It is piped into `sudo sh`, so it is
- * strictly inert: the only external command is uname; everything else is shell builtins and printf.
+ * GET /install.sh. POSIX sh only, no bashisms (tested under dash and bash --posix). Someone may pipe it into `sh` (or
+ * `sudo sh`), so it is strictly inert: the only external command is uname; everything else is shell builtins and printf.
+ * meatspaced (a local evaluation runner and safety supervisor for robots you own) is PLANNED: the script says so and exits.
+ * v0.1 flags are accepted and ignored, so old copies of the one-liner still exit 0.
  * Inside this template literal, shell expansions are written \${...} and backslashes are doubled.
  */
 export const INSTALL_SH = `#!/bin/sh
-# meatspaced installer v${VERSION} (preview build).
-# Inert by design: it parses flags, reports what it detected and what it would
-# do, then exits. It writes nothing, downloads nothing and starts nothing.
+# meatspaced installer v${VERSION} (inert).
+# meatspaced, a local evaluation runner and safety supervisor for robots you own, is
+# planned and not released. This script parses flags, prints what it detected
+# and what it would do, then exits. It writes nothing, downloads nothing and
+# starts nothing.
 set -eu
-
-protocol=mavlink
-rtk_verify=skipped
 
 usage() {
 	printf '%s\\n' \\
-		'usage: install.sh [--protocol=NAME] [--rtk-verify] [-h | --help]' \\
+		'usage: install.sh [-h | --help]' \\
 		'' \\
-		'  --protocol=NAME  bridge for this node: mavlink (default), ros2, vda5050, opcua' \\
-		'  --rtk-verify     require a verified RTK-GPS fix before the node registers' \\
-		'  -h, --help       print this help and exit' \\
+		'  -h, --help   print this help and exit' \\
 		'' \\
-		'meatspaced is not yet released. This script makes no changes to the system.'
+		'meatspaced is not released. This script makes no changes to the system.' \\
+		'v0.1 flags (--protocol, --rtk-verify) are accepted and ignored.'
 }
 
 fail() {
@@ -33,8 +33,7 @@ fail() {
 
 for arg in "$@"; do
 	case $arg in
-	--protocol=*) protocol=\${arg#--protocol=} ;;
-	--rtk-verify) rtk_verify=requested ;;
+	--protocol=* | --rtk-verify) ;;
 	-h | --help)
 		usage
 		exit 0
@@ -42,14 +41,6 @@ for arg in "$@"; do
 	*) fail "unknown option: $arg" ;;
 	esac
 done
-
-case $protocol in
-mavlink) bridge='MAVLink v2 bridge on udp:14550' ;;
-ros2) bridge='ROS 2 Humble DDS bridge on domain 0' ;;
-vda5050) bridge='VDA 5050 MQTT bridge on tcp:1883' ;;
-opcua) bridge='OPC UA client on opc.tcp:4840' ;;
-*) fail "invalid protocol: '$protocol' (expected mavlink, ros2, vda5050 or opcua)" ;;
-esac
 
 if [ -t 1 ]; then
 	esc=$(printf '\\033')
@@ -61,21 +52,11 @@ fi
 os=$(uname -s)
 arch=$(uname -m)
 
-field() {
-	printf '  %-12s%s%s%s\\n' "$1" "$ok" "$2" "$off"
-}
-
 printf '%s\\n\\n' 'meatspace.sh // meatspaced installer v${VERSION}'
-field os "$os"
-field arch "$arch"
-field protocol "$protocol"
-field rtk-verify "$rtk_verify"
+printf '  %-12s%s%s%s\\n' detected "$ok" "$os/$arch" "$off"
 printf '\\n  %s\\n' 'plan (dry run, nothing executed):'
-printf '    - %s\\n' "install meatspaced v${VERSION} for $os/$arch" "start the $bridge"
-if [ "$rtk_verify" = requested ]; then
-	printf '    - %s\\n' 'verify the RTK-GPS fix before registering'
-fi
-printf '    - %s\\n\\n' 'register this node with the clearinghouse'
-printf '%sWARN%s  %s\\n' "$warn" "$off" 'meatspaced is not yet released.' "$warn" "$off" 'NO changes were made to this system.'
-printf '\\n%s\\n' 'register interest: ${ORIGIN}/#connect'
+printf '    - %s\\n' "install meatspaced v${VERSION} for $os/$arch" 'run it as a local evaluation runner and safety supervisor for robots you own'
+printf '\\n%sWARN%s  %s\\n' "$warn" "$off" 'meatspaced is not released.'
+printf '%sWARN%s  %s\\n' "$warn" "$off" 'NO changes were made to this system.'
+printf '\\n%s\\n' 'tell us what it would have to do: ${ORIGIN}/#own-robot'
 `

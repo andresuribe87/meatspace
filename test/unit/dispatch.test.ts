@@ -33,7 +33,7 @@ describe('handoff copy', () => {
     expect(plan.escrowCents).toBe(4250)
     expect(plan.events.map((e) => (e.type === 'step' ? [formatOffset(e.t_ms), e.message, e.status] : null))).toEqual([
       ['00ms', 'Validating GeoJSON polygon against node firmware geofence...', 'PASS'],
-      ['140ms', 'Locking escrow ($42.50 USDC) & bidding on Node VTOL-260-TX-04...', 'ACCEPTED'],
+      ['140ms', 'Checking $42.50 against max_spend_usdc on node VTOL-260-TX-04 (simulated; nothing is charged)...', 'ACCEPTED'],
       ['380ms', 'Compiling intent to MAVLink waypoint primitive...', 'DISPATCHED'],
     ])
     expect(PHASE_OFFSETS_MS.ATTEST).toBe(800)
@@ -88,8 +88,8 @@ describe('payload builders', () => {
     expect(p.site).toEqual({ type: 'Point', coordinates: [n.lon, n.lat] })
   })
 
-  it('SPOT-SUB-44 sweeps its own site', () => {
-    const p = buildPayload(node('SPOT-SUB-44'))
+  it('QDR-SUB-44 sweeps its own site', () => {
+    const p = buildPayload(node('QDR-SUB-44'))
     expect(p.primitive === 'SUBSTATION_THERMAL_SWEEP' && p.site.coordinates).toEqual([-95.201, 29.731])
   })
 })
@@ -134,7 +134,7 @@ describe('state machine failures', () => {
   it('the spend cap is compared exactly, never rounded: 37.799 does not cover a $37.80 escrow', () => {
     const p = defaultPayload('AUTOMATED_CNC_SYNTHESIS', SEED_NODES)
     const plan = planDispatch({ ...p, max_spend_usdc: 37.799 }, node('ARM-CELL-12'), 0)
-    expect(plan.failure).toMatchObject({ phase: 'ESCROW', code: 'ERR_SPEND_CAP', httpStatus: 422, message: 'escrow $37.80 exceeds max_spend_usdc 37.799' })
+    expect(plan.failure).toMatchObject({ phase: 'ESCROW', code: 'ERR_SPEND_CAP', httpStatus: 422, message: 'price $37.80 exceeds max_spend_usdc 37.799' })
     expect(planDispatch({ ...p, max_spend_usdc: 37.8 }, node('ARM-CELL-12'), 0).escrowCents).toBe(3780)
     expect(planDispatch({ ...p, max_spend_usdc: 37.8 }, node('ARM-CELL-12'), 0).failure).toBeNull()
   })
@@ -172,8 +172,8 @@ describe('state machine failures', () => {
       'ORK-VTOL-09': 52.5,
       'HLX-MR-31': 62.5,
       'VTOL-180-AB-11': 56.25,
-      'SPOT-SUB-44': expect.closeTo(41.6),
-      'QDR-B2-17': expect.closeTo(39.8),
+      'QDR-SUB-44': expect.closeTo(41.6),
+      'QDR-GH-17': expect.closeTo(39.8),
       'AMR-V50-08': expect.closeTo(34.4),
       'ARM-CELL-12': 0,
       'CNC-5AX-03': 0,
@@ -195,19 +195,19 @@ describe('state machine failures', () => {
     const cnc = defaultPayload('AUTOMATED_CNC_SYNTHESIS', SEED_NODES)
     if (cnc.primitive !== 'AUTOMATED_CNC_SYNTHESIS') throw new Error('expected cnc')
     const arm = node('ARM-CELL-12')
-    const sweep = buildPayload(node('SPOT-SUB-44'))
+    const sweep = buildPayload(node('QDR-SUB-44'))
     if (sweep.primitive !== 'SUBSTATION_THERMAL_SWEEP') throw new Error('expected sweep')
     const cases: [DispatchPayload, HardwareNode | undefined, string][] = [
-      [{ ...sortie, node_id: 'NOPE-01' }, undefined, 'Resolving node NOPE-01 in clearinghouse registry...'],
+      [{ ...sortie, node_id: 'NOPE-01' }, undefined, 'Resolving node NOPE-01 in the simulator...'],
       [{ ...sortie, node_id: 'ARM-CELL-12' }, arm, 'Resolving node ARM-CELL-12 capabilities for AERIAL_ISR_SORTIE...'],
       [{ ...sortie, constraints: { ...sortie.constraints, agl_floor_m: 10 } }, vtol, 'Validating altitude band against node firmware envelope...'],
       [{ ...sortie, constraints: { ...sortie.constraints, rtl_reserve_pct: 10 } }, vtol, 'Validating battery reserve against node firmware RTL envelope...'],
       [sortie, { ...vtol, charge: 50 }, 'Validating battery reserve against node firmware RTL envelope...'],
-      [sweep, { ...node('SPOT-SUB-44'), charge: 30 }, 'Validating battery reserve against node firmware return-to-dock envelope...'],
+      [sweep, { ...node('QDR-SUB-44'), charge: 30 }, 'Validating battery reserve against node firmware return-to-dock envelope...'],
       [{ ...cnc, tolerance_mm: 0.001 }, arm, 'Validating tolerance against cell capability...'],
       [{ ...cnc, site: { type: 'Point', coordinates: [9.2, 48.9] } }, arm, 'Validating site against cell location...'],
       [{ ...cnc, artifact: { ...cnc.artifact, bbox_mm: [700, 80, 35] } }, arm, 'Validating STEP bounding box against cell work envelope...'],
-      [{ ...sweep, site: { type: 'Point', coordinates: [-95.3, 29.8] } }, node('SPOT-SUB-44'), 'Validating GeoJSON point against node firmware geofence...'],
+      [{ ...sweep, site: { type: 'Point', coordinates: [-95.3, 29.8] } }, node('QDR-SUB-44'), 'Validating GeoJSON point against node firmware geofence...'],
     ]
     for (const [p, n, message] of cases) expect(validateStep(p, n)).toMatchObject({ phase: 'VALIDATE', status: 'FAIL', message })
     expect(validateStep(sortie, vtol)).toMatchObject({ status: 'PASS', message: 'Validating GeoJSON polygon against node firmware geofence...' })

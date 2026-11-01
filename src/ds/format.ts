@@ -1,9 +1,12 @@
 /**
  * Number formatting rules of the design system (pure, no DOM).
  * - On screen, signed values use a true minus (U+2212). Copyable blocks and JSON use ASCII: pass `ascii`.
- * - Fixed precision per field; never round toward the flattering side (we round half away from zero, like toFixed).
+ * - Fixed precision per field; never round toward the flattering side. Rounding is Python's (`pyFixed`: exact value,
+ *   ties to even), because every report number was first printed by the lab in Python: the site prints the same digits.
  * - Ranges in prose use "to"; intervals print as `[lo, hi]` with the unit once.
  */
+
+import { pyFixed } from '../../shared/reports'
 
 /** True minus sign. */
 export const MINUS = '−'
@@ -13,7 +16,7 @@ export const NBSP = ' '
 /** Fixed-precision number with a true minus on screen (`ascii` for copyable text). */
 export function fmt(v: number, digits = 2, ascii = false): string {
   if (!Number.isFinite(v)) return 'n/a'
-  const s = Math.abs(v).toFixed(digits)
+  const s = pyFixed(Math.abs(v), digits)
   // −0.00 prints as 0.00: a sign on a zero reading is noise.
   const neg = v < 0 && Number(s) !== 0
   return (neg ? (ascii ? '-' : MINUS) : '') + s
@@ -22,7 +25,7 @@ export function fmt(v: number, digits = 2, ascii = false): string {
 /** Signed change: always carries + or − (e.g. Δ +0.73, −79%). */
 export function fmtSigned(v: number, digits = 2, ascii = false): string {
   if (!Number.isFinite(v)) return 'n/a'
-  const s = Math.abs(v).toFixed(digits)
+  const s = pyFixed(Math.abs(v), digits)
   if (Number(s) === 0) return s
   return (v < 0 ? (ascii ? '-' : MINUS) : '+') + s
 }

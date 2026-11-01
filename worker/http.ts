@@ -141,8 +141,11 @@ const CORS_PREFLIGHT: Readonly<Record<string, string>> = {
 
 const CORS_RESPONSE: Readonly<Record<string, string>> = {
   ...CORS_ORIGIN,
-  'access-control-expose-headers': 'x-meatspace-task-id, retry-after',
+  'access-control-expose-headers': 'x-meatspace-task-id, retry-after, etag, x-meatspace-sha256, x-meatspace-content-sha256',
 }
+
+/** Intake endpoints accept same-origin browsers and curl only: no CORS preflight, no CORS headers. */
+const SAME_ORIGIN_ONLY = new Set(['/v1/waitlist', '/v1/requests'])
 
 function setAll(res: Response, headers: Readonly<Record<string, string>>): void {
   for (const [k, v] of Object.entries(headers)) res.headers.set(k, v)
@@ -156,12 +159,15 @@ export const securityHeaders: MiddlewareHandler<AppEnv> = async (c, next) => {
   if (!isUpgrade(c.res)) setAll(c.res, SECURITY_HEADERS)
 }
 
-/** /v1: never cached, and open to cross-origin callers except the same-origin-only waitlist. */
+/**
+ * /v1: open to cross-origin callers except the same-origin-only intake endpoints, and never cached unless the handler
+ * says otherwise (report files carry their own ETag and cache-control).
+ */
 export const apiHeaders: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const cors = c.req.path !== '/v1/waitlist'
+  const cors = !SAME_ORIGIN_ONLY.has(c.req.path)
   if (cors && c.req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS_PREFLIGHT })
   await next()
   if (isUpgrade(c.res)) return
-  c.res.headers.set('cache-control', 'no-store')
+  if (!c.res.headers.has('cache-control')) c.res.headers.set('cache-control', 'no-store')
   if (cors) setAll(c.res, CORS_RESPONSE)
 }

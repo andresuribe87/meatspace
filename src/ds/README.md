@@ -21,7 +21,7 @@ The component library for meatspace.sh v0.2. Everything is typed React 19, style
 4. **Two monospaces, one voice.** Martian Mono = readouts, display, H1/H2 (22px and up). JetBrains Mono = terminal
    (UI, body, tables, code, legends, axes). Atkinson Hyperlegible Next = prose only.
 5. **Status is grammar.** Every capability wears a lamp: LIVE, PREVIEW, PLANNED, WAITLIST, ON REQUEST, CONCEPT, REFUSED.
-   Nothing is LIVE until it works at that URL. The Twin Gap Report reads PREVIEW until v1 is published.
+   Nothing is LIVE until it works at that URL. Twin Gap Reports are LIVE: they work at /reports and /v1/reports today.
 6. **Change the timebase, not the signal.** Under a 560px container plots drop to 5 divisions and the s/div doubles.
    Never squash, smooth or clip a trace. Δ scales are 1-2-5. Verdict columns never drop off a phone.
 7. **Terminals don't fade.** State changes take 0ms. Nothing ticks unless it measures something. Busy controls show
@@ -33,6 +33,8 @@ The component library for meatspace.sh v0.2. Everything is typed React 19, style
 - Say what was measured, on what, and what it does not show, next to the result.
 - Plain words, short sentences, no hype, no exclamation marks, no emoji. Periods, colons, parentheses; ranges use "to".
 - "verified" only for a real-robot result with n ≥ 50. "signed" only after Ed25519 ships ("hashed" until then).
+  One recorded exception: the lab's own files (report.json `units`, report.md) say "units verified" for the encoder-tick
+  check. They are hashed and published verbatim; site pages never repeat the word (they say "read from the data").
   Outside `/concept`: never escrow, USDC, settlement, attestation, TPM, nodes, fleet, "our network".
 - Numbers: `4.93 deg [4.64, 5.25]`, unit once, *n* wherever an interval appears. True minus (−79%) on screen
   (`fmt`), ASCII in copyable blocks and JSON (`fmt(v, d, true)` / `<Num ascii>`). Report numbers come from

@@ -43,7 +43,7 @@ export const PRIMITIVES: Readonly<Record<PrimitiveId, PrimitiveDef>> = {
     summary: 'Quadruped / ROS 2 industrial rover inspection',
     category: 'GROUND',
     intent: 'INSPECT_ASSET',
-    defaultNodeId: 'SPOT-SUB-44',
+    defaultNodeId: 'QDR-SUB-44',
     estDurationMin: 18,
   },
   AUTOMATED_CNC_SYNTHESIS: {
@@ -105,7 +105,8 @@ export const VALIDATE_MESSAGES: Readonly<Record<PrimitiveId, string>> = {
   AUTOMATED_CNC_SYNTHESIS: 'Validating STEP bounding box against cell work envelope...',
 }
 
-const PROOF = { attestation: 'TPM2_QUOTE' as const }
+/** v0.1 also sent attestation: "TPM2_QUOTE"; that claim is withdrawn, and the field is optional (and ignored). */
+const PROOF = {}
 
 /** The node's home position as a GeoJSON [lon, lat]. */
 const homePosition = (node: HardwareNode): [number, number] => [round5(node.lon), round5(node.lat)]

@@ -1,5 +1,5 @@
 /**
- * Zone B, right column: interactive curl / JSON dispatch console.
+ * /concept: the v0.1 interactive curl / JSON dispatch console, kept working and labelled simulated.
  *
  * Tabs pick the primitive; the request view shows the exact curl command that [ COPY CURL ] copies
  * (body syntax-highlighted, editable as raw JSON); [ EXECUTE CALL ] POSTs the draft to the real
@@ -33,9 +33,9 @@ const TAB_ID = (p: PrimitiveId) => `dispatch-tab-${p}`
 const PANEL_ID = 'dispatch-tabpanel'
 const EDITOR_ID = 'dispatch-editor'
 const TARGET_ID = 'dispatch-target'
-const ENDPOINT = `${PUBLIC_ORIGIN}/v1/dispatch`
+const ENDPOINT = `${PUBLIC_ORIGIN}/v1/concept/dispatch`
 
-const OK_STATUSES: ReadonlySet<StepStatus> = new Set<StepStatus>(['PASS', 'ACCEPTED', 'DISPATCHED', 'SIGNED'])
+const OK_STATUSES: ReadonlySet<StepStatus> = new Set<StepStatus>(['PASS', 'ACCEPTED', 'DISPATCHED', 'HASHED'])
 /** The response log follows new output while its bottom edge is at most this far out of view. */
 const FOLLOW_SLACK_PX = 24
 
@@ -198,7 +198,7 @@ function OutputLines({ run }: { run: Exclude<Run, { phase: 'idle' }> }) {
       {run.phase === 'done' && !run.local ? (
         receipt && !lastError ? (
           <div className="mt-2 text-emerald wrap-anywhere">
-            exit 0 · task {receipt.task_id} · escrow {escrowLabel(receipt)} USDC locked
+            exit 0 · task {receipt.task_id} · escrow {escrowLabel(receipt)} USDC (simulated: no machine moved, nothing was charged)
           </div>
         ) : (
           <div className="mt-2 text-amber">exit {lastError && lastError.http_status > 0 ? lastError.http_status : run.httpStatus || 1}</div>
@@ -427,7 +427,7 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
     <Panel
       title={
         <>
-          API SANDBOX // <span className="normal-case">POST /v1/dispatch</span>
+          CONCEPT CONSOLE // <span className="normal-case">POST /v1/concept/dispatch</span> // SIMULATED
         </>
       }
       className="flex h-full min-w-0 flex-col"
@@ -592,7 +592,7 @@ export function DispatchConsole({ primitive, onPrimitiveChange, draft, onDraftCh
             >
               {run.phase === 'idle' ? (
                 <>
-                  <p className="text-muted">press [ EXECUTE CALL ] to dispatch against the live sandbox</p>
+                  <p className="text-muted">press [ EXECUTE CALL ] to run the simulator. no machine moves.</p>
                   <p className="mt-1 text-muted">
                     <span aria-hidden="true">$ </span>
                     <Cursor />

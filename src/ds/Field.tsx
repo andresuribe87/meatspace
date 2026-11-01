@@ -61,7 +61,12 @@ export function Field({ label, required, help, error, prefix, suffix, disabled, 
       <div className={`field ${full ? 'full' : ''} ${className}`}>
         <label htmlFor={cid}>
           {label}
-          {required ? <span className="req">required</span> : null}
+          {/* The required state is exposed by the control itself; the hint is visual only, so the name stays "DATASET". */}
+          {required ? (
+            <span className="req" aria-hidden="true">
+              required
+            </span>
+          ) : null}
         </label>
         <div className={['ctl', area ? 'ctl--area' : '', error ? 'is-error' : '', disabled ? 'is-disabled' : ''].filter(Boolean).join(' ')}>
           {prefix ? (
@@ -118,7 +123,7 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
     <select
       id={f.id}
       aria-describedby={f.describedBy}
-      aria-invalid={f.invalid || undefined}
+      aria-invalid={f.invalid}
       disabled={f.disabled}
       required={f.required}
       {...props}

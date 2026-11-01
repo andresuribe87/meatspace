@@ -104,7 +104,10 @@ export function Reading({
       ) : null}
       {n != null ? (
         <div className="ro-n">
-          <span className="nw">n = {n}</span>
+          {/* n is data too: it carries the reading's provenance (same object as the value). */}
+          <span className="nw">
+            n = <Num value={n} digits={0} prov={prov} placeholder={placeholder} />
+          </span>
           {nLabel ? <> {nLabel}</> : null}
         </div>
       ) : null}

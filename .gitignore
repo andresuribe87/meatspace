@@ -33,3 +33,6 @@ dist-ssr
 # playwright
 test-results/
 playwright-report/
+
+# generated from lab/reports by scripts/sync-reports.ts (prebuild/predev); shared/reports.generated.ts is committed
+public/data/

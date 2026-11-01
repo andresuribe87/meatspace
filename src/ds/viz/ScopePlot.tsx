@@ -291,9 +291,16 @@ export function ScopePlot({
           <span className="nw">M {m ? m.tb.sPerDiv.toFixed(2) : '…'} s/div</span> · <span className="nw">{fps} fps</span>
         </span>
         <span className="ds-row" style={{ gap: 10 }}>
-          <span className="nw">
-            mask ±{fmt(tolerance, 1)}°{viol.stock != null ? ` · out: stock ${viol.stock}` : ''}
-            {viol.cal != null ? ` / cal ${viol.cal}` : ''} of {n} fr
+          {/* Wraps between items, never inside one (a 320px screen at 400% zoom). */}
+          <span>
+            <span className="nw">mask ±{fmt(tolerance, 1)}°</span>
+            {viol.stock != null ? (
+              <>
+                {' · '}
+                <span className="nw">out: stock {viol.stock}</span>
+              </>
+            ) : null}
+            {viol.cal != null ? <span className="nw"> / cal {viol.cal}</span> : null} <span className="nw">of {n} fr</span>
           </span>
           {tableView ? (
             <Key variant="ghost" size="sm" aria-pressed={table} onClick={() => setTable((t) => !t)}>

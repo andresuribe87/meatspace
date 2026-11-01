@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { CAPABILITIES, type Capability, type LampWord } from '../../shared/status'
 import { Key } from './Key'
 import { Lamp } from './Lamp'
+import { nobr } from './Nobr'
 import { Table } from './Table'
 
 /** Skip link: the first focusable element on every page. Visible on keyboard focus only. */
@@ -22,6 +23,8 @@ export interface StatusLineItem {
   word?: boolean
   /** Dropped on phones (only reports, refused and real cell stay). */
   hideOnPhone?: boolean
+  /** Dropped under 900px too (a trailing fact that would otherwise sit alone on a second row). */
+  hideOnTablet?: boolean
 }
 
 /**
@@ -34,7 +37,7 @@ export function StatusLine({ items, className = '' }: { items: StatusLineItem[];
     <div className={`sline ${className}`}>
       <span className="sr">Status: </span>
       {items.map((it, i) => (
-        <span key={i} className={it.hideOnPhone ? 'hide-sm' : undefined}>
+        <span key={i} className={[it.hideOnPhone ? 'hide-sm' : '', it.hideOnTablet ? 'hide-md' : ''].filter(Boolean).join(' ') || undefined}>
           {it.label} {it.word ? <i>{it.value}</i> : <b>{it.value}</b>}
         </span>
       ))}
@@ -50,9 +53,9 @@ export function Ledger({ items = CAPABILITIES, label = 'Capabilities' }: { items
         {items.map((c) => (
           <li key={c.part}>
             <span className="pn">{c.part}</span>
-            <span className="nm">{c.name}</span>
+            <span className="nm">{nobr(c.name)}</span>
             <Lamp status={c.status} size="sm" />
-            <span className="sc">{c.scope}</span>
+            <span className="sc">{nobr(c.scope)}</span>
           </li>
         ))}
       </ul>
@@ -69,8 +72,9 @@ export interface ChainStep {
   body: ReactNode
 }
 
-/** C-19 Signal chain: 3 compartments joined by ▶ connectors (▼ under a 760px container). */
-export function SignalChain({ steps, label = 'Signal chain' }: { steps: ChainStep[]; label?: string }) {
+/** C-19 Signal chain: 3 compartments joined by ▶ connectors (▼ under a 760px container). `level`: the step titles' heading level (one below the section's). */
+export function SignalChain({ steps, label = 'Signal chain', level = 3 }: { steps: ChainStep[]; label?: string; level?: 3 | 4 }) {
+  const H = `h${level}` as 'h3' | 'h4'
   return (
     <div className="cq">
       <ol className="chain" aria-label={label}>
@@ -80,7 +84,7 @@ export function SignalChain({ steps, label = 'Signal chain' }: { steps: ChainSte
               <span className="idx">{s.index}</span>
               <Lamp status={s.status} size="sm" />
             </div>
-            <h4>{s.title}</h4>
+            <H>{s.title}</H>
             <p>{s.body}</p>
           </li>
         ))}

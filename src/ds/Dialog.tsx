@@ -74,7 +74,7 @@ export function Dialog({ open, onClose, title, endpoint, actions, closeOnBackdro
         <h2 id={titleId} className="t-legend" style={{ color: 'var(--text)' }}>
           {title}
         </h2>
-        <Key variant="ghost" size="sm" aria-label="Close" onClick={() => ref.current?.close()}>
+        <Key variant="ghost" size="sm" aria-label="Esc, close dialog" onClick={() => ref.current?.close()}>
           Esc
         </Key>
       </div>

@@ -25,5 +25,7 @@ for c in json.load(open("reports/candidates.json"))["candidates"]:
     if c["scan_verdict"] == "ok":
         print(c["dataset"], c["sha"], c["twin"], sep="\t")
 ')
+# per-frame trace of each report's representative future-block episode (re-runs that replay, checks it against the report)
+"$PY" -m meatspace_lab export-trace reports/*/ >> "$LOG" 2>&1 || { echo "FAILED: export-trace (see $LOG)" | tee -a "$LOG"; fail=1; }
 "$PY" -m meatspace_lab index --reports reports
 exit $fail

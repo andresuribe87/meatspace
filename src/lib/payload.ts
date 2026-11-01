@@ -30,7 +30,7 @@ export function formatPayload(value: unknown): string {
 }
 
 /** Shell-safe curl command for a JSON body. Single quotes inside the body are escaped for POSIX sh. */
-export function curlCommand(body: string, path = '/v1/dispatch'): string {
+export function curlCommand(body: string, path = '/v1/concept/dispatch'): string {
   const quoted = `'${body.replace(/'/g, `'\\''`)}'`
   return [`curl -sN -X POST ${PUBLIC_ORIGIN}${path} \\`, `  -H 'content-type: application/json' \\`, `  -d ${quoted}`].join('\n')
 }

@@ -163,7 +163,7 @@ const pendingState = (): ConnectionState => (isOffline() ? 'offline' : hasDroppe
 
 function streamUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
-  return `${proto}://${window.location.host}/v1/stream`
+  return `${proto}://${window.location.host}/v1/concept/stream`
 }
 
 function clearReconnect(): void {

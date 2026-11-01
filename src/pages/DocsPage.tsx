@@ -1,8 +1,10 @@
 /**
- * /docs: MEATSPACE(1) rendered as a terminal man page. Same source as `curl https://meatspace.sh/docs`
- * (shared/manpage.ts); prose reflows on phones, tables and commands scroll inside their own box.
+ * /docs: MEATSPACE(1), the man page, in the Instrument design system. Same source as `curl https://meatspace.sh/docs`
+ * (shared/manpage.ts): from md up, prose keeps the exact lines of the text page; below md the same words reflow.
+ * Section index on the left (sticky from 1100px), ruler headings, commands on carbon screens that scroll inside
+ * their own box. No syntax colours: only verdict words in console traces carry signal colour.
  */
-import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 
 import {
   MAN_DATE,
@@ -18,8 +20,7 @@ import {
   type ManItem,
   type ManLeaf,
 } from '../../shared/manpage'
-import type { StepStatus } from '../../shared/types'
-import { BracketButton, CopyButton } from '../components/ui'
+import { CommandLine, CopyKey, Key, nobr, Ruler } from '../ds'
 import { PUBLIC_ORIGIN } from '../lib/payload'
 
 export interface DocsPageProps {
@@ -37,57 +38,57 @@ const SLUGS = SECTIONS.map((s) => s.slug)
 
 const URL_RE = /(https:\/\/[^\s"'<>]*[^\s"'<>.,;:)])/
 
-/** Absolute https URLs become real links; everything else stays plain text. */
-function linkify(text: string): ReactNode {
+/**
+ * Absolute https URLs become real links; everything else stays plain text (product names kept whole: "SO-101").
+ * `block`: a link alone on a preformatted line gets a 24px-tall target (WCAG 2.5.8), as it is not inside a sentence.
+ */
+function linkify(text: string, block = false): ReactNode {
   const parts = text.split(URL_RE)
-  if (parts.length === 1) return text
+  if (parts.length === 1) return nobr(text)
   return parts.map((part, i) =>
     i % 2 === 1 ? (
-      <a key={i} href={part} className="text-fg underline decoration-muted underline-offset-[3px] hover:text-emerald hover:decoration-emerald">
+      <a key={i} href={part} className={block ? 'lnk inline-block max-w-full py-[4px] [overflow-wrap:anywhere]' : 'lnk'}>
         {part}
       </a>
     ) : (
-      <Fragment key={i}>{part}</Fragment>
+      <Fragment key={i}>{nobr(part)}</Fragment>
     ),
   )
 }
 
-const OK_STATUS: ReadonlySet<string> = new Set<StepStatus>(['PASS', 'ACCEPTED', 'DISPATCHED', 'SIGNED'])
-const BAD_STATUS: ReadonlySet<string> = new Set<StepStatus>(['FAIL', 'REJECTED'])
+/** Verdict words that may carry signal colour in a console trace: emerald for agreement, amber for a refusal. */
+const OK_WORDS: ReadonlySet<string> = new Set(['PASS', 'ACCEPTED', 'DISPATCHED', 'COMPILED', 'FOUND', 'QUEUED', 'OK'])
+const WARN_WORDS: ReadonlySet<string> = new Set(['FAIL', 'REJECTED', 'REFUSED', 'UNSUPPORTED', 'NOT FOUND'])
 
-/** Dispatch trace line: muted offset, plain message, status in the console's colours. */
+/** Console trace line: muted offset, plain message, the trailing verdict word in signal colour. */
 function consoleLine(line: string): ReactNode {
-  const m = /^(\s*\d+ms)?(.*?)(\b[A-Z]+)?$/.exec(line)
+  const m = /^(\s*\+?\d+ms)?(.*?)(\b[A-Z][A-Z_]+)?$/.exec(line)
   const [, offset = '', rest = '', status = ''] = m ?? []
-  const known = OK_STATUS.has(status) || BAD_STATUS.has(status)
+  const tone = OK_WORDS.has(status) ? 'ok' : WARN_WORDS.has(status) ? 'w' : null
   return (
     <>
-      {offset ? <span className="text-muted">{offset}</span> : null}
-      {known ? rest : rest + status}
-      {known ? <b className={`font-bold ${OK_STATUS.has(status) ? 'text-emerald' : 'text-amber'}`}>{status}</b> : null}
+      {offset ? <span className="p">{offset}</span> : null}
+      {tone ? rest : rest + status}
+      {tone ? <b className={tone}>{status}</b> : null}
     </>
   )
 }
 
-/** Code lines joined with real newlines (copy-exact); commands emerald, the "$ " prompt muted and unselectable. */
+/** Code lines joined with real newlines (copy-exact). The "$ " prompt is muted and unselectable; comments muted. */
 function codeContent(lines: readonly string[], style: CodeStyle | undefined): ReactNode {
-  let continued = false
   return lines.map((line, i) => {
     let node: ReactNode = line
-    if (style === 'shell') node = <span className="text-emerald">{line}</span>
-    else if (style === 'table') node = i === 0 ? <span className="text-muted">{line}</span> : line
+    if (style === 'table') node = i === 0 ? <span className="c">{line}</span> : line
     else if (style === 'console') node = consoleLine(line)
-    else {
-      const prompt = line.startsWith('$ ')
-      if (prompt || continued) {
+    else if (style !== 'shell') {
+      if (line.startsWith('$ ')) {
         node = (
           <>
-            {prompt ? <span className="text-muted select-none">$ </span> : null}
-            <span className="text-emerald">{prompt ? line.slice(2) : line}</span>
+            <span className="p">$ </span>
+            {line.slice(2)}
           </>
         )
-      } else if (line.startsWith('# ')) node = <span className="text-muted">{line}</span>
-      continued = (prompt || continued) && line.endsWith('\\')
+      } else if (line.startsWith('# ')) node = <span className="c">{line}</span>
     }
     return (
       <Fragment key={i}>
@@ -103,10 +104,10 @@ function codeContent(lines: readonly string[], style: CodeStyle | undefined): Re
  * ------------------------------------------------------------------------- */
 
 /**
- * <pre> that becomes a scrollable, focusable, labelled region only while it actually scrolls sideways. Otherwise it
- * clips: a sub-pixel overflow would still make an `overflow: auto` box an unlabelled keyboard stop in Chromium.
+ * Carbon code screen whose <pre> becomes a scrollable, focusable, labelled region only while it actually scrolls
+ * sideways. Otherwise it clips: a sub-pixel overflow would still make an `overflow: auto` box an unlabelled keyboard stop.
  */
-function ScrollPre({ label, children }: { label: string; children: ReactNode }) {
+function Screen({ label, name, children, copy }: { label: string; name?: string; children: ReactNode; copy?: string }) {
   const ref = useRef<HTMLPreElement>(null)
   const [scrolls, setScrolls] = useState(false)
   useEffect(() => {
@@ -126,15 +127,23 @@ function ScrollPre({ label, children }: { label: string; children: ReactNode }) 
     }
   }, [])
   return (
-    <pre
-      ref={ref}
-      tabIndex={scrolls ? 0 : undefined}
-      role={scrolls ? 'region' : undefined}
-      aria-label={scrolls ? `${label} (scrolls horizontally)` : undefined}
-      className={`whitespace-pre ${scrolls ? 'overflow-x-auto' : 'overflow-x-hidden'}`}
-    >
-      {children}
-    </pre>
+    <div className="code">
+      {copy ? (
+        <div className="code-h">
+          <span className="t-legend">shell</span>
+          <CopyKey text={copy} what={`${label} commands`} />
+        </div>
+      ) : null}
+      <pre
+        ref={ref}
+        tabIndex={scrolls ? 0 : undefined}
+        role={scrolls ? 'region' : undefined}
+        aria-label={scrolls ? `${label}${name ? `: ${name.trim().slice(0, 48)}` : ''} (scrolls sideways)` : undefined}
+        className={`whitespace-pre ${scrolls ? 'overflow-x-auto' : 'overflow-x-hidden'}`}
+      >
+        {children}
+      </pre>
+    </div>
   )
 }
 
@@ -151,7 +160,7 @@ function hang(line: string): CSSProperties | undefined {
 function Prose({ text, depth }: { text: string; depth: number }) {
   const lines = manProse(text, depth)
   return (
-    <p>
+    <p className="max-md:[overflow-wrap:anywhere]">
       {lines.map((line, i) => (
         <Fragment key={i}>
           {i > 0 ? ' ' : null}
@@ -162,23 +171,72 @@ function Prose({ text, depth }: { text: string; depth: number }) {
   )
 }
 
+/** Shell commands (no prompt in the source) get a copy key: they are meant to be pasted as written. */
+function copyable(block: Extract<ManLeaf, { kind: 'code' }>): string | undefined {
+  if (block.style === 'shell') return block.lines.join('\n')
+  if (block.style === undefined && block.lines.some((l) => l.startsWith('$ '))) {
+    return block.lines
+      .filter((l) => !l.startsWith('# '))
+      .map((l) => (l.startsWith('$ ') ? l.slice(2) : l))
+      .join('\n')
+  }
+  return undefined
+}
+
 function Leaf({ block, label, depth }: { block: ManLeaf; label: string; depth: number }) {
   switch (block.kind) {
     case 'p':
       return <Prose text={block.text} depth={depth} />
     case 'pre':
       return (
-        <pre className="whitespace-pre-wrap break-words">
+        <pre className="break-words whitespace-pre-wrap">
           {block.lines.map((line, i) => (
             <span key={i} className="block" style={hang(line)}>
-              {linkify(line) || ' '}
+              {linkify(line, true) || ' '}
             </span>
           ))}
         </pre>
       )
     case 'code':
-      return <ScrollPre label={label}>{codeContent(block.lines, block.style)}</ScrollPre>
+      if (block.style === 'table' && block.rows) return <TableLeaf block={block} label={label} />
+      return (
+        <Screen label={label} name={block.lines[0]} copy={copyable(block)}>
+          {codeContent(block.lines, block.style)}
+        </Screen>
+      )
   }
+}
+
+/**
+ * A column table: the exact text-page lines from md up; below md each row stacks (first cell in bold, then the others),
+ * so no column is pushed off a phone screen.
+ */
+function TableLeaf({ block, label }: { block: Extract<ManLeaf, { kind: 'code' }>; label: string }) {
+  const [head, ...rows] = block.rows ?? []
+  return (
+    <>
+      <div className="max-md:hidden">
+        <Screen label={label} name={block.lines[0]}>
+          {codeContent(block.lines, block.style)}
+        </Screen>
+      </div>
+      <dl className="border-t border-line md:hidden" aria-label={`${label}: ${head?.join(', ') ?? 'table'}`}>
+        {rows.map((r, i) => (
+          <div key={i} className="border-b border-line py-[var(--s-2)] [overflow-wrap:anywhere]">
+            <dt className="font-semibold text-fg">
+              {r[0]}
+              {r.length > 2 ? <span className="muted"> · {nobr(r[1])}</span> : null}
+            </dt>
+            {r.slice(r.length > 2 ? 2 : 1).map((c, j) => (
+              <dd key={j} className="muted">
+                {nobr(c)}
+              </dd>
+            ))}
+          </div>
+        ))}
+      </dl>
+    </>
+  )
 }
 
 function DefList({ items, label, depth }: { items: readonly ManItem[]; label: string; depth: number }) {
@@ -186,7 +244,7 @@ function DefList({ items, label, depth }: { items: readonly ManItem[]; label: st
     <dl>
       {items.map((it, i) => (
         <div key={i} className={i > 0 ? 'mt-[1lh]' : undefined}>
-          <dt className="font-bold whitespace-pre-wrap text-fg">{it.term}</dt>
+          <dt className="font-semibold whitespace-pre-wrap text-fg">{it.term}</dt>
           <dd className="pl-[4ch] sm:pl-[7ch]">
             <Blocks blocks={it.desc} label={`${label}: ${it.term}`} depth={depth + 1} />
           </dd>
@@ -241,20 +299,16 @@ function useActiveSection(): string {
   return active
 }
 
-/** Header / footer line: left, centre, right. The repeated title on the right is decorative in the h1. */
-function ManLine({ left, centre, right, as: Tag = 'div', id }: { left: string; centre: string; right: string; as?: 'h1' | 'div'; id?: string }) {
-  const decorative = Tag === 'h1'
+/** man(1) header / footer line: left, centre, right. Decorative: the H1 above carries the title. */
+function ManLine({ left, centre, right }: { left: string; centre: string; right: string }) {
   return (
-    <Tag id={id} className="flex flex-wrap justify-between gap-x-[2ch] font-normal text-muted">
-      <span>{left}</span> <span>{centre}</span>{' '}
-      <span aria-hidden={decorative || undefined} className={decorative ? 'max-[379px]:hidden' : undefined}>
-        {right}
-      </span>
-    </Tag>
+    <p className="t-legend flex flex-wrap justify-between gap-x-[2ch]" aria-hidden="true">
+      <span>{left}</span>
+      <span>{centre}</span>
+      <span className="max-[379px]:hidden">{right}</span>
+    </p>
   )
 }
-
-const LINK_BUTTON = 'inline-flex items-center gap-1.5 whitespace-nowrap px-2 py-1 text-xs uppercase tracking-wider text-fg hover:text-emerald'
 
 export function DocsPage({ onNavigate }: DocsPageProps) {
   const active = useActiveSection()
@@ -265,34 +319,56 @@ export function DocsPage({ onNavigate }: DocsPageProps) {
     if (id && SLUGS.includes(id)) document.getElementById(id)?.scrollIntoView({ block: 'start' })
   }, [])
 
-  return (
-    <main id="main" className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-4 sm:px-6 sm:py-6">
-      <div className="mx-auto grid w-full max-w-[79ch] grid-cols-1 gap-y-4 text-xs leading-5 sm:text-sm sm:leading-6 xl:w-auto xl:max-w-none xl:grid-cols-[24ch_79ch] xl:justify-center xl:gap-x-[6ch]">
-        <div className="-mx-2 flex flex-wrap items-center justify-between gap-y-1 xl:col-start-2">
-          <BracketButton onClick={() => onNavigate('/')}>
-            <span aria-hidden="true">←</span> BACK
-          </BracketButton>
-          <div className="flex flex-wrap items-center">
-            <a href="/docs?format=txt" className={LINK_BUTTON} aria-label="RAW plain-text man page">
-              <span aria-hidden="true">[</span>
-              <span>RAW</span>
-              <span aria-hidden="true">]</span>
-            </a>
-            <CopyButton text={CURL_DOCS} label="COPY curl meatspace.sh/docs" className="normal-case!" />
-          </div>
-        </div>
+  const onBack = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    e.preventDefault()
+    onNavigate('/')
+  }
 
-        <nav aria-label="Manual sections" className="border-y border-line py-2 xl:col-start-1 xl:row-span-2 xl:row-start-1 xl:border-0 xl:py-0">
-          <div className="xl:sticky xl:top-[var(--header-h)]">
-            <p className="mb-2 hidden text-[11px] tracking-[0.14em] text-muted xl:block">SECTIONS</p>
-            <ul className="flex flex-wrap gap-x-[2ch] gap-y-1 text-xs xl:block xl:space-y-1">
-              {SECTIONS.map((s) => (
+  return (
+    <main id="main" className="page-wrap pt-[var(--s-6)] pb-[var(--s-9)]">
+      <div className="mx-auto grid max-w-[calc(79ch+24ch+6ch)] grid-cols-1 gap-y-[var(--s-5)] lg:grid-cols-[24ch_minmax(0,79ch)] lg:gap-x-[6ch]">
+        <header className="min-w-0 lg:col-start-2">
+          <div className="ds-row justify-between">
+            <Key variant="ghost" size="sm" href="/" onClick={onBack}>
+              Home
+            </Key>
+            <span className="ds-row">
+              <Key variant="ghost" size="sm" href="/docs?format=txt" aria-label="Raw plain-text man page">
+                Raw
+              </Key>
+              <CopyKey text={CURL_DOCS} what="curl command for the manual" />
+            </span>
+          </div>
+          <p className="t-legend mt-[var(--s-5)]">manual · the same text as curl, rendered</p>
+          <h1 id="man-title" className="t-h1 mt-[var(--s-2)]">
+            {MAN_TITLE}
+          </h1>
+          <div className="code mt-[var(--s-4)]">
+            <CommandLine command={CURL_DOCS} label="Manual as plain text" />
+          </div>
+          <div className="mt-[var(--s-5)]">
+            <ManLine left={MAN_TITLE} centre={MAN_MANUAL} right={MAN_TITLE} />
+            <Ruler className="mt-[var(--s-2)]" />
+          </div>
+        </header>
+
+        <nav aria-label="Manual sections" className="min-w-0 border-y border-line py-[var(--s-3)] lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:border-0 lg:py-0">
+          <div className="lg:sticky lg:top-[calc(var(--header-h)+var(--s-5))]">
+            <p className="t-legend mb-[var(--s-3)]">sections</p>
+            <ul className="t-ui flex flex-wrap gap-x-[2ch] lg:block">
+              {SECTIONS.map((s, i) => (
                 <li key={s.slug}>
                   <a
                     href={`#${s.slug}`}
                     aria-current={active === s.slug ? 'location' : undefined}
-                    className={active === s.slug ? 'text-emerald' : 'text-muted hover:text-fg'}
+                    className={`inline-block py-[3px] lg:flex lg:gap-[1.5ch] lg:border-l-2 lg:pl-[1.5ch] ${
+                      active === s.slug ? 'text-fg lg:border-fg' : 'text-muted hover:text-fg lg:border-transparent'
+                    }`}
                   >
+                    <span className="tabular hidden lg:inline" aria-hidden="true">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
                     {s.title}
                   </a>
                 </li>
@@ -301,23 +377,27 @@ export function DocsPage({ onNavigate }: DocsPageProps) {
           </div>
         </nav>
 
-        <article aria-labelledby="man-title" className="min-w-0 xl:col-start-2">
-          <header>
-            <ManLine as="h1" id="man-title" left={MAN_TITLE} centre={MAN_MANUAL} right={MAN_TITLE} />
-          </header>
-
+        {/* The manual is the plain-text page (curl /docs) rendered as written: its figures are generated from the report
+            index by shared/manpage.ts, never typed, and the whole text carries that one provenance. */}
+        <article
+          aria-labelledby="man-title"
+          className="t-ui min-w-0 text-fg lg:col-start-2"
+          data-verbatim="shared/manpage.ts (MEATSPACE(1), figures from /data/reports/index.json)"
+        >
           {SECTIONS.map((s) => (
-            <section key={s.slug} id={s.slug} aria-labelledby={`${s.slug}-title`} className="mt-[1lh]">
-              <h2 id={`${s.slug}-title`} className="font-bold text-fg">
+            <section key={s.slug} id={s.slug} aria-labelledby={`${s.slug}-title`} className="mt-[var(--s-6)] scroll-mt-[calc(var(--header-h)+var(--s-4))] first:mt-0">
+              <h2 id={`${s.slug}-title`} className="t-h3 tracking-[0.04em]">
                 {s.title}
               </h2>
-              <div className="pl-[3ch] sm:pl-[7ch]">
+              <Ruler className="mt-[var(--s-2)] mb-[var(--s-4)]" />
+              <div className="pl-[2ch] sm:pl-[7ch]">
                 <Blocks blocks={s.blocks} label={s.title} />
               </div>
             </section>
           ))}
 
-          <footer className="mt-[1lh]">
+          <footer className="mt-[var(--s-7)]">
+            <Ruler className="mb-[var(--s-2)]" />
             <ManLine left={MAN_VERSION} centre={MAN_DATE} right={MAN_TITLE} />
           </footer>
         </article>

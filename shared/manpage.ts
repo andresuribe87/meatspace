@@ -3,47 +3,18 @@
  *
  * The page is built from structured blocks (prose, verbatim lines, code, definition lists) so the
  * browser can reflow prose on narrow screens while renderManText() lays out a classic 79-column
- * terminal page. Facts come from the shared contract wherever it exports them (limits, phase offsets,
- * primitives, compile targets, the seed orderbook, the state machine itself) so the manual cannot
- * drift from the API. Pure string functions only: this module runs in workerd and in the browser.
+ * terminal page. Facts come from the shared contract wherever it exports them: statuses from
+ * shared/status.ts, endpoints, cells and request fields from shared/api.ts, every report number from
+ * shared/reports.generated.ts (written by the build from lab/reports), limits from shared/constants.ts.
+ * Nothing about a result is typed here. Pure string functions only: this module runs in workerd and in
+ * the browser.
  */
-import {
-  MAX_ACTIVE_LOCKS_PER_CLIENT as LOCK_QUOTA,
-  ORIGIN,
-  RATE_LIMITS as LIMITS,
-  REPO_URL,
-  TASK_LOCK_MS,
-  TICK_MS,
-  VERSION,
-  WAITLIST_MAX_BYTES,
-  WS_ORIGIN,
-} from './constants'
-import {
-  AGL_CEILING_LIMIT_M,
-  attestMessage,
-  GROUND_RESERVE_PCT,
-  MAX_BODY_BYTES,
-  MAX_DURATION_MIN,
-  MAX_SPEND_USDC,
-  MIN_DURATION_MIN,
-  MIN_RTL_RESERVE_PCT,
-  parseDispatchPayload,
-  PHASE_OFFSETS_MS,
-  planDispatch,
-} from './dispatch'
-import { centsToDecimal, formatOffset, formatRate, formatUsd } from './format'
-import { CATEGORY_FILTERS, SEED_NODES } from './nodes'
-import { COMPILE_TARGETS, defaultPayload, PRIMITIVE_IDS, PRIMITIVES } from './primitives'
-import type {
-  AerialIsrPayload,
-  ApiErrorBody,
-  DispatchEvent,
-  DispatchPhase,
-  ErrorCode,
-  HardwareNode,
-  Interface,
-  PrimitiveId,
-} from './types'
+import { CELLS, cellWire, ENDPOINTS, NOTES_MAX, REQUEST_MAX_BYTES, REQUEST_OPTIONS, REQUEST_STATUS, REQUESTS_PER_MIN, statusOf, type EndpointDef } from './api'
+import { MAX_ACTIVE_LOCKS_PER_CLIENT as LOCK_QUOTA, ORIGIN, RATE_LIMITS as LIMITS, REPO_URL, VERSION } from './constants'
+import { changeText, estText, gapShort, PACKAGE_SCHEMA, REPORT_SCHEMA, TRACE_SCHEMA, type GapLabel, type OkReportSummary, type Range } from './reports'
+import { REPORT_INDEX } from './reports.generated'
+import { apiStatus, CAPABILITIES, CAPABILITY_STATUS, type CapabilityStatus } from './status'
+import type { ErrorCode } from './types'
 
 export interface ManSection {
   /** Uppercase section heading, e.g. "SYNOPSIS". */
@@ -59,10 +30,10 @@ export type ManLeaf =
   /** Verbatim lines that may wrap on narrow screens (hanging indent preserved). */
   | { kind: 'pre'; lines: readonly string[]; tight?: boolean }
   /** Verbatim lines that never wrap (tables, commands, JSON); scroll sideways when too wide. */
-  | { kind: 'code'; lines: readonly string[]; style?: CodeStyle; tight?: boolean }
+  | { kind: 'code'; lines: readonly string[]; style?: CodeStyle; tight?: boolean; rows?: readonly (readonly string[])[] }
 
 /**
- * shell: every line is a command. table: first line is the header row. console: dispatch trace
+ * shell: every line is a command. table: first line is the header row. console: an event trace
  * (offset, message, status). Unstyled: lines starting "$ " (and their "\" continuations) are commands.
  */
 export type CodeStyle = 'shell' | 'table' | 'console'
@@ -78,13 +49,13 @@ export type ManBlock = ManLeaf | { kind: 'dl'; items: readonly ManItem[]; tight?
 export const MAN_TITLE = 'MEATSPACE(1)'
 export const MAN_MANUAL = 'meatspace.sh Manual'
 export const MAN_VERSION = `v${VERSION}`
-export const MAN_DATE = '2026-10-31'
+export const MAN_DATE = '2026-11-01'
 /** Total text width: the 7-space body indent plus 72 columns of content. */
 export const MAN_WIDTH = 79
 export const MAN_INDENT = 7
 
 const BODY = MAN_WIDTH - MAN_INDENT
-const NBSP = ' '
+const NBSP = ' '
 
 /* ----------------------------------------------------------------------------
  * Layout primitives (pure)
@@ -158,107 +129,48 @@ function jsonLines(value: unknown, width: number): string[] {
 const p = (text: string, tight?: boolean): ManLeaf => ({ kind: 'p', text, tight })
 const pre = (lines: readonly string[], tight?: boolean): ManLeaf => ({ kind: 'pre', lines, tight })
 const code = (lines: readonly string[], style?: CodeStyle): ManLeaf => ({ kind: 'code', lines, style })
-const table = (rows: readonly (readonly string[])[], width = BODY): ManLeaf => code(columns(rows, width), 'table')
+/** A column table: `lines` for the text page, `rows` (header first) so a narrow screen can stack the cells instead. */
+const table = (rows: readonly (readonly string[])[], width = BODY): ManLeaf => ({ kind: 'code', lines: columns(rows, width), style: 'table', rows })
 const json = (value: unknown, width = BODY): ManLeaf => code(jsonLines(value, width))
 const dl = (items: readonly ManItem[]): ManBlock => ({ kind: 'dl', items })
 const item = (term: string, ...desc: ManLeaf[]): ManItem => ({ term, desc })
 /** Description lists nest one indent deeper. */
 const DD = BODY - MAN_INDENT
 
-/* ----------------------------------------------------------------------------
- * Facts derived from the contract
- * ------------------------------------------------------------------------- */
-
-const REPO = REPO_URL
-const LOCK_S = TASK_LOCK_MS / 1000
-const TICK_S = TICK_MS / 1000
-const DISPATCH_LIMIT = LIMITS.dispatchPerMin
-const WAITLIST_LIMIT = LIMITS.waitlistPerMin
-const RETRY_AFTER_S = LIMITS.retryAfterS
-/** The handoff's illustrative short hash; real hashes differ per task. */
-const SAMPLE_HASH = '0x9f8c...3a1b'
-
-const VALUE_PROP =
-  'Autonomous hardware sits idle in proprietary silos for most of its lifecycle, while software agents have zero native way to discover, rent, or task physical machines across vendor boundaries. meatspace.sh exposes idle robots and autonomous fleets as pay-per-minute API endpoints, handling cross-vendor command translation, safety sandboxing, and cryptographic proof of execution in a single call.'
-
-const PHASES = Object.keys(PHASE_OFFSETS_MS) as DispatchPhase[]
-const INTERFACES = Object.keys(COMPILE_TARGETS) as Interface[]
-const OFFSETS = PHASES.map((ph) => String(PHASE_OFFSETS_MS[ph]))
-
-/** "a, b, c or d" */
-const orList = (xs: readonly string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} or ${xs[xs.length - 1]}`)
-const quoted = (xs: readonly string[]) => xs.map((x) => `"${x}"`)
-/** 2.5 -> "2.5", 31.25 -> "31.25", 15 -> "15" */
-const num = (n: number) => String(Math.round(n * 1e6) / 1e6)
 /** Keep comparison operators on the same line as their operand when wrapping. */
 const glue = (s: string) => s.replace(/(<=|>=|==|<|>) /g, `$1${NBSP}`)
+/** "a, b, c or d" */
+const orList = (xs: readonly string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} or ${xs[xs.length - 1]}`)
+const andList = (xs: readonly string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`)
+const quoted = (xs: readonly string[]) => xs.map((x) => `"${x}"`)
+/** Printable ASCII for the text page (status.ts scope lines use a middle dot). */
+const ascii = (s: string) => s.replaceAll(' · ', '; ').replaceAll('·', ';')
 
-function seedNode(id: string): HardwareNode {
-  const n = SEED_NODES.find((x) => x.id === id)
-  if (!n) throw new Error(`manpage: node ${id} missing from the seed orderbook`)
-  return n
-}
+/* ----------------------------------------------------------------------------
+ * Facts from the contract and the reports
+ * ------------------------------------------------------------------------- */
 
-function aerialDefault(): AerialIsrPayload {
-  const pl = defaultPayload('AERIAL_ISR_SORTIE', SEED_NODES)
-  if (pl.primitive !== 'AERIAL_ISR_SORTIE') throw new Error('manpage: unexpected default sortie payload')
-  return pl
-}
+const IDX = REPORT_INDEX
+const C = IDX.counts
+const HERO = IDX.reports.find((r) => r.id === IDX.hero.id) as OkReportSummary
+const SO101 = IDX.aggregates.so101
+const SO100 = IDX.aggregates.so100
+const RETRY_AFTER_S = LIMITS.retryAfterS
+const MENAGERIE = 'https://github.com/google-deepmind/mujoco_menagerie'
 
-/** The console's default call: AERIAL_ISR_SORTIE on VTOL-260-TX-04, $3.40 / min x 12.5 min = $42.50. */
-const SORTIE = aerialDefault()
-const SORTIE_NODE = seedNode(SORTIE.node_id)
-const SORTIE_PLAN = planDispatch(SORTIE, SORTIE_NODE, 0)
-const SORTIE_TARGET = COMPILE_TARGETS[SORTIE_NODE.iface]
-const SORTIE_ESCROW = `${formatRate(SORTIE_NODE.rateCents)} x ${num(SORTIE.est_duration_min)} min = ${formatUsd(SORTIE_PLAN.escrowCents)}`.replaceAll(' ', NBSP)
+/** -0.9143 -> "-91%" */
+const pct0 = (v: number) => `${v < 0 ? '-' : '+'}${Math.abs(Math.round(v * 100))}%`
+/** A change range as improvements: min/max of negative changes -> "76% to 91% lower". */
+const lowerRange = (r: Range) => `${Math.round(-r.max * 100)}% to ${Math.round(-r.min * 100)}%`
+const msRange = (r: Range) => `${Math.round(r.min)} to ${Math.round(r.max)} ms`
+const labelled = (fam: typeof SO100, set: 'future', label: string) =>
+  IDX.reports.filter((r) => r.family === fam.family && (r[set].gap_label === label || r[set].baseline_label === label)).map((r) => r.dataset)
 
-type StepEvent = Extract<DispatchEvent, { type: 'step' }>
-const isStep = (e: DispatchEvent): e is StepEvent => e.type === 'step'
+const CAP_ROWS = CAPABILITIES.map((c) => [apiStatus(c.status), c.name, ascii(c.scope)])
+const USED_STATUSES = [...new Set(CAPABILITIES.map((c) => c.status))] as CapabilityStatus[]
 
-/** Success: the three planned steps plus ATTEST (appended by the Durable Object), then the receipt. */
-const SORTIE_STEPS: readonly StepEvent[] = [
-  ...SORTIE_PLAN.events.filter(isStep),
-  { type: 'step', t_ms: PHASE_OFFSETS_MS.ATTEST, phase: 'ATTEST', message: attestMessage(SAMPLE_HASH), status: 'SIGNED' },
-]
-
-/** The handoff's console trace: offset, message, status (the ATTEST line is printed without one). */
-function traceLines(): string[] {
-  const out: string[] = []
-  for (const e of SORTIE_STEPS) {
-    const head = `${formatOffset(e.t_ms).padStart(5)}  ${e.message}`
-    const status = e.phase === 'ATTEST' ? '' : e.status
-    if (!status) out.push(head)
-    else if (head.length + 1 + status.length <= BODY) out.push(`${head} ${status}`)
-    else out.push(head, `${' '.repeat(7)}${status}`)
-  }
-  return out
-}
-
-/** `jq -c '[.t_ms, .type, .phase, .status // .code]'` over the success stream. */
-const JQ_SUMMARY = [
-  ...SORTIE_STEPS.map((e) => JSON.stringify([e.t_ms, e.type, e.phase, e.status])),
-  JSON.stringify([PHASE_OFFSETS_MS.ATTEST, 'receipt', null, null]),
-]
-
-/** A cap just under the default sortie's escrow, which the exact spend-cap comparison rejects. */
-const UNDER_CAP = num((SORTIE_PLAN.escrowCents - 0.1) / 100)
-
-/** VALIDATE step copy when the node is unknown (no geometry check ran). */
-const NOT_FOUND_STEP = planDispatch({ ...SORTIE, node_id: 'NOPE-404' }, undefined, 0).events.find(isStep)?.message ?? ''
-
-/** A real failure from the state machine: rtl_reserve_pct below the firmware minimum. */
-const LOW_RESERVE = 10
-const LOW_RESERVE_PLAN = planDispatch({ ...SORTIE, constraints: { ...SORTIE.constraints, rtl_reserve_pct: LOW_RESERVE } }, SORTIE_NODE, 0)
-const LOW_RESERVE_ERROR = LOW_RESERVE_PLAN.events.find((e) => e.type === 'error')
-
-/** A real pre-stream schema error, exactly as the Worker serialises it. */
-function schemaErrorExample(): ApiErrorBody {
-  const r = parseDispatchPayload({ ...SORTIE, est_duration_min: MAX_DURATION_MIN + 60 })
-  if (r.ok) throw new Error('manpage: schema example unexpectedly valid')
-  return { error: { code: r.code, message: r.message, path: r.path } }
-}
-
-const filterLabel = (id: string) => CATEGORY_FILTERS.find((f) => f.id === id)?.label ?? id
+const R = `${ORIGIN}/v1/reports`
+const ID = HERO.id
 
 /* ----------------------------------------------------------------------------
  * Sections
@@ -267,432 +179,279 @@ const filterLabel = (id: string) => CATEGORY_FILTERS.find((f) => f.id === id)?.l
 const SYNOPSIS: ManBlock[] = [
   code(
     [
-      `curl -s ${ORIGIN}/v1/nodes`,
-      `curl -s ${ORIGIN}/v1/nodes/${SORTIE.node_id}`,
-      `curl -sN -X POST ${ORIGIN}/v1/dispatch \\`,
-      `     -H 'content-type: application/json' -d @payload.json`,
-      `websocat ${WS_ORIGIN}/v1/stream`,
-      `wscat -c ${WS_ORIGIN}/v1/stream`,
+      `R=${R}  ID=${ID}`,
+      `curl -s $R | jq -r '.reports[].id'`,
+      `curl -s $R/$ID | jq .headline.sets.future`,
+      `curl -s $R/$ID/twin -o calibrated_twin.json`,
+      `curl -s $R/$ID/trace | jq -c .series.elbow_flex.real`,
+      `curl -s ${ORIGIN}/v1/cells | jq .cells`,
+      `curl -s -X POST ${ORIGIN}/v1/requests \\`,
+      `     -H 'content-type: application/json' -d @request.json`,
+      `curl ${ORIGIN}/docs`,
     ],
     'shell',
   ),
 ]
 
 const DESCRIPTION: ManBlock[] = [
-  p(VALUE_PROP),
   p(
-    `v0.1 is a live sandbox: the HTTP API is real and the commands on this page work from any terminal, but the hardware, settlement and attestation behind them are simulated. Every receipt carries "sandbox":${NBSP}true.`,
+    "meatspace.sh measures how far a robot's simulation twin is from the real robot, and publishes each result with the files to check it. A Twin Gap Report replays a public LeRobot dataset open-loop in the matching MuJoCo Menagerie twin, measures command-to-state lag and per-joint sim-vs-real error, fits a calibrated twin on some episodes, and reports the error on episodes the fit never saw, with 95% bootstrap intervals, next to a physics-free baseline.",
+  ),
+  p(
+    'Scope: actuator and proprioception only. The replay is open-loop, in joint space, with contacts disabled: it measures the actuator model, not task success, contact or vision, and it does not test new policies. Every candidate dataset in the pool is reported whatever its result; one that fails a unit or mapping check is listed with the reason and gets no numbers.',
+  ),
+  p(
+    `${MAN_VERSION}: reports, calibrated twin packages and request intake work today. A gap report on your own dataset is run by hand. Hosted twin trials and the MCP server are planned and their endpoints answer 501; a real SO-101 cell is a waitlist (nothing is purchased). The v0.1 dispatch marketplace was a simulation and lives under /v1/concept. Files carry sha256 hashes; nothing is signed yet.`,
   ),
 ]
 
-const ENDPOINTS: ManBlock[] = [
+const STATUS: ManBlock[] = [
+  p('Status words come from one source shared with the site and GET /v1. A capability wears exactly one:'),
+  table([['STATUS', 'CAPABILITY', 'SCOPE'], ...CAP_ROWS]),
+  dl(USED_STATUSES.map((s) => item(apiStatus(s), p(CAPABILITY_STATUS[s].meaning)))),
   p(
-    `Base URL ${ORIGIN}. There is no authentication in v0.1. /v1 responses are JSON unless noted and never cached (cache-control: no-store); every /v1 endpoint except /v1/waitlist allows cross-origin calls (access-control-allow-origin: *) and exposes the x-meatspace-task-id and retry-after headers. A known path called with the wrong method gets 405 ERR_METHOD_NOT_ALLOWED and an allow header; an unknown /v1 path gets 404 ERR_NOT_FOUND. /docs/, /install.sh/ and /healthz/ redirect (301) to the same path without the trailing slash, keeping the query string.`,
+    `Each endpoint in GET /v1 has its own status (live, planned or concept) and names the capability behind it, so a live intake can lead to an on_request report that a person runs. Cells list a status per lane: ${CELLS.map((c) => {
+      const w = cellWire(c)
+      return `${c.id} twin ${w.twin}, trials ${w.trials}, real ${w.real}`
+    }).join('; ')}.`,
+  ),
+]
+
+const fut = HERO.future
+const heroRows = [
+  ['MODEL', 'RMSE DEG [95% CI]'],
+  ['stock twin', estText(fut.rmse_deg.stock)],
+  ['aligned stock', estText(fut.rmse_deg.aligned_stock)],
+  ['lag-filter baseline', estText(fut.rmse_deg.baseline)],
+  ['calibrated twin', estText(fut.rmse_deg.calibrated)],
+  ['change vs stock', changeText(fut.vs_stock)],
+  ['change vs baseline', changeText(fut.vs_baseline)],
+]
+
+const REPORTS: ManBlock[] = [
+  p(
+    `${C.reported} reports, ${C.so101} SO-101 and ${C.so100} SO-100, from ${C.owners_reported} dataset owners; ${C.rejected} more were run and rejected with a reason, and ${C.not_run} candidates of the pool of ${C.candidates} failed the compatibility scan and were not run (lab/reports/candidates.json). Newest report: ${IDX.generated_at}. Every number below comes from those files; GET /v1/reports has them all.`,
   ),
   dl([
-    item('GET /v1', p('Endpoint index: name, version, sandbox flag, docs URL and the list of endpoints.'), pre(['-> 200: { name, version, sandbox, docs, endpoints[] }'], true)),
-    item('GET /v1/snapshot', p('Ticker stats and the whole live orderbook in one document.'), pre(['-> 200: NetworkSnapshot { seq, ts, stats, nodes[] }'], true)),
-    item('GET /v1/nodes', p('The live hardware orderbook.'), pre(['-> 200: { nodes: HardwareNode[], ts }'], true)),
     item(
-      'GET /v1/nodes/:id',
-      p(`One node by NODE_ID, e.g. /v1/nodes/${SORTIE.node_id}.`),
-      pre(['-> 200: HardwareNode', '-> 404: ApiErrorBody, ERR_NODE_NOT_FOUND'], true),
-    ),
-    item(
-      'GET /v1/stats',
-      p('Ticker stats: active nodes, available flight/actuation hours, 24h settled volume and network latency.'),
-      pre(['-> 200: { stats: NetworkStats, ts }'], true),
-    ),
-    item(
-      'GET /v1/stream',
-      p(`WebSocket. Pushes a snapshot frame on connect and every ~${TICK_S}${NBSP}s while open; see STREAM.`),
-      pre(['-> 101: text frames {"type":"snapshot","data":NetworkSnapshot}', '-> 426: ApiErrorBody, ERR_UPGRADE_REQUIRED'], true),
-    ),
-    item(
-      'POST /v1/dispatch',
+      'Method',
       p(
-        `Task a node. The body is a primitive payload (application/json, at most ${MAX_BODY_BYTES} bytes; see PRIMITIVES). Runs VALIDATE, ESCROW, COMPILE and ATTEST; see DISPATCH LIFECYCLE and RESPONSE FORMAT.`,
+        'Load the dataset at a pinned revision sha (tabular data only, per-file sha256). Detect units from the encoder-tick lattice and check the joint mapping against the twin, on the fit episodes. Replay every recorded command open-loop in the twin: q_sim[0] = x[0], then for each frame hold ctrl = a[t - d] for one frame (d = command delay; stock d = 0) and compare q_sim[t] with x[t] for t = 1..T-1. Contacts are disabled; the gripper is never scored.',
       ),
-      pre(['-> 200, 404, 409, 422, 429: application/x-ndjson DispatchEvents', '-> 400, 413, 429, 500: ApiErrorBody, before any stream'], true),
     ),
     item(
-      'POST /v1/waitlist',
+      'Hold-out sets',
       p(
-        `Join the API key or hardware operator queue. The body (application/json, at most ${WAITLIST_MAX_BYTES} bytes) has kind "api_keys" or "hardware", email, and optional handle (<= 64 chars) and detail (<= 500 chars); hardware sign-ups may add protocol (mavlink, ros2, vda5050, opcua) and fleet_size (1, 2-10, 11-50, 51-250, 250+). Requests with a foreign Origin header are refused. A valid sign-up always gets 200, repeats included.`,
+        'Future block: the last 20% of episodes by index, recorded after every fit episode (the harder test). Interleaved: round(0.2 n) episodes drawn at random from the rest, plus every episode beyond the 40-episode fit cap. Fit: what remains, at most 40. Units and the mapping are decided on the fit episodes only.',
       ),
-      pre(['-> 200: { ok: true, kind }', '-> 400, 403, 413, 429, 500: ApiErrorBody'], true),
     ),
-    item('GET /install.sh', p('Inert POSIX sh installer for meatspaced(8); see FILES.'), pre(['-> 200: text/plain'], true)),
     item(
-      'GET /docs',
-      p('This manual: plain text for curl and for ?format=txt, the HTML page for browsers (Accept: text/html).'),
-      pre(['-> 200: text/plain or text/html'], true),
+      'Models',
+      p(
+        'stock: the Menagerie MJCF as published. aligned stock: stock dynamics plus a fitted command delay. baseline: a physics-free lag filter per joint, y[t+1] = y[t] + alpha*(a[t-d] + b - y[t]), three parameters per joint, fitted on the same episodes. calibrated: fitted kp, kv and frictionloss per joint plus one command delay, armature fixed. "vs baseline" is what the MuJoCo physics adds over a black-box lag model.',
+      ),
     ),
-    item('GET /healthz', p('Liveness check.'), pre(['-> 200: text/plain "ok"'], true)),
+    item(
+      'Metrics',
+      p(
+        'Sim-vs-real joint RMSE in degrees, mean over the 5 arm joints, then over episodes. change = calibrated / reference - 1, paired by episode: negative is better. Every interval is a 95% percentile bootstrap over whole episodes (10,000 resamples, fixed seed). Also: command-to-state lag per joint (ms), static-frame RMSE (gravity sag), final-pose gap, workspace novelty and clipping.',
+      ),
+    ),
+    item('Verdict', p(IDX.verdict_rule)),
+    item(
+      'How to read one',
+      p(`${HERO.dataset} (${HERO.robot}, ${HERO.twin}), future block, ${fut.n_episodes} held-out episodes:`),
+      table(heroRows, DD),
+      p(`Verdict: ${fut.verdict}.`),
+      code([`$ curl -s $R/$ID | jq '.headline.sets.future.verdict'`]),
+    ),
+    item(
+      'Findings',
+      p(
+        `${SO101.robot} (${SO101.reports} datasets, ${SO101.owners} owners): the stock ${SO101.twin} twin answers commands within about one frame (median ${SO101.lag.median_frames_stock.min} to ${SO101.lag.median_frames_stock.max} frames, ${msRange(SO101.lag.stock_ms)} per joint) while the real arms lag ${msRange(SO101.lag.real_ms)}. On the future block the calibrated twin's error is ${lowerRange(SO101.future.vs_stock)} lower than stock and ${lowerRange(SO101.future.vs_baseline)} lower than the lag-filter baseline (interleaved: ${lowerRange(SO101.interleaved.vs_baseline)}).`,
+      ),
+      p(
+        `${SO100.robot} (${SO100.reports} datasets): the stock ${SO100.twin} twin is already close on dynamics. Future-block verdicts: ${Object.entries(SO100.future_gap_labels)
+          .map(([k, v]) => `${gapShort(k as GapLabel)} ${v}`)
+          .join(', ')}. Change vs the lag-filter baseline: ${pct0(SO100.future.vs_baseline.min)} to ${pct0(SO100.future.vs_baseline.max)}. No clear change vs stock on ${andList(labelled(SO100, 'future', 'no clear change'))}; worse than the baseline on ${andList(labelled(SO100, 'future', 'is WORSE than the physics-free lag filter'))}. Where the arm pushes on the world, a contact-free replay cannot model it and no actuator calibration removes that error; each report's limitations say where.`,
+      ),
+    ),
+    item(
+      'Limitations',
+      p(
+        'Open-loop, joint-space, contact-free: pushing on the world shows up as twin error. The servo is an ideal PD position actuator: it reproduces dynamic lag, not static sag, so the calibrated final-pose error is often larger than stock. Individual gains are often not identified; read the natural frequency and damping ratio. One dataset is one robot. About 10 held-out episodes per set on 50-episode datasets, so intervals are approximate. Each report lists its own limitations.',
+      ),
+    ),
+    item(
+      'Files',
+      pre([
+        'report.json           schema ' + REPORT_SCHEMA,
+        'report.strict.json    the same, NaN and Infinity written as null',
+        'report.md             human-readable, ends with the exact command',
+        'calibrated_twin.json  schema ' + PACKAGE_SCHEMA,
+        'trace.json            schema ' + TRACE_SCHEMA,
+        'heldout_episode.svg   the trace episode, plotted',
+        'rmse_by_joint*.svg    per-joint RMSE with intervals',
+      ]),
+    ),
+    item(
+      'trace.json',
+      p(
+        'One held-out episode per report, the future-block episode with the median stock error: per frame, for each arm joint, the command, the real state and the stock, baseline and calibrated replays, in degrees (2 decimals). The lab re-runs the report\'s replay to write it and checks the per-joint RMSE against report.json. A long episode is decimated by an integer factor, recorded as "decimation".',
+      ),
+    ),
+    item(
+      'Hashes',
+      p(
+        'report.json carries content_sha256 (everything except the volatile runtime block) and results_sha256 (results only, the same on any machine); the package and the trace carry their own sha256. content_sha256 verifies against /v1/reports/:id/files/report.json parsed as the lab wrote it (Python json, NaN allowed), not against the strict copy GET /v1/reports/:id serves for the two reports that hold NaN. report.md and the SVG plots are renderings: their sha256 (the ETag) is recorded at build, but report.json does not cover them. The build recomputes every one and refuses to publish a report that does not match. Hashed, not signed: Ed25519 signing is planned.',
+      ),
+    ),
   ]),
-  p('NetworkSnapshot (GET /v1/snapshot, every /v1/stream frame):'),
-  table([
-    ['FIELD', 'TYPE', 'MEANING'],
-    ['seq', 'number', 'monotonic; drop snapshots with seq <= last seen'],
-    ['ts', 'number', 'server epoch ms when produced: read time for GET and the first stream frame, tick or change time for later frames'],
-    ['stats', 'NetworkStats', 'ticker, below'],
-    ['nodes', 'HardwareNode[]', 'orderbook, below'],
-  ]),
-  p('NetworkStats (the ticker):'),
-  table([
-    ['FIELD', 'TYPE', 'MEANING'],
-    ['activeNodes', 'number', 'ACTIVE NODES'],
-    ['availableHrs', 'number', 'AVAILABLE FLIGHT/ACTUATION HRS, one decimal'],
-    ['settled24hCents', 'integer', '24H SETTLED VOLUME, USDC cents'],
-    ['latencyMs', 'number', 'NETWORK LATENCY, ms'],
-  ]),
-  p('HardwareNode (one row of the orderbook):'),
-  table([
-    ['FIELD', 'TYPE', 'MEANING'],
-    ['id', 'string', `NODE_ID, e.g. "${SORTIE_NODE.id}"`],
-    ['category', 'string', orList(CATEGORY_FILTERS.filter((f) => f.id !== 'ALL').map((f) => f.id))],
-    ['chassis', 'string', `e.g. "${SORTIE_NODE.chassis}"`],
-    ['iface', 'string', orList(quoted(INTERFACES))],
-    ['lat, lon', 'number', 'home position, signed WGS84 decimal degrees'],
-    ['sector', 'string', `site label, e.g. "${SORTIE_NODE.sector}"`],
-    ['sensors', 'string', `e.g. "${SORTIE_NODE.sensors}"`],
-    ['power', 'string', 'BATTERY or MAINS'],
-    ['charge', 'number', 'live, 0-100: BATTERY state of charge %, MAINS duty headroom %'],
-    ['status', 'string', 'DOCKED, IDLE, CHARGING or TASKED'],
-    ['rateCents', 'integer', 'spot rate, USDC cents per minute'],
-    ['geofenceKm', 'number', 'firmware geofence radius, km'],
-    ['drainPctPerMin', 'number', 'charge % used per tasked minute; 0 on MAINS'],
-    ['minAglM', 'number', 'AERIAL only: firmware AGL floor, m'],
-    ['envelopeMm', '[x, y, z]', 'MANIPULATOR only: work envelope, mm'],
-    ['minToleranceMm', 'number', 'MANIPULATOR only: best tolerance, mm'],
-    ['taskedUntil', 'number|null', 'epoch ms when the task lock releases'],
-    ['taskId', 'string|null', 'task holding the lock'],
-  ]),
-  p(
-    `Node status follows the simulated network. TASKED: a task lock is held for ${LOCK_S}${NBSP}s. When it releases, a BATTERY node goes to CHARGING, then DOCKED once nearly full; a fully charged DOCKED node now and then undocks to IDLE, and an IDLE node goes back to CHARGING before its charge drops below what its primitive's default est_duration_min and reserve need. So an IDLE or DOCKED node always passes the battery check with its default payload (see SAFETY ENVELOPES). A MAINS cell goes straight back to IDLE.`,
-  ),
 ]
 
-const PRIMITIVE_FIELDS: Readonly<Record<PrimitiveId, readonly (readonly string[])[]>> = {
-  AERIAL_ISR_SORTIE: [
-    ['geometry.type', 'string', '"Polygon"'],
-    ['geometry.coordinates', 'array', `1-8 linear rings of 4-256 [lon,${NBSP}lat] positions, each closed (first == last); every vertex inside the node geofence`],
-    ['constraints.agl_floor_m', 'number', '>= 0, <= 10000; >= the node minAglM'],
-    ['constraints.agl_ceiling_m', 'number', `>= 0, <= 10000; <= ${AGL_CEILING_LIMIT_M}; > agl_floor_m`],
-    ['constraints.rtl_reserve_pct', 'number', `>= 0, <= 100; >= ${MIN_RTL_RESERVE_PCT}`],
-    ['sensors', 'string[]', '1-16 items, 1-64 chars each'],
-  ],
-  SUBSTATION_THERMAL_SWEEP: [
-    ['site.type', 'string', '"Point"'],
-    ['site.coordinates', '[lon, lat]', 'inside the node geofence'],
-    ['assets', 'string[]', '1-64 items, 1-64 chars each; one inspection pose per asset'],
-    ['route', 'string', '1-64 chars'],
-    ['thresholds.delta_t_alarm_c', 'number', '> 0, <= 500; alarm delta, degrees C'],
-    ['thresholds.emissivity', 'number', '> 0, <= 1'],
-  ],
-  AUTOMATED_CNC_SYNTHESIS: [
-    ['site.type', 'string', '"Point"'],
-    ['site.coordinates', '[lon, lat]', 'within the cell geofence'],
-    ['artifact.format', 'string', '"STEP" or "GCODE"'],
-    ['artifact.uri', 'string', '1-512 chars'],
-    ['artifact.bbox_mm', '[x, y, z]', 'mm, each > 0, <= 10000; inside the cell work envelope'],
-    ['material', 'string', '1-64 chars'],
-    ['tolerance_mm', 'number', '> 0, <= 10; >= the cell minToleranceMm'],
-    ['qty', 'integer', '1-10000 parts'],
-  ],
+const TWIN_PACKAGES: ManBlock[] = [
+  p(
+    `calibrated_twin.json, schema ${PACKAGE_SCHEMA}, holds parameter overrides for the Menagerie MJCF (kp, kv, damping, armature, frictionloss per arm joint), the joint mapping from dataset degrees to MJCF radians, the command delay in frames, the joint ranges, the replay options (timestep, substeps, contacts off) and provenance (dataset sha, Menagerie sha, fit episodes). Its sha256 covers the canonical JSON. It models one robot: the unit that recorded the dataset, not the robot model; transfer to other units is not tested.`,
+  ),
+  p(`Apply it to the Menagerie twin at the pinned commit (${HERO.menagerie_sha.slice(0, 7)} for the published reports):`),
+  pre([
+    'actuator j  gainprm[0] = kp, biasprm[1] = -kp, biasprm[2] = -kv',
+    'joint j     damping, armature, frictionloss; range = jnt_range_rad',
+    'option      timestep; contacts disabled',
+    'commands    q = sign * deg2rad(x) + deg2rad(nominal_offset_deg),',
+    '            held for one frame, delayed by command_delay_frames',
+  ]),
+  p('Or write a calibrated MJCF with the lab tooling (lab/ in the repository):'),
+  code([
+    `$ curl -s $R/$ID/twin -o calibrated_twin.json`,
+    '$ python -m meatspace_lab export-twin \\',
+    '    --twin mujoco_menagerie/robotstudio_so101 \\',
+    '    --package calibrated_twin.json --out so101_calibrated.xml',
+  ]),
+]
+
+const opts = (xs: readonly string[]) => orList(quoted(xs))
+const O = REQUEST_OPTIONS
+
+const REQUESTS: ManBlock[] = [
+  p(
+    `POST /v1/requests takes one JSON object (at most ${REQUEST_MAX_BYTES} bytes) with kind and email, plus the fields of that kind. email is required and stored lowercase; free text is at most ${NOTES_MAX} characters (notes) unless noted; name, org and source are optional on every kind. Unknown fields are refused with ERR_SCHEMA and their $.path. A valid request always gets 202, repeats included, so the API never says whether an email is on file; a repeat of the same request returns the same request_id and replaces the answers stored for it. Nothing is charged. Requests from another site's origin are refused; curl sends none.`,
+  ),
+  dl([
+    item(
+      `kind "gap_report"  (${statusOf(REQUEST_STATUS.gap_report)})`,
+      p(
+        `A Twin Gap Report on your dataset, run by hand with the same pipeline. Required: dataset (Hub id, owner/name), robot (${opts(O.gap_report.robot)}). Optional: revision (sha, branch or tag), own_data (boolean), visibility (${opts(O.gap_report.visibility)}), simulator (${opts(O.gap_report.simulator)}), publish (boolean: you allow the report on meatspace.sh; default false). Units are checked when the data is downloaded: if the data cannot confirm them, the report says so and stops.`,
+      ),
+    ),
+    item(
+      `kind "pilot"  (${statusOf(REQUEST_STATUS.pilot)})`,
+      p(
+        `The real-robot pilot waitlist. There is no real cell yet. Required: robot (${opts(O.pilot.robot)}), simulator, policy_format (${opts(O.pilot.policy_format)}), checkpoint_ready (${opts(O.pilot.checkpoint_ready)}), budget (${opts(O.pilot.budget)}). Optional: deadline (YYYY-MM-DD), deadline_reason, serve, who_pays, org_type, trials (${opts(O.pilot.trials)}), sim_results (200 characters), agent (boolean), deposit.`,
+      ),
+    ),
+    item(
+      `kind "own_robot"  (${statusOf(REQUEST_STATUS.own_robot)})`,
+      p(
+        `Evaluation on robots you own: software for it is planned, not built. Required: robot (text, 120), robot_count (${opts(O.own_robot.robot_count)}), eval_cost (text, 200). Optional: evals_per_week, hours_per_week, pain[] and stack[] (arrays), budget (${opts(O.own_robot.budget)}), call (boolean).`,
+      ),
+    ),
+  ]),
+  p('The allowed values of every field are listed in shared/api.ts. Example request.json:'),
+  json({ kind: 'gap_report', dataset: 'owner/name', robot: 'so101', own_data: true, email: 'you@example.com' }),
+  p('Answer:'),
+  json({ ok: true, request_id: 'gr_0123456789abcdef', kind: 'gap_report', status: statusOf(REQUEST_STATUS.gap_report), run: 'manual', charged: false, message: '...' }),
+]
+
+/** What each endpoint answers. */
+const RETURNS: Readonly<Record<string, readonly string[]>> = {
+  'GET /v1': ['-> 200: { name, version, docs, reports, capabilities[],', '         endpoints[], concept }'],
+  'GET /v1/reports': ['-> 200: ReportIndex { generated_at, counts, reports[],', '         rejected[], not_run[], aggregates }'],
+  'GET /v1/reports/:id': ['-> 200: report.json (strict JSON)', '-> 404: ERR_REPORT_NOT_FOUND'],
+  'GET /v1/reports/:id/twin': ['-> 200: calibrated_twin.json', '-> 404: ERR_REPORT_NOT_FOUND, ERR_FILE_NOT_FOUND (rejected)'],
+  'GET /v1/reports/:id/trace': ['-> 200: trace.json', '-> 404: ERR_REPORT_NOT_FOUND, ERR_FILE_NOT_FOUND (rejected)'],
+  'GET /v1/reports/:id/files/:name': ['-> 200: the file, byte for byte; 304 on If-None-Match', '-> 404: ERR_REPORT_NOT_FOUND, ERR_FILE_NOT_FOUND'],
+  'GET /v1/cells': ['-> 200: { cells: Cell[] }'],
+  'GET /v1/cells/:id': ['-> 200: Cell { id, robot, task, lanes, twin, trials, real }', '-> 404: ERR_CELL_NOT_FOUND'],
+  'POST /v1/requests': ['-> 202: { ok, request_id, kind, status, charged: false }', '-> 400, 403, 413, 429, 500: ApiErrorBody'],
+  'POST /v1/trials': ['-> 501: ERR_NOT_IMPLEMENTED'],
+  'GET /v1/trials/:id': ['-> 501: ERR_NOT_IMPLEMENTED'],
+  'GET /v1/cells/:id/twin': ['-> 501: ERR_NOT_IMPLEMENTED'],
+  'GET /mcp': ['-> 501: ERR_NOT_IMPLEMENTED (any method)'],
+  'GET /docs': ['-> 200: text/plain or text/html'],
+  'GET /install.sh': ['-> 200: text/plain'],
+  'GET /healthz': ['-> 200: text/plain "ok"'],
 }
 
-function primitiveBlocks(id: PrimitiveId): ManBlock[] {
-  const def = PRIMITIVES[id]
-  const nodes = SEED_NODES.filter((n) => n.category === def.category).map((n) => n.id)
-  return [
-    dl([
-      item(
-        id,
-        pre([def.summary]),
-        p(
-          `Intent ${def.intent}, on ${def.category} nodes (${filterLabel(def.category)}): ${nodes.join(', ')}. Default node ${def.defaultNodeId}, est_duration_min ${num(def.estDurationMin)}.`,
-        ),
-      ),
-    ]),
-    table([['FIELD', 'TYPE', 'CONSTRAINT'], ...PRIMITIVE_FIELDS[id]]),
-    p(id === 'AERIAL_ISR_SORTIE' ? 'Default payload, the payload.json of SYNOPSIS:' : 'Default payload:'),
-    json(defaultPayload(id, SEED_NODES)),
-  ]
-}
+const endpointKey = (e: EndpointDef) => `${e.method} ${e.path}`
+const endpointItem = (e: EndpointDef) =>
+  item(endpointKey(e), p(`${e.status === 'PLANNED' ? 'Planned. ' : ''}${e.description}`), pre(RETURNS[endpointKey(e)] ?? [], true))
 
-const PRIMITIVES_SECTION: ManBlock[] = [
+const ENDPOINTS_SECTION: ManBlock[] = [
   p(
-    'A primitive binds one intent to one node category; tasking a node of another category fails VALIDATE with ERR_PRIMITIVE_UNSUPPORTED. Positions are GeoJSON [lon, lat] in WGS84 decimal degrees; units are minutes, USDC, km, metres AGL and mm. Strings must be non-empty; unknown fields are ignored and dropped.',
-  ),
-  p('Fields common to every primitive:'),
-  table([
-    ['FIELD', 'TYPE', 'CONSTRAINT'],
-    ['primitive', 'string', orList(PRIMITIVE_IDS)],
-    ['node_id', 'string', '^[A-Z0-9][A-Z0-9-]{1,31}$'],
-    ['intent', 'string', "the primitive's intent, below"],
-    ['est_duration_min', 'number', `>= ${MIN_DURATION_MIN}, <= ${MAX_DURATION_MIN}; billable minutes`],
-    ['max_spend_usdc', 'number', `> 0, <= ${MAX_SPEND_USDC}; caps the escrow`],
-    ['proof.attestation', 'string', '"TPM2_QUOTE"'],
-    ['proof.artifacts', 'string[]', '1-16 items, 1-64 chars each'],
-  ]),
-  ...PRIMITIVE_IDS.flatMap(primitiveBlocks),
-]
-
-const phaseTerm = (ph: DispatchPhase) => `${formatOffset(PHASE_OFFSETS_MS[ph]).padEnd(6)}${ph}`
-
-const LIFECYCLE: ManBlock[] = [
-  p(
-    `POST /v1/dispatch runs four phases against live node state. The outcome is decided atomically when the request arrives: a successful dispatch locks the node (TASKED) for ${LOCK_S}${NBSP}s for every client, and adds its escrow to the 24h settled volume, before the first event is written. Events are then released at fixed offsets from request start. Only VALIDATE and ESCROW can fail in v0.1; the first failure ends the stream.`,
+    `Base URL ${ORIGIN}. No authentication and no API keys. /v1 responses are JSON unless noted. Every GET under /v1 allows cross-origin calls (access-control-allow-origin: *); POST /v1/requests accepts this site's origin or none (curl). Responses are not cached (no-store), except report files: they carry ETag = the sha256 of their bytes, answer If-None-Match with 304, and cache for 5 minutes, or for a year with ?sha256=<that hash> (a hash that is not the published one answers 404 ERR_FILE_NOT_FOUND and names the current hash). A known path called with the wrong method gets 405 and an allow header; an unknown /v1 path gets 404 ERR_NOT_FOUND. HEAD works wherever GET does.`,
   ),
   dl([
-    item(
-      phaseTerm('VALIDATE'),
-      p(
-        `The node must be registered (ERR_NODE_NOT_FOUND, 404) and of the primitive's category (ERR_PRIMITIVE_UNSUPPORTED). The payload must then fit the node's firmware envelope: geofence, altitude, RTL reserve and battery for aircraft; geofence and battery for rovers; site, work envelope and tolerance for cells. See SAFETY ENVELOPES. PASS, or FAIL and an error event. On PASS, and on a geofence or work-envelope failure, the step message is the primitive's own check (the trace below shows the sortie's); any other failure names the check that failed instead, e.g. "${NOT_FOUND_STEP}" for an unknown node.`,
-      ),
-    ),
-    item(
-      phaseTerm('ESCROW'),
-      p(
-        `A node that is already TASKED rejects the bid (ERR_NODE_BUSY, 409), and so does a client that already holds ${LOCK_QUOTA} active task locks (ERR_LOCK_QUOTA, 429; see RATE LIMITS). Otherwise escrow is the node's spot rate x est_duration_min, rounded to the cent, and must not exceed max_spend_usdc (ERR_SPEND_CAP). The cap is compared exactly as sent: against the default sortie's ${formatUsd(SORTIE_PLAN.escrowCents)} escrow, ${UNDER_CAP} is rejected and ${num(SORTIE_PLAN.escrowCents / 100)} accepted. ACCEPTED, or REJECTED and an error event.`,
-      ),
-    ),
-    item(
-      phaseTerm('COMPILE'),
-      p("Compiles the intent into the native primitive of the node's interface (not of the payload's primitive). DISPATCHED."),
-      table(
-        [['INTERFACE', 'ARTIFACT'], ...INTERFACES.map((i) => [i, COMPILE_TARGETS[i].artifact])],
-        DD,
-      ),
-      p(
-        'compiled.count is AERIAL (exterior ring positions - 1) x 4 + 2: takeoff, four legs per edge, RTL. GROUND assets + 1: a pose per asset, then dock. MANIPULATOR qty x 3: roughing, finishing and a probe cycle per part.',
-      ),
-    ),
-    item(
-      phaseTerm('ATTEST'),
-      p('Returns the TPM-signed telemetry stream hash (see PROOF OF PHYSICAL WORK), then the receipt event at the same offset. SIGNED.'),
-    ),
+    ...ENDPOINTS.filter((e) => e.status !== 'CONCEPT').map(endpointItem),
+    item('GET /v1/concept, /v1/concept/*', p('The v0.1 simulation. See CONCEPT.'), pre(['-> 200: concept index with every concept path'], true)),
   ]),
-  p(`Reference trace, the default ${SORTIE.primitive} on ${SORTIE.node_id} (${SORTIE_ESCROW} escrow; the hash differs per task):`),
-  code(traceLines(), 'console'),
+  p(':id is the report directory name, owner__name (GET /v1/reports lists them). :name is one of report.json, report.strict.json, report.md, calibrated_twin.json, trace.json, heldout_episode.svg, rmse_by_joint_future.svg, rmse_by_joint.svg, whichever the report publishes. A rejected report publishes only report.json and report.md.'),
 ]
 
-const RESPONSE_FORMAT: ManBlock[] = [
-  p(
-    'A dispatch that reaches the state machine answers with content-type application/x-ndjson: one DispatchEvent JSON object per line, each written at its t_ms offset, and the stream closes after the last one. Success is four step events, then a receipt. Failure is the steps up to and including the failing one (status FAIL or REJECTED), then one error event. Use curl -N so each line prints as it arrives.',
-  ),
-  p('The HTTP status reflects the outcome even though the body streams:'),
-  code([
-    '200  dispatched; the stream ends with a receipt',
-    '404  ERR_NODE_NOT_FOUND at VALIDATE',
-    '409  ERR_NODE_BUSY at ESCROW',
-    '422  any other VALIDATE or ESCROW failure',
-    '429  ERR_LOCK_QUOTA at ESCROW, with a retry-after header',
-  ]),
-  p('A successful dispatch also returns its task id in the x-meatspace-task-id response header.'),
-  dl([
-    item(
-      'type "step"',
-      table(
-        [
-          ['FIELD', 'TYPE', 'MEANING'],
-          ['t_ms', 'number', `${orList(OFFSETS)}, ms from request start`],
-          ['phase', 'string', orList(PHASES)],
-          ['message', 'string', 'the console line'],
-          ['status', 'string', 'PASS, ACCEPTED, DISPATCHED or SIGNED; FAIL (VALIDATE) or REJECTED (ESCROW) on failure'],
-        ],
-        DD,
-      ),
-    ),
-    item(
-      'type "error"',
-      table(
-        [
-          ['FIELD', 'TYPE', 'MEANING'],
-          ['t_ms', 'number', 'offset of the failing phase'],
-          ['phase', 'string', 'the failing phase, or null'],
-          ['code', 'string', 'see ERRORS'],
-          ['message', 'string', 'what failed, with the values involved'],
-          ['http_status', 'number', 'same as the HTTP response status'],
-        ],
-        DD,
-      ),
-    ),
-    item(
-      'type "receipt"',
-      table(
-        [
-          ['FIELD', 'TYPE', 'MEANING'],
-          ['t_ms', 'number', String(PHASE_OFFSETS_MS.ATTEST)],
-          ['receipt', 'object', 'DispatchReceipt, below'],
-        ],
-        DD,
-      ),
-    ),
-  ]),
-  p('DispatchReceipt:'),
-  table([
-    ['FIELD', 'TYPE', 'MEANING'],
-    ['task_id', 'string', '"tsk_" + 16 hex digits'],
-    ['status', 'string', '"DISPATCHED"'],
-    ['primitive', 'string', "the payload's primitive"],
-    ['node_id', 'string', 'the tasked node'],
-    ['interface', 'string', `node interface, e.g. "${SORTIE_NODE.iface}"`],
-    ['escrow_usdc', 'string', `2 dp decimal, e.g. "${centsToDecimal(SORTIE_PLAN.escrowCents)}"`],
-    ['rate_usdc_per_min', 'string', `2 dp decimal, e.g. "${centsToDecimal(SORTIE_NODE.rateCents)}"`],
-    ['est_duration_min', 'number', 'from the payload'],
-    ['compiled.target', 'string', 'node interface'],
-    ['compiled.artifact', 'string', `COMPILE artifact, e.g. "${SORTIE_TARGET.artifact}"`],
-    ['compiled.count', 'number', `compiled primitives, e.g. ${SORTIE_PLAN.compiled?.count ?? 0}`],
-    ['telemetry_stream_hash', 'string', '"0x" + 64 lowercase hex digits (SHA-256)'],
-    ['attestation', 'string', '"TPM2_QUOTE"'],
-    ['issued_at', 'string', 'ISO-8601 UTC'],
-    ['sandbox', 'boolean', 'true: v0.1 is simulated'],
-  ]),
-  p('The default sortie (payload.json of SYNOPSIS), one line per event:'),
-  code([
-    `$ curl -sN -X POST ${ORIGIN}/v1/dispatch \\`,
-    `    -H 'content-type: application/json' -d @payload.json \\`,
-    `    | jq -c '[.t_ms, .type, .phase, .status // .code]'`,
-    ...JQ_SUMMARY,
-  ]),
-  p(
-    `With constraints.rtl_reserve_pct set to ${LOW_RESERVE} the same call gets HTTP ${LOW_RESERVE_PLAN.httpStatus}: the VALIDATE step with status FAIL, then this error event (pretty-printed here; one line on the wire):`,
-  ),
-  json(LOW_RESERVE_ERROR),
-  p(
-    `Requests rejected before the state machine runs get a plain JSON ApiErrorBody (content-type application/json), not NDJSON: 400${NBSP}ERR_INVALID_JSON, 400${NBSP}ERR_SCHEMA (error.path names the field), 413${NBSP}ERR_PAYLOAD_TOO_LARGE (body over ${MAX_BODY_BYTES} bytes), 429${NBSP}ERR_RATE_LIMITED and 500${NBSP}ERR_INTERNAL. For est_duration_min ${MAX_DURATION_MIN + 60}:`,
-  ),
-  json(schemaErrorExample()),
-]
-
-const ERROR_DOCS: Readonly<Record<ErrorCode, { http: number; phase: DispatchPhase | '-'; meaning: string }>> = {
-  ERR_INVALID_JSON: { http: 400, phase: '-', meaning: 'body is not valid JSON' },
-  ERR_SCHEMA: { http: 400, phase: '-', meaning: 'fails schema; see error.path' },
-  ERR_PAYLOAD_TOO_LARGE: { http: 413, phase: '-', meaning: `body too large (dispatch: ${MAX_BODY_BYTES} bytes, waitlist: ${WAITLIST_MAX_BYTES} bytes)` },
-  ERR_RATE_LIMITED: { http: 429, phase: '-', meaning: `per-client limit; retry-after${NBSP}${RETRY_AFTER_S}` },
-  ERR_NOT_FOUND: { http: 404, phase: '-', meaning: 'no such /v1 endpoint' },
-  ERR_METHOD_NOT_ALLOWED: { http: 405, phase: '-', meaning: 'wrong method for the path; see the allow header' },
-  ERR_FORBIDDEN: { http: 403, phase: '-', meaning: 'cross-origin waitlist sign-up' },
-  ERR_UPGRADE_REQUIRED: { http: 426, phase: '-', meaning: '/v1/stream without an Upgrade' },
-  ERR_NODE_NOT_FOUND: { http: 404, phase: 'VALIDATE', meaning: 'unknown node_id (also GET /v1/nodes/:id)' },
-  ERR_PRIMITIVE_UNSUPPORTED: { http: 422, phase: 'VALIDATE', meaning: 'node of the wrong category' },
-  ERR_GEOFENCE: { http: 422, phase: 'VALIDATE', meaning: 'outside the node geofence' },
-  ERR_ALTITUDE_ENVELOPE: {
-    http: 422,
-    phase: 'VALIDATE',
-    meaning: `agl_floor_m < node minAglM, agl_ceiling_m > ${AGL_CEILING_LIMIT_M} m, or ceiling <= floor`,
-  },
-  ERR_RTL_RESERVE: { http: 422, phase: 'VALIDATE', meaning: `rtl_reserve_pct below ${MIN_RTL_RESERVE_PCT}` },
-  ERR_INSUFFICIENT_CHARGE: { http: 422, phase: 'VALIDATE', meaning: 'charge < est. draw + reserve' },
-  ERR_WORK_ENVELOPE: { http: 422, phase: 'VALIDATE', meaning: 'bbox_mm exceeds cell envelope' },
-  ERR_TOLERANCE: { http: 422, phase: 'VALIDATE', meaning: 'tolerance_mm < cell minimum' },
-  ERR_SITE_MISMATCH: { http: 422, phase: 'VALIDATE', meaning: 'CNC site is not at the cell' },
-  ERR_NODE_BUSY: { http: 409, phase: 'ESCROW', meaning: 'node is TASKED (locked)' },
-  ERR_LOCK_QUOTA: { http: 429, phase: 'ESCROW', meaning: `client holds ${LOCK_QUOTA} task locks` },
-  ERR_SPEND_CAP: { http: 422, phase: 'ESCROW', meaning: 'escrow exceeds max_spend_usdc' },
-  ERR_INTERNAL: { http: 500, phase: '-', meaning: 'unexpected server error' },
+const ERROR_DOCS: Readonly<Record<ErrorCode, { http: number; meaning: string }>> = {
+  ERR_INVALID_JSON: { http: 400, meaning: 'body is not valid JSON' },
+  ERR_SCHEMA: { http: 400, meaning: 'a field is missing or invalid; see error.path' },
+  ERR_PAYLOAD_TOO_LARGE: { http: 413, meaning: 'body over the limit' },
+  ERR_RATE_LIMITED: { http: 429, meaning: `per-client limit; retry-after${NBSP}${RETRY_AFTER_S}` },
+  ERR_NOT_FOUND: { http: 404, meaning: 'no such /v1 endpoint' },
+  ERR_METHOD_NOT_ALLOWED: { http: 405, meaning: 'wrong method for the path; see the allow header' },
+  ERR_FORBIDDEN: { http: 403, meaning: "POST from another site's origin" },
+  ERR_REPORT_NOT_FOUND: { http: 404, meaning: 'no report with that id' },
+  ERR_FILE_NOT_FOUND: { http: 404, meaning: 'the report publishes no such file (rejected reports have no twin or trace)' },
+  ERR_CELL_NOT_FOUND: { http: 404, meaning: 'no cell with that id' },
+  ERR_NOT_IMPLEMENTED: { http: 501, meaning: 'planned endpoint; the message says what exists and where to sign up' },
+  ERR_UPGRADE_REQUIRED: { http: 426, meaning: 'concept: stream without an Upgrade' },
+  ERR_NODE_NOT_FOUND: { http: 404, meaning: 'concept: unknown machine id' },
+  ERR_PRIMITIVE_UNSUPPORTED: { http: 422, meaning: 'concept: machine of the wrong category' },
+  ERR_GEOFENCE: { http: 422, meaning: 'concept: outside the simulated geofence' },
+  ERR_ALTITUDE_ENVELOPE: { http: 422, meaning: 'concept: altitude band outside the simulated limits' },
+  ERR_RTL_RESERVE: { http: 422, meaning: 'concept: return reserve below the minimum' },
+  ERR_INSUFFICIENT_CHARGE: { http: 422, meaning: 'concept: simulated charge too low' },
+  ERR_WORK_ENVELOPE: { http: 422, meaning: 'concept: part larger than the cell envelope' },
+  ERR_TOLERANCE: { http: 422, meaning: 'concept: tolerance tighter than the cell minimum' },
+  ERR_SITE_MISMATCH: { http: 422, meaning: 'concept: site is not at the cell' },
+  ERR_NODE_BUSY: { http: 409, meaning: 'concept: machine is locked by another task' },
+  ERR_LOCK_QUOTA: { http: 429, meaning: `concept: client holds ${LOCK_QUOTA} task locks` },
+  ERR_SPEND_CAP: { http: 422, meaning: 'concept: price above the request spend cap' },
+  ERR_INTERNAL: { http: 500, meaning: 'unexpected server error' },
 }
 
 const ERRORS: ManBlock[] = [
-  p(
-    'Every error has a stable code. Codes with a phase arrive as the error event of a dispatch stream, whose HTTP status matches; the rest are ApiErrorBody JSON responses, { error: { code, message, path? } }.',
-  ),
-  table([['CODE', 'HTTP', 'PHASE', 'MEANING'], ...Object.entries(ERROR_DOCS).map(([c, d]) => [c, String(d.http), d.phase, d.meaning])]),
-]
-
-/** Worked battery check for the default sortie, using the same formula as planDispatch. */
-function batteryExample(): string {
-  const draw = SORTIE_NODE.drainPctPerMin * SORTIE.est_duration_min
-  const reserve = SORTIE.constraints.rtl_reserve_pct
-  return `${SORTIE_NODE.id}, default sortie: ${num(SORTIE_NODE.drainPctPerMin)} x ${num(SORTIE.est_duration_min)} + ${num(reserve)} = ${num(draw + reserve)}% required. The node starts ${SORTIE_NODE.status} at ${num(SORTIE_NODE.charge)}%, and an IDLE or DOCKED node never holds less than its default payload needs (see Node status under ENDPOINTS).`
-}
-
-const dash = (v: string | undefined) => v ?? '-'
-
-const SAFETY: ManBlock[] = [
-  p(
-    "meatspaced(8) is designed to enforce each node's firmware envelope at the edge, before motor spin-up. Until it ships, the clearinghouse enforces the same envelopes at VALIDATE, against each node's limits (below) and its live, simulated charge.",
-  ),
-  dl([
-    item(
-      'Geofence',
-      p(
-        "Great-circle distance from the node's home position must not exceed its geofenceKm. AERIAL_ISR_SORTIE checks every polygon vertex and SUBSTATION_THERMAL_SWEEP checks site; both fail with ERR_GEOFENCE. AUTOMATED_CNC_SYNTHESIS checks site against the cell and fails with ERR_SITE_MISMATCH.",
-      ),
-    ),
-    item(
-      'AGL floor and ceiling',
-      p(
-        `AERIAL only. agl_floor_m must be at least the node's minAglM, agl_ceiling_m at most ${AGL_CEILING_LIMIT_M} m, and the ceiling above the floor; otherwise ERR_ALTITUDE_ENVELOPE.`,
-      ),
-    ),
-    item('RTL reserve', p(`AERIAL only. rtl_reserve_pct must be at least ${MIN_RTL_RESERVE_PCT}; otherwise ERR_RTL_RESERVE.`)),
-    item('Ground reserve', p(`GROUND only. Rovers keep a fixed ${GROUND_RESERVE_PCT}% return-to-dock reserve.`)),
-    item(
-      'Battery draw',
-      p(
-        `BATTERY nodes only; MAINS cells skip it. The task needs drainPctPerMin x est_duration_min of charge on top of the reserve (rtl_reserve_pct for AERIAL, ${GROUND_RESERVE_PCT} for GROUND). Live charge below that sum fails with ERR_INSUFFICIENT_CHARGE.`,
-      ),
-      p(batteryExample()),
-    ),
-    item('Work envelope', p("MANIPULATOR only. Each axis of artifact.bbox_mm (x, y, z) must fit the cell's envelopeMm; otherwise ERR_WORK_ENVELOPE.")),
-    item('Tolerance', p("MANIPULATOR only. tolerance_mm must not be tighter (smaller) than the cell's minToleranceMm; otherwise ERR_TOLERANCE.")),
-  ]),
-  p('Node limits. These are static; charge and status are live, read them from GET /v1/nodes:'),
-  table([
-    ['NODE_ID', 'GEOFENCE', 'MIN_AGL', 'DRAW', 'ENVELOPE_MM', 'TOL_MM'],
-    ...SEED_NODES.map((n) => [
-      n.id,
-      `${n.geofenceKm.toFixed(1)} km`,
-      n.minAglM === undefined ? '-' : `${n.minAglM} m`,
-      n.power === 'BATTERY' ? `${n.drainPctPerMin.toFixed(1)} %/min` : 'mains',
-      dash(n.envelopeMm?.join('x')),
-      dash(n.minToleranceMm === undefined ? undefined : num(n.minToleranceMm)),
-    ]),
-  ]),
-]
-
-const PROOF: ManBlock[] = [
-  p(
-    'Design goal: hardware TPM cryptographic signatures attached to raw MCAP/ROS bags, RTK-GPS flight logs, and sensor frames to guarantee zero synthetic spoofing.',
-  ),
-  p(
-    'Each payload declares its proof: proof.attestation is "TPM2_QUOTE", a TPM 2.0 quote signed by the node, and proof.artifacts names the evidence the node attaches to the run. The console defaults:',
-  ),
-  table([['PRIMITIVE', 'ARTIFACTS'], ...PRIMITIVE_IDS.map((id) => [id, defaultPayload(id, SEED_NODES).proof.artifacts.join(', ')])]),
-  p(
-    `At ATTEST the receipt carries telemetry_stream_hash: "0x" + the lowercase hex SHA-256 of the UTF-8 canonical JSON of the object {issued_at, node_id, payload, task_id}. issued_at, node_id and task_id are the receipt's; payload is the request body after validation, so unknown fields are dropped. Canonical JSON sorts object keys at every level, keeps array order, has no whitespace and writes strings and numbers as JSON.stringify does (RFC 8785). The ATTEST step prints the hash shortened, e.g. ${SAMPLE_HASH}, and receipt.attestation is "TPM2_QUOTE".`,
-  ),
-  p(
-    `v0.1 sandbox: no hardware runs, so there is no telemetry stream, TPM quote or artifact yet. The hash is computed by the clearinghouse over the request alone and every receipt carries "sandbox":${NBSP}true; treat it as a task fingerprint, not as proof of work.`,
-  ),
+  p('Every error has a stable code, in an ApiErrorBody: { error: { code, message, path? } }. Codes marked concept come only from the v0.1 simulation; in its dispatch stream they arrive as the final error event.'),
+  table([['CODE', 'HTTP', 'MEANING'], ...Object.entries(ERROR_DOCS).map(([codeName, d]) => [codeName, String(d.http), d.meaning])]),
+  p('A planned endpoint, for example:'),
+  code([`$ curl -s -X POST ${ORIGIN}/v1/trials | jq -r .error.code`, 'ERR_NOT_IMPLEMENTED']),
 ]
 
 const RATE_LIMITS: ManBlock[] = [
   table([
     ['ENDPOINT', 'LIMIT'],
-    ['POST /v1/dispatch', `${DISPATCH_LIMIT} requests per minute per client`],
-    ['POST /v1/waitlist', `${String(WAITLIST_LIMIT).padStart(String(DISPATCH_LIMIT).length, NBSP)} requests per minute per client`],
+    ['POST /v1/requests', `${REQUESTS_PER_MIN} per minute per client, shared with /v1/waitlist`],
+    ['POST /v1/concept/dispatch', `${LIMITS.dispatchPerMin} per minute per client; ${LOCK_QUOTA} simulated task locks`],
   ]),
   p(
-    `A client is an IPv4 address or an IPv6 /64: every address in one /64 shares its limits. Every request counts, valid or not. Over the limit a request is refused before its body is read: HTTP 429, ERR_RATE_LIMITED and a retry-after:${NBSP}${RETRY_AFTER_S} header. Counting is approximate.`,
-  ),
-  p(
-    `A client may also hold at most ${LOCK_QUOTA} task locks at once. A dispatch beyond that is rejected at ESCROW: HTTP 429 with an NDJSON stream ending in ERR_LOCK_QUOTA, and a retry-after header with the seconds until the client's earliest lock releases.`,
+    `A client is an IPv4 address or an IPv6 /64: every address in one /64 shares its limits. Every request counts, valid or not. Over the limit: HTTP 429, ERR_RATE_LIMITED and retry-after:${NBSP}${RETRY_AFTER_S}. Counting is approximate. GET endpoints are not limited; report files are static and cached.`,
   ),
 ]
 
-const STREAM: ManBlock[] = [
+const CONCEPT: ManBlock[] = [
   p(
-    `GET /v1/stream upgrades to a WebSocket. The server sends a snapshot text frame on connect, then every ~${TICK_S}${NBSP}s while the socket is open, and at once after any state change (a dispatch, a task lock releasing):`,
+    `The v0.1 site described a dispatch marketplace for idle industrial machines. It was a simulation end to end: no machine, no operator, no money. It is kept, labeled, at ${ORIGIN}/concept. Its API answers under /v1/concept (GET /v1/concept lists every path: snapshot, stats, stream, dispatch and a fictional orderbook). The v0.1 paths without /concept answer 308 Permanent Redirect to the same path under /v1/concept, method and body kept, so old scripts keep working with curl -L: GET /v1/snapshot, GET /v1/stats, GET /v1/stream (WebSocket clients must use the new path) and POST /v1/dispatch. POST /v1/waitlist still answers in place.`,
   ),
-  code(['{"type":"snapshot","data":{"seq":N,"ts":N,"stats":{...},"nodes":[...]}}']),
   p(
-    'Each frame is a full NetworkSnapshot, not a diff. seq is monotonic, across server restarts too: drop any frame whose seq is not greater than the last one applied. ts is when the server produced the frame: the connect time for the first frame, the tick or state-change time for the rest. Send the text frame "ping" (exactly, no newline) and the server answers "pong"; other client frames are ignored. A request without Upgrade: websocket gets 426 ERR_UPGRADE_REQUIRED.',
+    'Every concept response carries the header x-meatspace-status: concept, and every dispatch receipt "sandbox": true. Nothing moves and nothing is charged. A concept dispatch ends with a sha256 fingerprint of your request, which says nothing about execution. Its prices and phase names are v0.1 copy, not a product.',
   ),
-  code([`$ websocat ${WS_ORIGIN}/v1/stream | jq -c '.data.stats'`]),
+  code([`$ curl -s ${ORIGIN}/v1/concept | jq -r '.endpoints[].path'`]),
 ]
 
 const FILES: ManBlock[] = [
@@ -700,42 +459,39 @@ const FILES: ManBlock[] = [
     item(
       '/install.sh',
       p(
-        'Inert POSIX sh installer for meatspaced(8), the edge daemon that will register ROS 2 / MAVLink hardware with the clearinghouse. It takes --protocol=mavlink|ros2|vda5050|opcua and --rtk-verify, prints what it detected and the plan it would run, and exits 0 (2 on an unknown option or protocol). It writes nothing, downloads nothing and starts nothing: meatspaced is not released yet.',
+        "Inert POSIX sh script for meatspaced(8), a planned local evaluation runner and safety supervisor for robots you own. It prints what it detected and the plan it would run, and exits 0 (2 on an unknown option). It writes nothing, downloads nothing and starts nothing: meatspaced is not released. v0.1 flags are accepted and ignored.",
+      ),
+    ),
+    item(
+      `${ORIGIN}/data/reports/`,
+      p(
+        'The published report files, the same bytes GET /v1/reports/:id/files/:name serves, and index.json (the ReportIndex of GET /v1/reports). These are static paths: a name that is not published answers the site\'s HTML page with 200, not an error. Scripts should use /v1/reports/:id/files/:name, which answers 404 ERR_FILE_NOT_FOUND.',
       ),
     ),
   ]),
-  code([
-    `$ curl -sSL ${ORIGIN}/install.sh | sh -s -- --help`,
-    '# Register idle ROS 2 / MAVLink hardware node to the clearinghouse',
-    `$ curl -sSL ${ORIGIN}/install.sh \\`,
-    '    | sudo sh -s -- --protocol=mavlink --rtk-verify',
-  ]),
+  code([`$ curl -sSL ${ORIGIN}/install.sh | sh`]),
 ]
 
 const BUGS: ManBlock[] = [
   p(
-    `${MAN_VERSION}: everything physical is simulated. No machine moves, no USDC settles, the ticker is synthetic, and telemetry hashes and attestations come from the clearinghouse instead of node hardware.`,
-  ),
-  p(
-    `There are no API keys yet: every endpoint is anonymous and limited per client network only (an IPv4 address or an IPv6 /64), so clients behind one NAT or in one /64 share rate limits and a lock quota. Request a key with [${NBSP}API${NBSP}KEYS${NBSP}] at ${ORIGIN}/#api-keys or POST /v1/waitlist with kind "api_keys".`,
+    'Reports come from runs started by hand, not from the API, and only SO-100 and SO-101 twins exist. There are no API keys: limits are per client network, so clients behind one NAT share them. Files are hashed, not signed. Contacts are off in the replay, so any push against the world shows up as twin error. The lab writes report.json with Python json, which can hold NaN and Infinity; GET /v1/reports/:id and report.strict.json carry null instead.',
   ),
 ]
 
-const SEE_ALSO: ManBlock[] = [pre(['meatspaced(8), curl(1), jq(1), websocat(1)', REPO])]
+const SEE_ALSO: ManBlock[] = [pre(['curl(1), jq(1), meatspaced(8)', MENAGERIE, 'https://github.com/huggingface/lerobot', REPO_URL])]
 
 const PAGE: readonly { title: string; blocks: readonly ManBlock[] }[] = [
-  { title: 'NAME', blocks: [pre(['meatspace - dispatch tasks to physical hardware'])] },
+  { title: 'NAME', blocks: [pre(['meatspace - sim-to-real gap reports for robot twins'])] },
   { title: 'SYNOPSIS', blocks: SYNOPSIS },
   { title: 'DESCRIPTION', blocks: DESCRIPTION },
-  { title: 'ENDPOINTS', blocks: ENDPOINTS },
-  { title: 'PRIMITIVES', blocks: PRIMITIVES_SECTION },
-  { title: 'DISPATCH LIFECYCLE', blocks: LIFECYCLE },
-  { title: 'RESPONSE FORMAT', blocks: RESPONSE_FORMAT },
+  { title: 'STATUS', blocks: STATUS },
+  { title: 'REPORTS', blocks: REPORTS },
+  { title: 'TWIN PACKAGES', blocks: TWIN_PACKAGES },
+  { title: 'REQUESTS', blocks: REQUESTS },
+  { title: 'ENDPOINTS', blocks: ENDPOINTS_SECTION },
   { title: 'ERRORS', blocks: ERRORS },
-  { title: 'SAFETY ENVELOPES', blocks: SAFETY },
-  { title: 'PROOF OF PHYSICAL WORK', blocks: PROOF },
   { title: 'RATE LIMITS', blocks: RATE_LIMITS },
-  { title: 'STREAM', blocks: STREAM },
+  { title: 'CONCEPT', blocks: CONCEPT },
   { title: 'FILES', blocks: FILES },
   { title: 'BUGS', blocks: BUGS },
   { title: 'SEE ALSO', blocks: SEE_ALSO },
@@ -784,7 +540,7 @@ export function manProse(text: string, depth: number): string[] {
   return wrap(text, BODY - depth * MAN_INDENT)
 }
 
-/** "SAFETY ENVELOPES" -> "safety-envelopes" (the /docs#anchor). */
+/** "RATE LIMITS" -> "rate-limits" (the /docs#anchor). */
 export function manSlug(title: string): string {
   return title
     .toLowerCase()

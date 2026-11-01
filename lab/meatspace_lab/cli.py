@@ -1,4 +1,4 @@
-"""Command line: python -m meatspace_lab {report,scan,export-twin,render,index,verify}."""
+"""Command line: python -m meatspace_lab {report,scan,export-twin,export-trace,render,index,verify}."""
 
 from __future__ import annotations
 
@@ -128,6 +128,29 @@ def _cmd_verify(a: argparse.Namespace) -> int:
     return 0 if not diffs else 1
 
 
+def _cmd_trace(a: argparse.Namespace) -> int:
+    from .trace import TraceError, export_trace, write_trace
+
+    fail = 0
+    for d in a.dirs:
+        rep = json.loads((Path(d) / "report.json").read_text())
+        if rep.get("status") != "ok":
+            print(f"{d}: skipped (status {rep.get('status')}: no replay to export)")
+            continue
+        twin = Path(a.menagerie) / rep["twin"]["id"]
+        try:
+            tr = export_trace(d, twin, cache_dir=a.cache, local=a.local, nthread=a.threads, max_bytes=a.max_bytes)
+        except TraceError as e:
+            print(f"{d}: FAILED: {e}", file=sys.stderr)
+            fail = 1
+            continue
+        out = write_trace(tr, d)
+        print(f"{out}: episode {tr['episode']['index']} ({tr['episode']['frames']} frames, decimation "
+              f"{tr['decimation']}), {out.stat().st_size} bytes; RMSE matches report.json within "
+              f"{tr['check']['max_abs_diff_deg']} deg")
+    return fail
+
+
 def _cmd_index(a: argparse.Namespace) -> int:
     from .index import write_index
 
@@ -184,6 +207,15 @@ def main(argv: list[str] | None = None) -> int:
     v.add_argument("--strict", action="store_true", help="also fail on optimizer-path diagnostics (evaluation counts, "
                    "screen losses of non-selected delays), which may differ across BLAS kernels")
     v.set_defaults(fn=_cmd_verify)
+    t = sub.add_parser("export-trace", help="write <report dir>/trace.json: per-frame command, real, stock, baseline and "
+                       "calibrated trajectories of the report's representative future-block episode (re-runs its replay)")
+    t.add_argument("dirs", nargs="+", help="report directories, e.g. reports/*/ (unsupported reports are skipped)")
+    t.add_argument("--menagerie", default=".cache/menagerie", help="dir holding the pinned Menagerie twins")
+    t.add_argument("--cache", default=".cache/hf", help="Hub download cache (the report's dataset at its sha)")
+    t.add_argument("--local", default=None, help="a local copy of the dataset instead of the Hub cache (one dir only)")
+    t.add_argument("--max-bytes", type=int, default=150_000, help="decimate by an integer factor above this size")
+    t.add_argument("--threads", type=int, default=2)
+    t.set_defaults(fn=_cmd_trace)
     i = sub.add_parser("index", help="(re)write reports/INDEX.md from all report.json files")
     i.add_argument("--reports", default="reports")
     i.set_defaults(fn=_cmd_index)
