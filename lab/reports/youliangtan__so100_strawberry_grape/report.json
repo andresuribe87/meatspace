@@ -1,0 +1,644 @@
+{
+ "schema": "meatspace.twin-gap-report/v2",
+ "dataset": {
+  "id": "youliangtan/so100_strawberry_grape",
+  "revision_requested": "824bec87a1befd17bf4b0985f41cc0a00191b2db",
+  "revision_sha": "824bec87a1befd17bf4b0985f41cc0a00191b2db",
+  "codebase_version": "v2.1",
+  "robot_type": "so100",
+  "fps": 30.0,
+  "episodes_in_repo": 40,
+  "max_episodes_loaded": 200,
+  "episodes_total": 40,
+  "episodes_dropped": [],
+  "frames_used": 32628,
+  "files": [
+   {
+    "path": "data/chunk-000/episode_000000.parquet",
+    "sha256": "4b914fa31382ad48e89a3af890d59c6dec1e0e0fef88cd717c5cc809602e3dfc",
+    "bytes": 61779
+   },
+   {
+    "path": "data/chunk-000/episode_000001.parquet",
+    "sha256": "9d8a1ef7488369457ec483a20eebf202e7351ffbe9fa67701a2ab4d6a1df85e1",
+    "bytes": 56036
+   },
+   {
+    "path": "data/chunk-000/episode_000002.parquet",
+    "sha256": "44989c8d692782a87d3a17eaff640c9353b052baa7329716cae187e0fc6369ce",
+    "bytes": 51008
+   },
+   {
+    "path": "data/chunk-000/episode_000003.parquet",
+    "sha256": "c1e410ec2cb828280949d7514cdd7daacf1ddd9b8bdd8fb1eb76212cc0cf4bda",
+    "bytes": 45074
+   },
+   {
+    "path": "data/chunk-000/episode_000004.parquet",
+    "sha256": "2c7b1b450a67eea871d248193b7c98ed8fc0d9eee22a82925db9e2445cc7a3a3",
+    "bytes": 51784
+   },
+   {
+    "path": "data/chunk-000/episode_000005.parquet",
+    "sha256": "488edf208584cd7991b284cb42da00d415b1f9861b1abd29a40980e7bacfdb34",
+    "bytes": 45638
+   },
+   {
+    "path": "data/chunk-000/episode_000006.parquet",
+    "sha256": "c6c0abcbffea69da0c44e4d129ce20dbcb27f6df297c6064654649a7f14203c1",
+    "bytes": 39335
+   },
+   {
+    "path": "data/chunk-000/episode_000007.parquet",
+    "sha256": "18cac2a5d7b02a9fd3bf9429893bc0b4f223a1ad61ead2d518ac0f6fcd833118",
+    "bytes": 51834
+   },
+   {
+    "path": "data/chunk-000/episode_000008.parquet",
+    "sha256": "f945e3abacfcdad34431690c761669cae35e1eaf40cdf53119c8013edec81cd1",
+    "bytes": 43013
+   },
+   {
+    "path": "data/chunk-000/episode_000009.parquet",
+    "sha256": "3480ff60c1fbf19cd70536d823cc71ff4cb8e1635cc8c1a9643dc827fcf389eb",
+    "bytes": 37809
+   },
+   {
+    "path": "data/chunk-000/episode_000010.parquet",
+    "sha256": "424d238a8ee600f0457bfe3f599f622022785b2e151f5188a98474efcacb106c",
+    "bytes": 54368
+   },
+   {
+    "path": "data/chunk-000/episode_000011.parquet",
+    "sha256": "1da495ce65266d0d1d14484867eb8fb2d553c635f445fb957861ed237106fc06",
+    "bytes": 52699
+   },
+   {
+    "path": "data/chunk-000/episode_000012.parquet",
+    "sha256": "0caceb5d622c4acee04f04b4d5b22992f1a1bda503fe1a8f46d7bbd33d97ed16",
+    "bytes": 48082
+   },
+   {
+    "path": "data/chunk-000/episode_000013.parquet",
+    "sha256": "d8849f3a39642fe951b22c407870fd27edd1798671f3d3886975c703b0fd0989",
+    "bytes": 44950
+   },
+   {
+    "path": "data/chunk-000/episode_000014.parquet",
+    "sha256": "acf26adc5f8254bbe8f2e7afc6bfeabcd88330f1edebd7866099d0279850daf5",
+    "bytes": 41745
+   },
+   {
+    "path": "data/chunk-000/episode_000015.parquet",
+    "sha256": "6f150aa58769a9522015e48b8389d84380a3689eed1cfb8e90bcf4dfaaa35984",
+    "bytes": 43104
+   },
+   {
+    "path": "data/chunk-000/episode_000016.parquet",
+    "sha256": "f8c612dd800b9277a4b6f0ef19b6114067719ebddaad8ebd7e5d63b8b19cf9e8",
+    "bytes": 46147
+   },
+   {
+    "path": "data/chunk-000/episode_000017.parquet",
+    "sha256": "f9c3ab7c0816e023b0c9599e9bccf6712d4b826843ddf2f7d7310e80da0c2cc3",
+    "bytes": 54582
+   },
+   {
+    "path": "data/chunk-000/episode_000018.parquet",
+    "sha256": "babb911edaa6701fcef10aaa1a01045b9c2149d4c2100cff3ec69cc657ce2690",
+    "bytes": 39317
+   },
+   {
+    "path": "data/chunk-000/episode_000019.parquet",
+    "sha256": "8c91facbc8c500d756ed64d152c3df9dbc2cae69e69a3accb98bd551fa7bc18b",
+    "bytes": 43747
+   },
+   {
+    "path": "data/chunk-000/episode_000020.parquet",
+    "sha256": "6f8454e7b674c71f9138f31472cde3e5f8b03d743ef3c16031f16d4f0f7feb13",
+    "bytes": 42046
+   },
+   {
+    "path": "data/chunk-000/episode_000021.parquet",
+    "sha256": "977d748308224cbdafda7c6771500be71f9766821acbd0dc9fccd4c9cd04aa6c",
+    "bytes": 31154
+   },
+   {
+    "path": "data/chunk-000/episode_000022.parquet",
+    "sha256": "2e2e7e351ad8b5a5264eeddf2edf6b84663635958f913006224db55b161a1205",
+    "bytes": 41805
+   },
+   {
+    "path": "data/chunk-000/episode_000023.parquet",
+    "sha256": "97cdca41fac68ab813ef8c211ad0470486479851d210430294867e5bce42a1c3",
+    "bytes": 40209
+   },
+   {
+    "path": "data/chunk-000/episode_000024.parquet",
+    "sha256": "7fe6d9dedac6db6b435e7ece896e5343ce1c24da6f844f07fff5cd19a68d71c1",
+    "bytes": 34225
+   },
+   {
+    "path": "data/chunk-000/episode_000025.parquet",
+    "sha256": "b010946ef90b79060eaad270c89644ba383b87d858584d362183147e605392ee",
+    "bytes": 37079
+   },
+   {
+    "path": "data/chunk-000/episode_000026.parquet",
+    "sha256": "69227849a6fbad06689e3feda186eb32e668cb14b4dbe11348833c741cf96db6",
+    "bytes": 39926
+   },
+   {
+    "path": "data/chunk-000/episode_000027.parquet",
+    "sha256": "b2af63d7c7b69631df3f1c82fbbc6a2901c7ce4a1dd418e84267e50f8f27b61e",
+    "bytes": 41750
+   },
+   {
+    "path": "data/chunk-000/episode_000028.parquet",
+    "sha256": "36049164ae1ca1a0baf66ff98585219463a36cf3a5f338c4ce24ab3111e06549",
+    "bytes": 31143
+   },
+   {
+    "path": "data/chunk-000/episode_000029.parquet",
+    "sha256": "430d4b95c855bf21ac5b86f262564fd58103429c0c089804ea1ea7042c8c0734",
+    "bytes": 34781
+   },
+   {
+    "path": "data/chunk-000/episode_000030.parquet",
+    "sha256": "e143c5b07a9e8522c557027a1dcfbd14c9b6ea86132940206617d6071cd6c8b8",
+    "bytes": 25582
+   },
+   {
+    "path": "data/chunk-000/episode_000031.parquet",
+    "sha256": "d757203d8a54db154725263bde0897ddc804fb9138dd8a260c7902fc15e1b025",
+    "bytes": 25654
+   },
+   {
+    "path": "data/chunk-000/episode_000032.parquet",
+    "sha256": "1cc2b3c031bde630520f131fe0834226b69c676fae6d44aab5260eed478dc251",
+    "bytes": 32113
+   },
+   {
+    "path": "data/chunk-000/episode_000033.parquet",
+    "sha256": "94e2afbfb5b0e248f08d5a2f28b3a76a0c17307611f63e064b18441ffed46fbc",
+    "bytes": 34550
+   },
+   {
+    "path": "data/chunk-000/episode_000034.parquet",
+    "sha256": "9058128dc2f7bc02a85da6d1aec519d7f0a6e363b33d99205aefcc98b565394c",
+    "bytes": 30060
+   },
+   {
+    "path": "data/chunk-000/episode_000035.parquet",
+    "sha256": "2f2def3d74303259a9d661b0fb1c30a5120a5043f5dfffbf99f7ea5bdf4a6123",
+    "bytes": 38077
+   },
+   {
+    "path": "data/chunk-000/episode_000036.parquet",
+    "sha256": "516240ebe2a155a8696697447d1a69bc8d9733e56d2e45ccf669909eee15416e",
+    "bytes": 31240
+   },
+   {
+    "path": "data/chunk-000/episode_000037.parquet",
+    "sha256": "a67d3323b7c5340927da658a245e1c9ec7c4421bcb6d1eecbc923dc4840b408d",
+    "bytes": 31911
+   },
+   {
+    "path": "data/chunk-000/episode_000038.parquet",
+    "sha256": "b7490e5cac920406fd7d1b01ab7748a45d43168491a67b87d58de74ed0998a9f",
+    "bytes": 46543
+   },
+   {
+    "path": "data/chunk-000/episode_000039.parquet",
+    "sha256": "014aa84464000b5e4624cdd8ab0f9f0423b7a37d9e916be0de839b9acbab6d97",
+    "bytes": 44893
+   }
+  ],
+  "timestamps": {
+   "max_abs_dev_from_frame_index_over_fps_s": 1.8e-06,
+   "nominal": true,
+   "note": "timestamps equal frame_index/fps: loop timing is not recorded, the jitter check in data.py cannot fire"
+  }
+ },
+ "units": {
+  "convention": "lerobot-legacy",
+  "zero_reference": "calibration_zero_pose",
+  "encodings": [
+   {
+    "joint": "shoulder_pan",
+    "kind": "legacy_degrees",
+    "step": 0.087890625,
+    "max_resid_steps": 0.0,
+    "range_ticks": null,
+    "deg_per_unit": 1.0,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "shoulder_lift",
+    "kind": "legacy_degrees",
+    "step": 0.087890625,
+    "max_resid_steps": 5.684341886080802e-14,
+    "range_ticks": null,
+    "deg_per_unit": 1.0,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "elbow_flex",
+    "kind": "legacy_degrees",
+    "step": 0.087890625,
+    "max_resid_steps": 5.684341886080802e-14,
+    "range_ticks": null,
+    "deg_per_unit": 1.0,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "wrist_flex",
+    "kind": "legacy_degrees",
+    "step": 0.087890625,
+    "max_resid_steps": 2.842170943040401e-14,
+    "range_ticks": null,
+    "deg_per_unit": 1.0,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "wrist_roll",
+    "kind": "legacy_degrees",
+    "step": 0.087890625,
+    "max_resid_steps": 2.842170943040401e-14,
+    "range_ticks": null,
+    "deg_per_unit": 1.0,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "gripper",
+    "kind": "linear_0_100",
+    "step": 0.08880994940650534,
+    "max_resid_steps": 2.7714381360510743e-05,
+    "range_ticks": null,
+    "deg_per_unit": null,
+    "saturated_frac": 0.0
+   }
+  ],
+  "supported": true,
+  "reason": "legacy LeRobot degrees (tick = 180/2048 deg verified on every arm joint)",
+  "decided_on": "fit episodes",
+  "heldout_agrees": true,
+  "heldout_kinds": [
+   "legacy_degrees",
+   "legacy_degrees",
+   "legacy_degrees",
+   "legacy_degrees",
+   "legacy_degrees"
+  ],
+  "heldout_range_ticks": [
+   null,
+   null,
+   null,
+   null,
+   null
+  ]
+ },
+ "environment": {
+  "python": "3.13.18",
+  "mujoco": "3.17.0",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pandas": "3.1.0",
+  "pyarrow": "26.0.0",
+  "huggingface_hub": "2.4.0",
+  "meatspace_lab": "2.0.0",
+  "code_sha256": "924eb3d8364be665182088e3811bd50a322342a6ab1856e47930f5c6ec527779",
+  "platform": {
+   "machine": "x86_64",
+   "system": "Linux",
+   "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz"
+  },
+  "blas": [
+   {
+    "package": "numpy",
+    "lib": "libscipy_openblas64_-f48b354e.so",
+    "corename": "SkylakeX",
+    "config": "OpenBLAS 0.3.34.106.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY SkylakeX MAX_THREADS=64"
+   },
+   {
+    "package": "scipy",
+    "lib": "libscipy_openblas-5f890258.so",
+    "corename": "SkylakeX",
+    "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY SkylakeX MAX_THREADS=64"
+   }
+  ]
+ },
+ "conventions": {
+  "recording": "Legacy LeRobot (ManipulatorRobot.teleop_step, `main_*` names): the goal a[t] is WRITTEN to the follower first and the follower state x[t] is READ afterwards (a few ms later), so x[t] may already contain a few ms of response to a[t] (act-then-observe).",
+  "recording_convention": "lerobot-legacy",
+  "replay": "Replay (identical for both conventions): q_sim[0]=x[0] (zero velocity); for t=0..T-2 apply ctrl=a[t-d] (d = fitted integer command delay, stock d=0) for the whole frame, step `substeps` physics steps (timestep set so substeps*timestep = 1/fps exactly), record q_sim[t+1]; sim and real are compared at the same index t=1..T-1. The real sub-frame send-to-read offset (legacy: a[t] sent a few ms BEFORE x[t] is read; current: a[t] sent a few ms AFTER) is not modelled; it is absorbed by the fitted dynamics/delay, and it shifts lags between the two conventions by a fraction of a frame in opposite directions.",
+  "lag": "lag = argmin_L Var(a[t] - y[t+L]) over a fixed window t in [0, T-10), parabolic sub-frame refinement; y = real or sim state. Includes the 1-frame sampling offset: in the replay and in observe-then-act (current LeRobot) recordings an instantaneous actuator measures 1.0 frame; in act-then-observe (legacy) recordings it would measure ~0, and a realistic servo measures its delay minus the few-ms write-to-read gap. Lags are therefore directly comparable between sim and real within one dataset, and only approximately (fraction of a frame) across codebases. Also reported in ms, since datasets differ in fps. Joints with command std < 1 deg in an episode are skipped.",
+  "angles": "physical degrees (encoder ticks * 360/4096), arm joints only",
+  "change": "relative change of an error metric, new/reference - 1; NEGATIVE = better",
+  "unit_sources": {
+   "lerobot_repo": "https://github.com/huggingface/lerobot",
+   "lerobot_main_sha": "3f797de5952432284a7c77ad2760218cb74e2f26",
+   "normalize": "src/lerobot/motors/motors_bus.py::_normalize/_unnormalize/record_calibration",
+   "legacy_calibration": "lerobot/common/robot_devices/robots/feetech_calibration.py @ e23b41e7~1",
+   "always_degrees_commit": "6600b60e (2026-02-13): SO follower/leader default use_degrees=True"
+  }
+ },
+ "split": {
+  "method": "future = last round(n*test_frac) episodes by index; interleaved = round(n*test_frac) episodes of the rest drawn by numpy default_rng(seed).permutation, plus every remaining episode beyond the fit cap; fit = the remaining episodes (<= max_train_episodes)",
+  "seed": 0,
+  "test_frac": 0.2,
+  "fit": [
+   0,
+   1,
+   3,
+   5,
+   6,
+   7,
+   8,
+   9,
+   12,
+   13,
+   14,
+   15,
+   17,
+   18,
+   19,
+   20,
+   22,
+   23,
+   24,
+   26,
+   27,
+   28,
+   30,
+   31
+  ],
+  "interleaved_heldout": [
+   2,
+   4,
+   10,
+   11,
+   16,
+   21,
+   25,
+   29
+  ],
+  "future_heldout": [
+   32,
+   33,
+   34,
+   35,
+   36,
+   37,
+   38,
+   39
+  ],
+  "unused_train_in_interleaved": [],
+  "overlap": []
+ },
+ "twin": {
+  "id": "trs_so_arm100",
+  "menagerie_repo": "https://github.com/google-deepmind/mujoco_menagerie",
+  "menagerie_sha": "b0655057a9df2abe39ea7fc989914ba6f248301c",
+  "twin_dir_content_sha256": "4f3b0f21b8a2b889ebac185992053e143ef772da3f38e33615193547007e8858",
+  "xml": "so_arm100.xml",
+  "stock_timestep": 0.002,
+  "timestep_used": 0.00196078431372549,
+  "substeps_per_frame": 17,
+  "contacts": "disabled",
+  "stock_params": {
+   "kp": [
+    50.0,
+    50.0,
+    50.0,
+    50.0,
+    50.0
+   ],
+   "kv": [
+    5.12815,
+    4.960962,
+    4.62994,
+    4.493448,
+    4.473104
+   ],
+   "damping": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "armature": [
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1
+   ],
+   "frictionloss": [
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1
+   ],
+   "offset_deg": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "delay_frames": 0,
+   "jnt_range_rad": null
+  }
+ },
+ "mapping_checks": [
+  {
+   "joint": 0,
+   "p1_p99_deg": [
+    52.11,
+    135.0
+   ],
+   "mjcf_range_deg": [
+    -110.01,
+    110.01
+   ],
+   "shift_needed_documented_sign_deg": 24.99,
+   "shift_needed_flipped_sign_deg": 24.99,
+   "decision": "rejected"
+  },
+  {
+   "joint": 1,
+   "p1_p99_deg": [
+    52.56,
+    176.84
+   ],
+   "mjcf_range_deg": [
+    -190.22,
+    9.97
+   ],
+   "shift_needed_documented_sign_deg": 166.88,
+   "shift_needed_flipped_sign_deg": 0.0,
+   "decision": "flipped sign (documented sign does not fit the MJCF range)"
+  },
+  {
+   "joint": 2,
+   "p1_p99_deg": [
+    49.48,
+    168.13
+   ],
+   "mjcf_range_deg": [
+    -9.97,
+    179.91
+   ],
+   "shift_needed_documented_sign_deg": 0.0,
+   "shift_needed_flipped_sign_deg": 158.17,
+   "decision": "documented sign"
+  },
+  {
+   "joint": 3,
+   "p1_p99_deg": [
+    14.32,
+    91.49
+   ],
+   "mjcf_range_deg": [
+    -95.11,
+    95.11
+   ],
+   "shift_needed_documented_sign_deg": 0.0,
+   "shift_needed_flipped_sign_deg": 0.0,
+   "decision": "documented sign (flipped sign would also fit: sign not identified by range)"
+  },
+  {
+   "joint": 4,
+   "p1_p99_deg": [
+    -125.24,
+    48.62
+   ],
+   "mjcf_range_deg": [
+    -159.86,
+    159.86
+   ],
+   "shift_needed_documented_sign_deg": 0.0,
+   "shift_needed_flipped_sign_deg": 0.0,
+   "decision": "documented sign (flipped sign would also fit: sign not identified by range)"
+  }
+ ],
+ "mapping_gate_robustness": {
+  "all_episodes": {
+   "signs": [
+    1,
+    -1,
+    1,
+    1,
+    1
+   ],
+   "rejected": true,
+   "shift_needed_documented_sign_deg": [
+    25.52,
+    166.6,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "heldout_only": {
+   "signs": [
+    1,
+    -1,
+    1,
+    1,
+    1
+   ],
+   "rejected": true,
+   "shift_needed_documented_sign_deg": [
+    26.57,
+    163.79,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "fit": {
+   "signs": [
+    1,
+    -1,
+    1,
+    1,
+    1
+   ],
+   "rejected": true,
+   "shift_needed_documented_sign_deg": [
+    24.99,
+    166.88,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "agree": true
+ },
+ "forward_kinematics_documented_mapping": {
+  "frames_checked": 10889,
+  "stride": 3,
+  "assumption": "the base body sits on the work surface; gripper/base lowest points from geom bounding boxes",
+  "ee_minus_base_lowest_m": {
+   "p1": 0.039,
+   "p5": 0.048,
+   "p50": 0.073,
+   "min": 0.027
+  },
+  "frac_frames_ee_below_base_by_2cm": 0.0,
+  "stock_limits_deg": [
+   [
+    -110.01,
+    110.01
+   ],
+   [
+    -190.22,
+    9.97
+   ],
+   [
+    -9.97,
+    179.91
+   ],
+   [
+    -95.11,
+    95.11
+   ],
+   [
+    -159.86,
+    159.86
+   ]
+  ],
+  "frac_frames_within_1deg_of_stock_limit": {
+   "shoulder_pan": 0.0278,
+   "shoulder_lift": 0.0001,
+   "elbow_flex": 0.0,
+   "wrist_flex": 0.0017,
+   "wrist_roll": 0.0
+  },
+  "frac_frames_beyond_stock_limit": {
+   "shoulder_pan": 0.1586,
+   "shoulder_lift": 0.0,
+   "elbow_flex": 0.0,
+   "wrist_flex": 0.0057,
+   "wrist_roll": 0.0
+  }
+ },
+ "status": "unsupported",
+ "reason": "recorded range of motion does not fit the twin's joint range under the documented calibration convention with either sign (zero shift > 20 deg) for: shoulder_pan [52.11, 135.0] vs MJCF [-110.01, 110.01]; this robot's calibration does not follow the convention, so no mapping is asserted",
+ "limitations": [
+  "recorded range of motion does not fit the twin's joint range under the documented calibration convention with either sign (zero shift > 20 deg) for: shoulder_pan [52.11, 135.0] vs MJCF [-110.01, 110.01]; this robot's calibration does not follow the convention, so no mapping is asserted"
+ ],
+ "content_sha256": "2f815cd36159ba1dd831d05f7e56b6fd5870aedd49e90dce363759ac139d54e6",
+ "results_sha256": "b86e28fbe7bb5ad4ebed04ca6e4312310be483cc56be83867cea3a95a464ac80",
+ "volatile": {
+  "runtime_s": 2.5,
+  "git": {
+   "commit": "3ec53a7c87b6fe0406bc05afc6b9d2305a73906b",
+   "lab_code_dirty_or_untracked": false
+  }
+ }
+}

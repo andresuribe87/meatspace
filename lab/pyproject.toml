@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "meatspace-lab"
+version = "2.0.0"
+description = "meatspace.sh lab: Twin Gap Report (sim-to-real gap of MuJoCo Menagerie twins vs LeRobot datasets)"
+requires-python = ">=3.12"
+# Pinned: a report is only reproducible with the exact physics/optimizer versions it was made with.
+dependencies = [
+  "mujoco==3.17.0",
+  "numpy==2.5.4",
+  "scipy==1.18.1",
+  "pandas==3.1.0",
+  "pyarrow==26.0.0",
+  "huggingface_hub==2.4.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest==9.2.0"]
+
+[tool.setuptools]
+packages = ["meatspace_lab"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "tests"]

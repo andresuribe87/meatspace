@@ -1,0 +1,8 @@
+# local virtualenv and downloaded caches (Hub datasets, Menagerie clone) never get committed
+.venv/
+.cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/

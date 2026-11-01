@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" width="760" height="330" role="img" aria-label="Future held-out sim-vs-real RMSE per joint (40 episodes)">
+
+<style>
+  svg { --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#8a8984; --grid:#e6e5e0;
+        --stock:#eb6834; --calib:#2a78d6; --real:#52514e; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  @media (prefers-color-scheme: dark) {
+    svg { --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --muted:#8f8e86; --grid:#2e2e2b;
+          --stock:#d95926; --calib:#3987e5; --real:#c3c2b7; }
+  }
+  .bg { fill: var(--surface); }
+  .t1 { fill: var(--ink); font-size: 12px; }
+  .t2 { fill: var(--ink2); font-size: 11px; }
+  .t3 { fill: var(--muted); font-size: 10px; }
+  .grid { stroke: var(--grid); stroke-width: 1; }
+  .axis { stroke: var(--muted); stroke-width: 1; }
+  .real { stroke: var(--real); stroke-width: 4; stroke-opacity: 0.45; fill: none; stroke-linejoin: round; }
+  .stock { stroke: var(--stock); stroke-width: 1.75; fill: none; stroke-dasharray: 5 3; }
+  .calib { stroke: var(--calib); stroke-width: 1.75; fill: none; }
+  .fstock { fill: var(--stock); } .fcalib { fill: var(--calib); }
+  .ci { stroke: var(--ink); stroke-width: 1.5; }
+  .ref { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 3 2; fill: none; }
+</style>
+
+<rect class="bg" width="760" height="330"/>
+<text class="t1" x="56" y="18">Future held-out sim-vs-real RMSE per joint (40 episodes)</text>
+<rect class="fstock" x="56" y="30" width="14" height="10" rx="2"/><text class="t2" x="76" y="39">stock twin</text>
+<rect class="fcalib" x="206" y="30" width="14" height="10" rx="2"/><text class="t2" x="226" y="39">calibrated twin</text>
+<line class="ref" x1="356" y1="35" x2="374" y2="35"/><text class="t2" x="380" y="39">lag-filter baseline (no physics)</text>
+<text class="t3" x="618" y="39">whiskers: 95% CI</text>
+<line class="grid" x1="56" y1="280" x2="740" y2="280"/><text class="t3" x="50" y="283" text-anchor="end">0</text>
+<line class="grid" x1="56" y1="188.1" x2="740" y2="188.1"/><text class="t3" x="50" y="191.1" text-anchor="end">2</text>
+<line class="grid" x1="56" y1="96.2" x2="740" y2="96.2"/><text class="t3" x="50" y="99.2" text-anchor="end">4</text>
+<text class="t3" x="12" y="52">deg</text>
+<path class="fstock" d="M88,280 V222.1 Q88,218.1 92,218.1 H108 Q112,218.1 112,222.1 V280 Z"><title>shoulder_pan, stock: 1.35 deg [95% CI 1.29, 1.41]</title></path>
+<line class="ci" x1="100" y1="220.6" x2="100" y2="215.4"/><line class="ci" x1="96" y1="215.4" x2="104" y2="215.4"/><line class="ci" x1="96" y1="220.6" x2="104" y2="220.6"/>
+<path class="fcalib" d="M114,280 V266.2 Q114,262.2 118,262.2 H134 Q138,262.2 138,266.2 V280 Z"><title>shoulder_pan, calibrated: 0.39 deg [95% CI 0.37, 0.41]</title></path>
+<line class="ci" x1="126" y1="263.1" x2="126" y2="261.2"/><line class="ci" x1="122" y1="261.2" x2="130" y2="261.2"/><line class="ci" x1="122" y1="263.1" x2="130" y2="263.1"/>
+<line class="ref" x1="82" y1="258.3" x2="144" y2="258.3"><title>shoulder_pan, lag-filter baseline: 0.47 deg</title></line>
+<text class="t2" x="113" y="298" text-anchor="middle">shoulder_pan</text>
+<path class="fstock" d="M202,280 V237 Q202,233 206,233 H222 Q226,233 226,237 V280 Z"><title>shoulder_lift, stock: 1.02 deg [95% CI 1.00, 1.05]</title></path>
+<line class="ci" x1="214" y1="234.1" x2="214" y2="231.8"/><line class="ci" x1="210" y1="231.8" x2="218" y2="231.8"/><line class="ci" x1="210" y1="234.1" x2="218" y2="234.1"/>
+<path class="fcalib" d="M228,280 V264.1 Q228,260.1 232,260.1 H248 Q252,260.1 252,264.1 V280 Z"><title>shoulder_lift, calibrated: 0.43 deg [95% CI 0.42, 0.45]</title></path>
+<line class="ci" x1="240" y1="260.8" x2="240" y2="259.3"/><line class="ci" x1="236" y1="259.3" x2="244" y2="259.3"/><line class="ci" x1="236" y1="260.8" x2="244" y2="260.8"/>
+<line class="ref" x1="196" y1="255.1" x2="258" y2="255.1"><title>shoulder_lift, lag-filter baseline: 0.54 deg</title></line>
+<text class="t2" x="227" y="298" text-anchor="middle">shoulder_lift</text>
+<path class="fstock" d="M316,280 V164.4 Q316,160.4 320,160.4 H336 Q340,160.4 340,164.4 V280 Z"><title>elbow_flex, stock: 2.60 deg [95% CI 2.52, 2.71]</title></path>
+<line class="ci" x1="328" y1="164.4" x2="328" y2="155.6"/><line class="ci" x1="324" y1="155.6" x2="332" y2="155.6"/><line class="ci" x1="324" y1="164.4" x2="332" y2="164.4"/>
+<path class="fcalib" d="M342,280 V232.6 Q342,228.6 346,228.6 H362 Q366,228.6 366,232.6 V280 Z"><title>elbow_flex, calibrated: 1.12 deg [95% CI 1.02, 1.25]</title></path>
+<line class="ci" x1="354" y1="233" x2="354" y2="222.7"/><line class="ci" x1="350" y1="222.7" x2="358" y2="222.7"/><line class="ci" x1="350" y1="233" x2="358" y2="233"/>
+<line class="ref" x1="310" y1="218.3" x2="372" y2="218.3"><title>elbow_flex, lag-filter baseline: 1.34 deg</title></line>
+<text class="t2" x="341" y="298" text-anchor="middle">elbow_flex</text>
+<path class="fstock" d="M430,280 V99.7 Q430,95.7 434,95.7 H450 Q454,95.7 454,99.7 V280 Z"><title>wrist_flex, stock: 4.01 deg [95% CI 3.75, 4.28]</title></path>
+<line class="ci" x1="442" y1="107.9" x2="442" y2="83.6"/><line class="ci" x1="438" y1="83.6" x2="446" y2="83.6"/><line class="ci" x1="438" y1="107.9" x2="446" y2="107.9"/>
+<path class="fcalib" d="M456,280 V137.9 Q456,133.9 460,133.9 H476 Q480,133.9 480,137.9 V280 Z"><title>wrist_flex, calibrated: 3.18 deg [95% CI 2.96, 3.40]</title></path>
+<line class="ci" x1="468" y1="143.8" x2="468" y2="123.8"/><line class="ci" x1="464" y1="123.8" x2="472" y2="123.8"/><line class="ci" x1="464" y1="143.8" x2="472" y2="143.8"/>
+<line class="ref" x1="424" y1="123.1" x2="486" y2="123.1"><title>wrist_flex, lag-filter baseline: 3.41 deg</title></line>
+<text class="t2" x="455" y="298" text-anchor="middle">wrist_flex</text>
+<path class="fstock" d="M544,280 V242.3 Q544,238.3 548,238.3 H564 Q568,238.3 568,242.3 V280 Z"><title>wrist_roll, stock: 0.91 deg [95% CI 0.86, 0.96]</title></path>
+<line class="ci" x1="556" y1="240.4" x2="556" y2="236"/><line class="ci" x1="552" y1="236" x2="560" y2="236"/><line class="ci" x1="552" y1="240.4" x2="560" y2="240.4"/>
+<path class="fcalib" d="M570,280 V269.5 Q570,265.5 574,265.5 H590 Q594,265.5 594,269.5 V280 Z"><title>wrist_roll, calibrated: 0.32 deg [95% CI 0.28, 0.36]</title></path>
+<line class="ci" x1="582" y1="267.1" x2="582" y2="263.7"/><line class="ci" x1="578" y1="263.7" x2="586" y2="263.7"/><line class="ci" x1="578" y1="267.1" x2="586" y2="267.1"/>
+<line class="ref" x1="538" y1="257.5" x2="600" y2="257.5"><title>wrist_roll, lag-filter baseline: 0.49 deg</title></line>
+<text class="t2" x="569" y="298" text-anchor="middle">wrist_roll</text>
+<path class="fstock" d="M658,280 V193.1 Q658,189.1 662,189.1 H678 Q682,189.1 682,193.1 V280 Z"><title>arm_mean, stock: 1.98 deg [95% CI 1.92, 2.04]</title></path>
+<line class="ci" x1="670" y1="191.9" x2="670" y2="186.2"/><line class="ci" x1="666" y1="186.2" x2="674" y2="186.2"/><line class="ci" x1="666" y1="191.9" x2="674" y2="191.9"/>
+<text class="t2" x="670" y="177.2" text-anchor="middle">1.98</text>
+<path class="fcalib" d="M684,280 V234.1 Q684,230.1 688,230.1 H704 Q708,230.1 708,234.1 V280 Z"><title>arm_mean, calibrated: 1.09 deg [95% CI 1.03, 1.14]</title></path>
+<line class="ci" x1="696" y1="232.5" x2="696" y2="227.6"/><line class="ci" x1="692" y1="227.6" x2="700" y2="227.6"/><line class="ci" x1="692" y1="232.5" x2="700" y2="232.5"/>
+<text class="t2" x="696" y="213.4" text-anchor="middle">1.09</text>
+<line class="ref" x1="652" y1="222.4" x2="714" y2="222.4"><title>arm_mean, lag-filter baseline: 1.25 deg</title></line>
+<text class="t2" x="683" y="298" text-anchor="middle">arm_mean</text>
+<line class="axis" x1="56" y1="280" x2="740" y2="280"/>
+</svg>

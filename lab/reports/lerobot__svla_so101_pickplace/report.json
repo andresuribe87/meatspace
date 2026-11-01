@@ -1,0 +1,10797 @@
+{
+ "schema": "meatspace.twin-gap-report/v2",
+ "dataset": {
+  "id": "lerobot/svla_so101_pickplace",
+  "revision_requested": "f641879e22172be7e8161d5e6c1503c2d2feb657",
+  "revision_sha": "f641879e22172be7e8161d5e6c1503c2d2feb657",
+  "codebase_version": "v3.0",
+  "robot_type": "so100_follower",
+  "fps": 30.0,
+  "episodes_in_repo": 50,
+  "max_episodes_loaded": 200,
+  "episodes_total": 50,
+  "episodes_dropped": [],
+  "frames_used": 11939,
+  "files": [
+   {
+    "path": "data/chunk-000/file-000.parquet",
+    "sha256": "579ad57e2454359fa9f2c0e83525991bd2e0305b7b2914d0b1181da3c6ad9949",
+    "bytes": 369943
+   }
+  ],
+  "timestamps": {
+   "max_abs_dev_from_frame_index_over_fps_s": 4e-07,
+   "nominal": true,
+   "note": "timestamps equal frame_index/fps: loop timing is not recorded, the jitter check in data.py cannot fire"
+  }
+ },
+ "units": {
+  "convention": "lerobot-motorsbus",
+  "zero_reference": "mid_range",
+  "encodings": [
+   {
+    "joint": "shoulder_pan",
+    "kind": "range_m100_100",
+    "step": 0.07984031936127745,
+    "max_resid_steps": 5.084513566089299e-05,
+    "range_ticks": 2505,
+    "deg_per_unit": 1.100830078125,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "shoulder_lift",
+    "kind": "range_m100_100",
+    "step": 0.08375209380234507,
+    "max_resid_steps": 5.422618141892599e-05,
+    "range_ticks": 2388,
+    "deg_per_unit": 1.0494140625,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "elbow_flex",
+    "kind": "range_m100_100",
+    "step": 0.08964589870013447,
+    "max_resid_steps": 7.888672189437784e-05,
+    "range_ticks": 2231,
+    "deg_per_unit": 0.9804199218749999,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "wrist_flex",
+    "kind": "range_m100_100",
+    "step": 0.0847816871555744,
+    "max_resid_steps": 4.766712117998395e-05,
+    "range_ticks": 2359,
+    "deg_per_unit": 1.036669921875,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "wrist_roll",
+    "kind": "range_m100_100",
+    "step": 0.04884004884004884,
+    "max_resid_steps": 0.0001524086992503726,
+    "range_ticks": 4095,
+    "deg_per_unit": 1.7995605468750002,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "gripper",
+    "kind": "linear_0_100",
+    "step": 0.06711409163119188,
+    "max_resid_steps": 2.259992226072427e-05,
+    "range_ticks": null,
+    "deg_per_unit": null,
+    "saturated_frac": 0.0
+   }
+  ],
+  "supported": true,
+  "reason": "LeRobot MotorNormMode.RANGE_M100_100; calibrated range recovered per joint from the tick lattice (wrist_roll full-turn = 4095 ticks confirms the recovery)",
+  "decided_on": "fit episodes",
+  "heldout_agrees": true,
+  "heldout_kinds": [
+   "range_m100_100",
+   "range_m100_100",
+   "range_m100_100",
+   "range_m100_100",
+   "range_m100_100"
+  ],
+  "heldout_range_ticks": [
+   2505,
+   2388,
+   2231,
+   2359,
+   4095
+  ]
+ },
+ "environment": {
+  "python": "3.13.18",
+  "mujoco": "3.17.0",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pandas": "3.1.0",
+  "pyarrow": "26.0.0",
+  "huggingface_hub": "2.4.0",
+  "meatspace_lab": "2.0.0",
+  "code_sha256": "924eb3d8364be665182088e3811bd50a322342a6ab1856e47930f5c6ec527779",
+  "platform": {
+   "machine": "x86_64",
+   "system": "Linux",
+   "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz"
+  },
+  "blas": [
+   {
+    "package": "numpy",
+    "lib": "libscipy_openblas64_-f48b354e.so",
+    "corename": "SkylakeX",
+    "config": "OpenBLAS 0.3.34.106.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY SkylakeX MAX_THREADS=64"
+   },
+   {
+    "package": "scipy",
+    "lib": "libscipy_openblas-5f890258.so",
+    "corename": "SkylakeX",
+    "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY SkylakeX MAX_THREADS=64"
+   }
+  ]
+ },
+ "conventions": {
+  "recording": "Current LeRobot (record_loop, `*.pos` names): x[t] is READ first (robot.get_observation), then the leader or policy is read and a[t] is SENT, so x[t] cannot reflect a[t] (observe-then-act).",
+  "recording_convention": "lerobot-motorsbus",
+  "replay": "Replay (identical for both conventions): q_sim[0]=x[0] (zero velocity); for t=0..T-2 apply ctrl=a[t-d] (d = fitted integer command delay, stock d=0) for the whole frame, step `substeps` physics steps (timestep set so substeps*timestep = 1/fps exactly), record q_sim[t+1]; sim and real are compared at the same index t=1..T-1. The real sub-frame send-to-read offset (legacy: a[t] sent a few ms BEFORE x[t] is read; current: a[t] sent a few ms AFTER) is not modelled; it is absorbed by the fitted dynamics/delay, and it shifts lags between the two conventions by a fraction of a frame in opposite directions.",
+  "lag": "lag = argmin_L Var(a[t] - y[t+L]) over a fixed window t in [0, T-10), parabolic sub-frame refinement; y = real or sim state. Includes the 1-frame sampling offset: in the replay and in observe-then-act (current LeRobot) recordings an instantaneous actuator measures 1.0 frame; in act-then-observe (legacy) recordings it would measure ~0, and a realistic servo measures its delay minus the few-ms write-to-read gap. Lags are therefore directly comparable between sim and real within one dataset, and only approximately (fraction of a frame) across codebases. Also reported in ms, since datasets differ in fps. Joints with command std < 1 deg in an episode are skipped.",
+  "angles": "physical degrees (encoder ticks * 360/4096), arm joints only",
+  "change": "relative change of an error metric, new/reference - 1; NEGATIVE = better",
+  "unit_sources": {
+   "lerobot_repo": "https://github.com/huggingface/lerobot",
+   "lerobot_main_sha": "3f797de5952432284a7c77ad2760218cb74e2f26",
+   "normalize": "src/lerobot/motors/motors_bus.py::_normalize/_unnormalize/record_calibration",
+   "legacy_calibration": "lerobot/common/robot_devices/robots/feetech_calibration.py @ e23b41e7~1",
+   "always_degrees_commit": "6600b60e (2026-02-13): SO follower/leader default use_degrees=True"
+  }
+ },
+ "split": {
+  "method": "future = last round(n*test_frac) episodes by index; interleaved = round(n*test_frac) episodes of the rest drawn by numpy default_rng(seed).permutation, plus every remaining episode beyond the fit cap; fit = the remaining episodes (<= max_train_episodes)",
+  "seed": 0,
+  "test_frac": 0.2,
+  "fit": [
+   0,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   19,
+   20,
+   21,
+   22,
+   25,
+   26,
+   28,
+   29,
+   30,
+   31,
+   32,
+   33,
+   35,
+   36,
+   37,
+   38,
+   39
+  ],
+  "interleaved_heldout": [
+   1,
+   2,
+   3,
+   4,
+   11,
+   18,
+   23,
+   24,
+   27,
+   34
+  ],
+  "future_heldout": [
+   40,
+   41,
+   42,
+   43,
+   44,
+   45,
+   46,
+   47,
+   48,
+   49
+  ],
+  "unused_train_in_interleaved": [],
+  "overlap": []
+ },
+ "twin": {
+  "id": "robotstudio_so101",
+  "menagerie_repo": "https://github.com/google-deepmind/mujoco_menagerie",
+  "menagerie_sha": "b0655057a9df2abe39ea7fc989914ba6f248301c",
+  "twin_dir_content_sha256": "6c00120339c328b1e7f8287d54a7b36a6d40dff4ee0c387e21121ca4f12b2634",
+  "xml": "so101.xml",
+  "stock_timestep": 0.005,
+  "timestep_used": 0.0047619047619047615,
+  "substeps_per_frame": 7,
+  "contacts": "disabled",
+  "stock_params": {
+   "kp": [
+    998.22,
+    998.22,
+    998.22,
+    998.22,
+    998.22
+   ],
+   "kv": [
+    2.731,
+    2.731,
+    2.731,
+    2.731,
+    2.731
+   ],
+   "damping": [
+    0.6,
+    0.6,
+    0.6,
+    0.6,
+    0.6
+   ],
+   "armature": [
+    0.028,
+    0.028,
+    0.028,
+    0.028,
+    0.028
+   ],
+   "frictionloss": [
+    0.052,
+    0.052,
+    0.052,
+    0.052,
+    0.052
+   ],
+   "offset_deg": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "delay_frames": 0,
+   "jnt_range_rad": null
+  }
+ },
+ "mapping_checks": [
+  {
+   "joint": 0,
+   "p1_p99_deg": [
+    -62.36,
+    93.21
+   ],
+   "mjcf_range_deg": [
+    -110.0,
+    110.0
+   ],
+   "shift_needed_documented_sign_deg": 0.0,
+   "shift_needed_flipped_sign_deg": 0.0,
+   "decision": "documented sign (flipped sign would also fit: sign not identified by range)"
+  },
+  {
+   "joint": 1,
+   "p1_p99_deg": [
+    -103.71,
+    4.28
+   ],
+   "mjcf_range_deg": [
+    -100.0,
+    100.0
+   ],
+   "shift_needed_documented_sign_deg": 3.71,
+   "shift_needed_flipped_sign_deg": 3.71,
+   "decision": "documented sign (flipped sign would also fit: sign not identified by range)"
+  },
+  {
+   "joint": 2,
+   "p1_p99_deg": [
+    21.58,
+    97.34
+   ],
+   "mjcf_range_deg": [
+    -96.83,
+    96.83
+   ],
+   "shift_needed_documented_sign_deg": 0.51,
+   "shift_needed_flipped_sign_deg": 0.51,
+   "decision": "documented sign (flipped sign would also fit: sign not identified by range)"
+  },
+  {
+   "joint": 3,
+   "p1_p99_deg": [
+    42.93,
+    99.18
+   ],
+   "mjcf_range_deg": [
+    -95.0,
+    95.0
+   ],
+   "shift_needed_documented_sign_deg": 4.18,
+   "shift_needed_flipped_sign_deg": 4.18,
+   "decision": "documented sign (flipped sign would also fit: sign not identified by range)"
+  },
+  {
+   "joint": 4,
+   "p1_p99_deg": [
+    -157.28,
+    -43.37
+   ],
+   "mjcf_range_deg": [
+    -157.21,
+    162.79
+   ],
+   "shift_needed_documented_sign_deg": 0.07,
+   "shift_needed_flipped_sign_deg": 0.0,
+   "decision": "documented sign (flipped sign would also fit: sign not identified by range)"
+  }
+ ],
+ "mapping_gate_robustness": {
+  "all_episodes": {
+   "signs": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "rejected": false,
+   "shift_needed_documented_sign_deg": [
+    0.0,
+    3.71,
+    0.51,
+    4.24,
+    8.68
+   ]
+  },
+  "heldout_only": {
+   "signs": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "rejected": false,
+   "shift_needed_documented_sign_deg": [
+    0.0,
+    3.71,
+    0.6,
+    5.3,
+    8.86
+   ]
+  },
+  "fit": {
+   "signs": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "rejected": false,
+   "shift_needed_documented_sign_deg": [
+    0.0,
+    3.71,
+    0.51,
+    4.18,
+    0.07
+   ]
+  },
+  "agree": true
+ },
+ "status": "ok",
+ "mapping": {
+  "sign": [
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "nominal_offset_deg": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "zero_reference": "mid_range",
+  "note": "MJCF derived from TheRobotStudio so101_new_calib.xml, whose zero is the LeRobot 'middle of range' calibration pose; nominal offsets 0, documented signs +1 (checked per dataset against the recorded range of motion, mapping_checks)."
+ },
+ "fit": {
+  "config": {
+   "seed": 0,
+   "test_frac": 0.2,
+   "max_train_episodes": 40,
+   "delays": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "screen_episodes": 16,
+   "screen_iters": 4,
+   "final_iters": 30,
+   "offset_bound_deg": 20.0,
+   "time_limit_s": 3600.0,
+   "widen_ranges": true,
+   "fit_offsets": false,
+   "fit_armature": false
+  },
+  "optimizer": "scipy.optimize.least_squares(method='trf', bounds), forward-difference Jacobian, log-parametrised kp",
+  "bounds": {
+   "kp": [
+    1.0,
+    3000.0
+   ],
+   "kv": [
+    0.0,
+    50.0
+   ],
+   "armature": [
+    0.0001,
+    0.5
+   ],
+   "frictionloss": [
+    0.0,
+    1.0
+   ]
+  },
+  "bound_tolerance": {
+   "kp": 0.001,
+   "armature": 0.001,
+   "kv": 0.01,
+   "frictionloss": 0.001,
+   "offset": 0.4
+  },
+  "calibrated": {
+   "params": {
+    "kp": [
+     13.3608,
+     11.5801,
+     13.3081,
+     17.1044,
+     13.6739
+    ],
+    "kv": [
+     0.508978,
+     0.286815,
+     0.292072,
+     0.743698,
+     0.500421
+    ],
+    "damping": [
+     0.6,
+     0.6,
+     0.6,
+     0.6,
+     0.6
+    ],
+    "armature": [
+     0.028,
+     0.028,
+     0.028,
+     0.028,
+     0.028
+    ],
+    "frictionloss": [
+     0.031851,
+     0.184217,
+     0.514864,
+     0.108774,
+     0.053276
+    ],
+    "offset_deg": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "delay_frames": 1,
+    "jnt_range_rad": [
+     [
+      -1.91986,
+      1.91986
+     ],
+     [
+      -6.283185,
+      1.745329
+     ],
+     [
+      -1.69,
+      6.283185
+     ],
+     [
+      -1.658063,
+      6.283185
+     ],
+     [
+      -6.283185,
+      2.841206
+     ]
+    ]
+   },
+   "fitted": [
+    "kp[shoulder_pan]",
+    "kv[shoulder_pan]",
+    "frictionloss[shoulder_pan]",
+    "kp[shoulder_lift]",
+    "kv[shoulder_lift]",
+    "frictionloss[shoulder_lift]",
+    "kp[elbow_flex]",
+    "kv[elbow_flex]",
+    "frictionloss[elbow_flex]",
+    "kp[wrist_flex]",
+    "kv[wrist_flex]",
+    "frictionloss[wrist_flex]",
+    "kp[wrist_roll]",
+    "kv[wrist_roll]",
+    "frictionloss[wrist_roll]"
+   ],
+   "train_mse_deg2": 0.2239,
+   "delay_screen_mse_deg2": {
+    "0": 0.33724,
+    "1": 0.23861,
+    "2": 0.50739,
+    "3": 1.03098,
+    "4": 2.6915,
+    "5": 8.50238
+   },
+   "gain_grid_mse_deg2_by_delay": {
+    "0": {
+     "3.0": 25.084,
+     "1.0": 24.537,
+     "0.3": 23.688,
+     "0.1": 21.955,
+     "0.03": 14.404,
+     "0.01": 2.2669
+    },
+    "1": {
+     "3.0": 12.813,
+     "1.0": 12.422,
+     "0.3": 11.818,
+     "0.1": 10.571,
+     "0.03": 5.6023,
+     "0.01": 0.79443
+    },
+    "2": {
+     "3.0": 4.8296,
+     "1.0": 4.6059,
+     "0.3": 4.2646,
+     "0.1": 3.5678,
+     "0.03": 1.3561,
+     "0.01": 3.8006
+    },
+    "3": {
+     "3.0": 1.4383,
+     "1.0": 1.3777,
+     "0.3": 1.3032,
+     "0.1": 1.1879,
+     "0.03": 1.7677,
+     "0.01": 11.19
+    },
+    "4": {
+     "3.0": 2.7084,
+     "1.0": 2.8051,
+     "0.3": 2.9874,
+     "0.1": 3.452,
+     "0.03": 6.7556,
+     "0.01": 22.753
+    },
+    "5": {
+     "3.0": 8.5108,
+     "1.0": 8.7664,
+     "0.3": 9.188,
+     "0.1": 10.211,
+     "0.03": 16.112,
+     "0.01": 38.211
+    }
+   },
+   "n_simulated_rollout_sets": 477,
+   "time_limited": false,
+   "converged": true,
+   "optimizer_status": "`ftol` termination condition is satisfied.",
+   "at_bound": [],
+   "identifiability": {
+    "method": "local Gauss-Newton analysis at the fitted point (train episodes)",
+    "parameters": [
+     {
+      "param": "kp",
+      "joint": "shoulder_pan",
+      "value": 13.36,
+      "at_bound": false,
+      "ci95": [
+       13.0,
+       13.75
+      ],
+      "marginal_over_conditional_std": 9.01,
+      "identified_alone": true
+     },
+     {
+      "param": "kv",
+      "joint": "shoulder_pan",
+      "value": 0.509,
+      "at_bound": false,
+      "ci95": [
+       0.4825,
+       0.5367
+      ],
+      "marginal_over_conditional_std": 8.93,
+      "identified_alone": true
+     },
+     {
+      "param": "frictionloss",
+      "joint": "shoulder_pan",
+      "value": 0.03185,
+      "at_bound": false,
+      "ci95": [
+       0.02727,
+       0.03643
+      ],
+      "marginal_over_conditional_std": 1.33,
+      "identified_alone": true
+     },
+     {
+      "param": "kp",
+      "joint": "shoulder_lift",
+      "value": 11.58,
+      "at_bound": false,
+      "ci95": [
+       11.41,
+       11.75
+      ],
+      "marginal_over_conditional_std": 3.33,
+      "identified_alone": true
+     },
+     {
+      "param": "kv",
+      "joint": "shoulder_lift",
+      "value": 0.2868,
+      "at_bound": false,
+      "ci95": [
+       0.2693,
+       0.3052
+      ],
+      "marginal_over_conditional_std": 3.4,
+      "identified_alone": true
+     },
+     {
+      "param": "frictionloss",
+      "joint": "shoulder_lift",
+      "value": 0.1842,
+      "at_bound": false,
+      "ci95": [
+       0.1715,
+       0.1967
+      ],
+      "marginal_over_conditional_std": 1.51,
+      "identified_alone": true
+     },
+     {
+      "param": "kp",
+      "joint": "elbow_flex",
+      "value": 13.31,
+      "at_bound": false,
+      "ci95": [
+       12.75,
+       13.91
+      ],
+      "marginal_over_conditional_std": 2.82,
+      "identified_alone": true
+     },
+     {
+      "param": "kv",
+      "joint": "elbow_flex",
+      "value": 0.2921,
+      "at_bound": false,
+      "ci95": [
+       0.251,
+       0.3315
+      ],
+      "marginal_over_conditional_std": 2.08,
+      "identified_alone": true
+     },
+     {
+      "param": "frictionloss",
+      "joint": "elbow_flex",
+      "value": 0.5149,
+      "at_bound": false,
+      "ci95": [
+       0.4711,
+       0.565
+      ],
+      "marginal_over_conditional_std": 2.02,
+      "identified_alone": true
+     },
+     {
+      "param": "kp",
+      "joint": "wrist_flex",
+      "value": 17.1,
+      "at_bound": false,
+      "ci95": [
+       16.48,
+       17.8
+      ],
+      "marginal_over_conditional_std": 7.11,
+      "identified_alone": true
+     },
+     {
+      "param": "kv",
+      "joint": "wrist_flex",
+      "value": 0.7437,
+      "at_bound": false,
+      "ci95": [
+       0.6969,
+       0.7912
+      ],
+      "marginal_over_conditional_std": 6.75,
+      "identified_alone": true
+     },
+     {
+      "param": "frictionloss",
+      "joint": "wrist_flex",
+      "value": 0.1088,
+      "at_bound": false,
+      "ci95": [
+       0.09392,
+       0.1238
+      ],
+      "marginal_over_conditional_std": 1.48,
+      "identified_alone": true
+     },
+     {
+      "param": "kp",
+      "joint": "wrist_roll",
+      "value": 13.67,
+      "at_bound": false,
+      "ci95": [
+       13.38,
+       14.0
+      ],
+      "marginal_over_conditional_std": 8.73,
+      "identified_alone": true
+     },
+     {
+      "param": "kv",
+      "joint": "wrist_roll",
+      "value": 0.5004,
+      "at_bound": false,
+      "ci95": [
+       0.48,
+       0.521
+      ],
+      "marginal_over_conditional_std": 8.46,
+      "identified_alone": true
+     },
+     {
+      "param": "frictionloss",
+      "joint": "wrist_roll",
+      "value": 0.05328,
+      "at_bound": false,
+      "ci95": [
+       0.04748,
+       0.05916
+      ],
+      "marginal_over_conditional_std": 1.39,
+      "identified_alone": true
+     }
+    ],
+    "at_bound": [],
+    "condition_number": 5280.0,
+    "eig_rel_ascending": [
+     0.000189,
+     0.00022,
+     0.000416,
+     0.00101,
+     0.00176,
+     0.00309,
+     0.00329,
+     0.0037,
+     0.00376,
+     0.00763,
+     0.162,
+     0.311,
+     0.389,
+     0.748,
+     1.0
+    ],
+    "weakest_directions": [
+     {
+      "eig_rel": 0.000189,
+      "loadings": {
+       "kp[wrist_roll]": -0.97,
+       "kv[wrist_roll]": -0.21,
+       "frictionloss[wrist_roll]": -0.09,
+       "kp[shoulder_pan]": 0.0
+      }
+     },
+     {
+      "eig_rel": 0.00022,
+      "loadings": {
+       "kp[wrist_flex]": 0.95,
+       "kv[wrist_flex]": 0.25,
+       "frictionloss[wrist_flex]": 0.18,
+       "kp[shoulder_pan]": 0.0
+      }
+     },
+     {
+      "eig_rel": 0.000416,
+      "loadings": {
+       "kp[shoulder_pan]": 0.98,
+       "kv[shoulder_pan]": 0.21,
+       "frictionloss[shoulder_pan]": 0.05,
+       "kp[wrist_flex]": 0.0
+      }
+     }
+    ],
+    "strong_correlations": [
+     [
+      "kp[shoulder_pan]",
+      "kv[shoulder_pan]",
+      0.989
+     ],
+     [
+      "kp[wrist_roll]",
+      "kv[wrist_roll]",
+      0.988
+     ],
+     [
+      "kp[wrist_flex]",
+      "kv[wrist_flex]",
+      0.98
+     ]
+    ],
+    "unidentified_ratio_threshold": 10.0,
+    "derived": {
+     "shoulder_pan": {
+      "I_eff_kgm2": 0.03122,
+      "natural_freq_hz": {
+       "value": 3.29,
+       "ci95": [
+        3.25,
+        3.34
+       ]
+      },
+      "damping_ratio": {
+       "value": 0.858,
+       "ci95": [
+        0.849,
+        0.868
+       ]
+      }
+     },
+     "shoulder_lift": {
+      "I_eff_kgm2": 0.03137,
+      "natural_freq_hz": {
+       "value": 3.06,
+       "ci95": [
+        3.04,
+        3.08
+       ]
+      },
+      "damping_ratio": {
+       "value": 0.736,
+       "ci95": [
+        0.725,
+        0.747
+       ]
+      }
+     },
+     "elbow_flex": {
+      "I_eff_kgm2": 0.0347,
+      "natural_freq_hz": {
+       "value": 3.12,
+       "ci95": [
+        3.05,
+        3.19
+       ]
+      },
+      "damping_ratio": {
+       "value": 0.656,
+       "ci95": [
+        0.634,
+        0.677
+       ]
+      }
+     },
+     "wrist_flex": {
+      "I_eff_kgm2": 0.02914,
+      "natural_freq_hz": {
+       "value": 3.86,
+       "ci95": [
+        3.78,
+        3.93
+       ]
+      },
+      "damping_ratio": {
+       "value": 0.952,
+       "ci95": [
+        0.932,
+        0.969
+       ]
+      }
+     },
+     "wrist_roll": {
+      "I_eff_kgm2": 0.02808,
+      "natural_freq_hz": {
+       "value": 3.51,
+       "ci95": [
+        3.47,
+        3.55
+       ]
+      },
+      "damping_ratio": {
+       "value": 0.888,
+       "ci95": [
+        0.88,
+        0.895
+       ]
+      }
+     }
+    },
+    "bootstrap": {
+     "n": 2000,
+     "seed": 0,
+     "kind": "linearised one-step Gauss-Newton, whole train episodes resampled"
+    }
+   }
+  },
+  "aligned_stock": {
+   "params": {
+    "kp": [
+     998.22,
+     998.22,
+     998.22,
+     998.22,
+     998.22
+    ],
+    "kv": [
+     2.731,
+     2.731,
+     2.731,
+     2.731,
+     2.731
+    ],
+    "damping": [
+     0.6,
+     0.6,
+     0.6,
+     0.6,
+     0.6
+    ],
+    "armature": [
+     0.028,
+     0.028,
+     0.028,
+     0.028,
+     0.028
+    ],
+    "frictionloss": [
+     0.052,
+     0.052,
+     0.052,
+     0.052,
+     0.052
+    ],
+    "offset_deg": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "delay_frames": 3,
+    "jnt_range_rad": [
+     [
+      -1.91986,
+      1.91986
+     ],
+     [
+      -6.283185,
+      1.745329
+     ],
+     [
+      -1.69,
+      6.283185
+     ],
+     [
+      -1.658063,
+      6.283185
+     ],
+     [
+      -6.283185,
+      2.841206
+     ]
+    ]
+   },
+   "fitted": [
+    "delay_frames"
+   ],
+   "train_mse_deg2": 1.49089,
+   "delay_screen_mse_deg2": {
+    "0": 24.32643,
+    "1": 12.37114,
+    "2": 4.66628,
+    "3": 1.49089,
+    "4": 2.90939,
+    "5": 8.80153
+   },
+   "n_simulated_rollout_sets": 7,
+   "time_limited": false,
+   "converged": null,
+   "at_bound": []
+  },
+  "baseline": {
+   "model": "y[t+1] = y[t] + alpha*(a[t-d] + b - y[t]), y[0] = x[0], per arm joint",
+   "alpha": [
+    0.5,
+    0.48,
+    0.3,
+    0.5,
+    0.5
+   ],
+   "delay_frames": [
+    2,
+    2,
+    1,
+    2,
+    2
+   ],
+   "bias_deg": [
+    -0.0329,
+    0.8686,
+    1.527,
+    0.0967,
+    -0.0418
+   ],
+   "train_mse_deg2": [
+    0.09041,
+    0.70535,
+    2.36446,
+    0.12228,
+    0.07624
+   ],
+   "grid": {
+    "alpha": [
+     0.02,
+     1.0,
+     50
+    ],
+    "delay_frames": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   }
+  }
+ },
+ "headline": {
+  "metric": "held-out sim-vs-real joint trajectory RMSE, mean over 5 arm joints and over episodes (deg)",
+  "sets": {
+   "interleaved": {
+    "n_episodes": 10,
+    "stock": {
+     "mean": 4.9987,
+     "ci95": [
+      4.6598,
+      5.3201
+     ],
+     "p90": 5.4874,
+     "median": 5.0632,
+     "n": 10
+    },
+    "aligned_stock": {
+     "mean": 1.0115,
+     "ci95": [
+      0.9581,
+      1.0606
+     ],
+     "p90": 1.0933,
+     "median": 1.0308,
+     "n": 10
+    },
+    "baseline": {
+     "mean": 0.6372,
+     "ci95": [
+      0.6185,
+      0.6598
+     ],
+     "p90": 0.6781,
+     "median": 0.6241,
+     "n": 10
+    },
+    "calibrated": {
+     "mean": 0.4274,
+     "ci95": [
+      0.4078,
+      0.4467
+     ],
+     "p90": 0.4569,
+     "median": 0.4277,
+     "n": 10
+    },
+    "calibrated_vs_stock": {
+     "abs_reduction_deg": {
+      "mean": 4.5713,
+      "ci95": [
+       4.2401,
+       4.8751
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9145,
+      "ci95": [
+       0.9103,
+       0.9181
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9145,
+      "ci95": [
+       -0.9181,
+       -0.9103
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9154,
+      "median_ci95": [
+       -0.9192,
+       -0.9091
+      ],
+      "min": -0.9236,
+      "max": -0.9011
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "calibrated_vs_baseline": {
+     "abs_reduction_deg": {
+      "mean": 0.2098,
+      "ci95": [
+       0.1844,
+       0.2395
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.3293,
+      "ci95": [
+       0.2939,
+       0.3669
+      ]
+     },
+     "rel_change": {
+      "mean": -0.3293,
+      "ci95": [
+       -0.3669,
+       -0.2939
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.3172,
+      "median_ci95": [
+       -0.3708,
+       -0.279
+      ],
+      "min": -0.448,
+      "max": -0.2468
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "gap_label": "closes most of the gap",
+    "baseline_label": "beats the physics-free lag filter",
+    "verdict": "closes most of the gap (-91% [-92, -91] vs stock, residual 0.43 deg); calibrated twin beats the physics-free lag filter (-33% [-37, -29])"
+   },
+   "future": {
+    "n_episodes": 10,
+    "stock": {
+     "mean": 5.349,
+     "ci95": [
+      5.1429,
+      5.5377
+     ],
+     "p90": 5.6584,
+     "median": 5.388,
+     "n": 10
+    },
+    "aligned_stock": {
+     "mean": 1.011,
+     "ci95": [
+      0.9782,
+      1.0478
+     ],
+     "p90": 1.1021,
+     "median": 1.004,
+     "n": 10
+    },
+    "baseline": {
+     "mean": 0.6347,
+     "ci95": [
+      0.6147,
+      0.6575
+     ],
+     "p90": 0.684,
+     "median": 0.6195,
+     "n": 10
+    },
+    "calibrated": {
+     "mean": 0.4583,
+     "ci95": [
+      0.4385,
+      0.4812
+     ],
+     "p90": 0.4836,
+     "median": 0.4549,
+     "n": 10
+    },
+    "calibrated_vs_stock": {
+     "abs_reduction_deg": {
+      "mean": 4.8907,
+      "ci95": [
+       4.685,
+       5.0768
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9143,
+      "ci95": [
+       0.9093,
+       0.9191
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9143,
+      "ci95": [
+       -0.9191,
+       -0.9093
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9128,
+      "median_ci95": [
+       -0.922,
+       -0.9069
+      ],
+      "min": -0.9258,
+      "max": -0.9026
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "calibrated_vs_baseline": {
+     "abs_reduction_deg": {
+      "mean": 0.1764,
+      "ci95": [
+       0.1534,
+       0.2038
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.2779,
+      "ci95": [
+       0.244,
+       0.3153
+      ]
+     },
+     "rel_change": {
+      "mean": -0.2779,
+      "ci95": [
+       -0.3153,
+       -0.244
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.2568,
+      "median_ci95": [
+       -0.3268,
+       -0.2389
+      ],
+      "min": -0.3935,
+      "max": -0.2022
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "gap_label": "closes most of the gap",
+    "baseline_label": "beats the physics-free lag filter",
+    "verdict": "closes most of the gap (-91% [-92, -91] vs stock, residual 0.46 deg); calibrated twin beats the physics-free lag filter (-28% [-32, -24])"
+   }
+  },
+  "verdict": "future: closes most of the gap (-91% [-92, -91] vs stock, residual 0.46 deg); calibrated twin beats the physics-free lag filter (-28% [-32, -24]); interleaved: closes most of the gap (-91% [-92, -91] vs stock, residual 0.43 deg); calibrated twin beats the physics-free lag filter (-33% [-37, -29])",
+  "lag_interleaved": {
+   "per_joint_ms": {
+    "shoulder_pan": {
+     "real": 132.9175,
+     "stock": 27.3464,
+     "calibrated": 132.2713
+    },
+    "shoulder_lift": {
+     "real": 135.7972,
+     "stock": 29.3236,
+     "calibrated": 136.2663
+    },
+    "elbow_flex": {
+     "real": 137.2728,
+     "stock": 26.008,
+     "calibrated": 142.2988
+    },
+    "wrist_flex": {
+     "real": 129.7078,
+     "stock": 25.9264,
+     "calibrated": 130.4026
+    },
+    "wrist_roll": {
+     "real": 130.7625,
+     "stock": 26.2528,
+     "calibrated": 131.2459
+    }
+   },
+   "max_abs_mismatch_vs_real_ms": {
+    "stock": 111.3,
+    "calibrated": 5.0
+   },
+   "median_over_joints_frames": {
+    "real": 3.99,
+    "stock": 0.79,
+    "calibrated": 3.97
+   }
+  }
+ },
+ "metrics": {
+  "fit": {
+   "n_episodes": 30,
+   "real": {
+    "real_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 5.4658,
+      "ci95": [
+       5.1797,
+       5.7501
+      ],
+      "p90": 6.6123,
+      "median": 5.5605,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 5.7193,
+      "ci95": [
+       5.4748,
+       5.958
+      ],
+      "p90": 6.4067,
+      "median": 5.7466,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 4.4518,
+      "ci95": [
+       4.3064,
+       4.5983
+      ],
+      "p90": 4.9143,
+      "median": 4.5079,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 3.2627,
+      "ci95": [
+       3.04,
+       3.4997
+      ],
+      "p90": 4.1212,
+      "median": 3.1892,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 3.5896,
+      "ci95": [
+       3.3467,
+       3.8511
+      ],
+      "p90": 4.4672,
+      "median": 3.5538,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 4.4978,
+      "ci95": [
+       4.3449,
+       4.6424
+      ],
+      "p90": 4.9868,
+      "median": 4.5133,
+      "n": 30
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.959,
+      "ci95": [
+       3.9454,
+       3.9725
+      ],
+      "p90": 3.9987,
+      "median": 3.9582,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 4.0641,
+      "ci95": [
+       4.0451,
+       4.0832
+      ],
+      "p90": 4.1458,
+      "median": 4.0576,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 4.1157,
+      "ci95": [
+       4.1039,
+       4.1277
+      ],
+      "p90": 4.1576,
+      "median": 4.1199,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 3.8948,
+      "ci95": [
+       3.8828,
+       3.9073
+      ],
+      "p90": 3.9314,
+      "median": 3.8968,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 3.9226,
+      "ci95": [
+       3.9094,
+       3.9351
+      ],
+      "p90": 3.9578,
+      "median": 3.9283,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 3.9912,
+      "ci95": [
+       3.9822,
+       4.0002
+      ],
+      "p90": 4.0228,
+      "median": 3.9938,
+      "n": 30
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 131.9675,
+      "ci95": [
+       131.5137,
+       132.4174
+      ],
+      "p90": 133.2889,
+      "median": 131.9406,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 135.4693,
+      "ci95": [
+       134.8361,
+       136.1065
+      ],
+      "p90": 138.1917,
+      "median": 135.2523,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 137.1908,
+      "ci95": [
+       136.7961,
+       137.5897
+      ],
+      "p90": 138.5879,
+      "median": 137.331,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 129.8267,
+      "ci95": [
+       129.4272,
+       130.2426
+      ],
+      "p90": 131.0475,
+      "median": 129.8945,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 130.7529,
+      "ci95": [
+       130.3118,
+       131.1714
+      ],
+      "p90": 131.9259,
+      "median": 130.9429,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 133.0414,
+      "ci95": [
+       132.739,
+       133.3416
+      ],
+      "p90": 134.0928,
+      "median": 133.1254,
+      "n": 30
+     }
+    }
+   },
+   "stock": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 5.8643,
+      "ci95": [
+       5.5509,
+       6.1689
+      ],
+      "p90": 7.0181,
+      "median": 5.9737,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 6.1333,
+      "ci95": [
+       5.9268,
+       6.3396
+      ],
+      "p90": 6.7052,
+      "median": 6.2969,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 4.6633,
+      "ci95": [
+       4.5113,
+       4.8151
+      ],
+      "p90": 5.1483,
+      "median": 4.6986,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 3.5597,
+      "ci95": [
+       3.3091,
+       3.834
+      ],
+      "p90": 4.4489,
+      "median": 3.4559,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 3.8737,
+      "ci95": [
+       3.6058,
+       4.1403
+      ],
+      "p90": 4.8031,
+      "median": 3.8445,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 4.8189,
+      "ci95": [
+       4.6694,
+       4.9621
+      ],
+      "p90": 5.2577,
+      "median": 4.849,
+      "n": 30
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.1462,
+      "ci95": [
+       0.067,
+       0.2774
+      ],
+      "p90": 0.2408,
+      "median": 0.0943,
+      "n": 3
+     },
+     "shoulder_lift": {
+      "mean": 3.5416,
+      "ci95": [
+       3.4463,
+       3.71
+      ],
+      "p90": 3.6617,
+      "median": 3.4686,
+      "n": 3
+     },
+     "elbow_flex": {
+      "mean": 0.3245,
+      "ci95": [
+       0.2329,
+       0.5075
+      ],
+      "p90": 0.4526,
+      "median": 0.2329,
+      "n": 3
+     },
+     "wrist_flex": {
+      "mean": 0.2571,
+      "ci95": [
+       0.0494,
+       0.5049
+      ],
+      "p90": 0.4473,
+      "median": 0.217,
+      "n": 3
+     },
+     "wrist_roll": {
+      "mean": 0.2091,
+      "ci95": [
+       0.1757,
+       0.2548
+      ],
+      "p90": 0.2432,
+      "median": 0.1968,
+      "n": 3
+     },
+     "arm_mean": {
+      "mean": 0.8957,
+      "ci95": [
+       0.8522,
+       0.9436
+      ],
+      "p90": 0.9331,
+      "median": 0.8914,
+      "n": 3
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.4349,
+      "ci95": [
+       0.4148,
+       0.4557
+      ],
+      "p90": 0.4976,
+      "median": 0.4363,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 2.4058,
+      "ci95": [
+       2.335,
+       2.4746
+      ],
+      "p90": 2.5791,
+      "median": 2.396,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 0.545,
+      "ci95": [
+       0.5348,
+       0.555
+      ],
+      "p90": 0.58,
+      "median": 0.5436,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 0.5486,
+      "ci95": [
+       0.3668,
+       0.7682
+      ],
+      "p90": 1.5637,
+      "median": 0.3022,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 0.3414,
+      "ci95": [
+       0.311,
+       0.3784
+      ],
+      "p90": 0.4232,
+      "median": 0.3226,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 0.8551,
+      "ci95": [
+       0.8154,
+       0.9027
+      ],
+      "p90": 1.0782,
+      "median": 0.8185,
+      "n": 30
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 0.7919,
+      "ci95": [
+       0.7858,
+       0.7986
+      ],
+      "p90": 0.8187,
+      "median": 0.7891,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 0.938,
+      "ci95": [
+       0.8939,
+       0.9884
+      ],
+      "p90": 1.0941,
+      "median": 0.8782,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 0.7844,
+      "ci95": [
+       0.7767,
+       0.7936
+      ],
+      "p90": 0.8116,
+      "median": 0.7845,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 0.7854,
+      "ci95": [
+       0.7791,
+       0.7918
+      ],
+      "p90": 0.8078,
+      "median": 0.7838,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 0.7834,
+      "ci95": [
+       0.778,
+       0.7896
+      ],
+      "p90": 0.8023,
+      "median": 0.7788,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 0.8166,
+      "ci95": [
+       0.8068,
+       0.8274
+      ],
+      "p90": 0.8588,
+      "median": 0.8079,
+      "n": 30
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 26.3973,
+      "ci95": [
+       26.1929,
+       26.6201
+      ],
+      "p90": 27.2884,
+      "median": 26.3044,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 31.268,
+      "ci95": [
+       29.7958,
+       32.9459
+      ],
+      "p90": 36.4696,
+      "median": 29.272,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 26.1457,
+      "ci95": [
+       25.8902,
+       26.4529
+      ],
+      "p90": 27.0529,
+      "median": 26.1496,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 26.1792,
+      "ci95": [
+       25.9704,
+       26.3935
+      ],
+      "p90": 26.9273,
+      "median": 26.1265,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 26.1139,
+      "ci95": [
+       25.9338,
+       26.3216
+      ],
+      "p90": 26.7419,
+      "median": 25.9585,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 27.2208,
+      "ci95": [
+       26.8927,
+       27.5798
+      ],
+      "p90": 28.6261,
+      "median": 26.9309,
+      "n": 30
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.157,
+      "ci95": [
+       0.1227,
+       0.1928
+      ],
+      "p90": 0.2667,
+      "median": 0.175,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 3.4815,
+      "ci95": [
+       3.3672,
+       3.5606
+      ],
+      "p90": 3.71,
+      "median": 3.5342,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 0.2115,
+      "ci95": [
+       0.1705,
+       0.2554
+      ],
+      "p90": 0.4086,
+      "median": 0.2329,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 0.221,
+      "ci95": [
+       0.1712,
+       0.2736
+      ],
+      "p90": 0.4597,
+      "median": 0.1978,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 0.2402,
+      "ci95": [
+       0.1934,
+       0.2843
+      ],
+      "p90": 0.3604,
+      "median": 0.2636,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 0.8622,
+      "ci95": [
+       0.8371,
+       0.8879
+      ],
+      "p90": 0.9461,
+      "median": 0.8518,
+      "n": 30
+     }
+    }
+   },
+   "aligned_stock": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.5273,
+      "ci95": [
+       0.4934,
+       0.5665
+      ],
+      "p90": 0.6277,
+      "median": 0.514,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 1.2752,
+      "ci95": [
+       1.2047,
+       1.3437
+      ],
+      "p90": 1.5225,
+      "median": 1.3149,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 2.2056,
+      "ci95": [
+       2.11,
+       2.3009
+      ],
+      "p90": 2.5414,
+      "median": 2.2118,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 0.5609,
+      "ci95": [
+       0.5274,
+       0.5987
+      ],
+      "p90": 0.6827,
+      "median": 0.5373,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 0.4848,
+      "ci95": [
+       0.4621,
+       0.5093
+      ],
+      "p90": 0.5858,
+      "median": 0.47,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 1.0108,
+      "ci95": [
+       0.9867,
+       1.0351
+      ],
+      "p90": 1.0853,
+      "median": 1.0085,
+      "n": 30
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.1651,
+      "ci95": [
+       0.0714,
+       0.2774
+      ],
+      "p90": 0.2512,
+      "median": 0.1464,
+      "n": 3
+     },
+     "shoulder_lift": {
+      "mean": 0.5802,
+      "ci95": [
+       0.4367,
+       0.692
+      ],
+      "p90": 0.676,
+      "median": 0.612,
+      "n": 3
+     },
+     "elbow_flex": {
+      "mean": 0.5913,
+      "ci95": [
+       0.5435,
+       0.687
+      ],
+      "p90": 0.6583,
+      "median": 0.5435,
+      "n": 3
+     },
+     "wrist_flex": {
+      "mean": 0.2493,
+      "ci95": [
+       0.0219,
+       0.5045
+      ],
+      "p90": 0.4479,
+      "median": 0.2215,
+      "n": 3
+     },
+     "wrist_roll": {
+      "mean": 0.209,
+      "ci95": [
+       0.1757,
+       0.2548
+      ],
+      "p90": 0.2432,
+      "median": 0.1966,
+      "n": 3
+     },
+     "arm_mean": {
+      "mean": 0.359,
+      "ci95": [
+       0.3419,
+       0.3737
+      ],
+      "p90": 0.3712,
+      "median": 0.3613,
+      "n": 3
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 5.1847,
+      "ci95": [
+       4.9123,
+       5.4487
+      ],
+      "p90": 6.245,
+      "median": 5.2468,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 5.3262,
+      "ci95": [
+       5.083,
+       5.5696
+      ],
+      "p90": 6.1255,
+      "median": 5.2489,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 3.5649,
+      "ci95": [
+       3.4217,
+       3.7073
+      ],
+      "p90": 3.9719,
+      "median": 3.6485,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 3.1988,
+      "ci95": [
+       2.9906,
+       3.4236
+      ],
+      "p90": 4.042,
+      "median": 3.1522,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 3.4427,
+      "ci95": [
+       3.2164,
+       3.678
+      ],
+      "p90": 4.2222,
+      "median": 3.4159,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 4.1435,
+      "ci95": [
+       3.997,
+       4.2791
+      ],
+      "p90": 4.644,
+      "median": 4.114,
+      "n": 30
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.7906,
+      "ci95": [
+       3.7838,
+       3.7978
+      ],
+      "p90": 3.8184,
+      "median": 3.7886,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 3.8834,
+      "ci95": [
+       3.8551,
+       3.916
+      ],
+      "p90": 4.004,
+      "median": 3.8497,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 3.7838,
+      "ci95": [
+       3.7758,
+       3.7938
+      ],
+      "p90": 3.8067,
+      "median": 3.7816,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 3.784,
+      "ci95": [
+       3.7781,
+       3.7901
+      ],
+      "p90": 3.8089,
+      "median": 3.7823,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 3.78,
+      "ci95": [
+       3.7763,
+       3.7841
+      ],
+      "p90": 3.7926,
+      "median": 3.7777,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 3.8044,
+      "ci95": [
+       3.7973,
+       3.812
+      ],
+      "p90": 3.8369,
+      "median": 3.7981,
+      "n": 30
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 126.3542,
+      "ci95": [
+       126.1278,
+       126.595
+      ],
+      "p90": 127.2787,
+      "median": 126.2857,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 129.4457,
+      "ci95": [
+       128.5033,
+       130.5343
+      ],
+      "p90": 133.4663,
+      "median": 128.3222,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 126.1254,
+      "ci95": [
+       125.8612,
+       126.4596
+      ],
+      "p90": 126.8913,
+      "median": 126.0518,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 126.1332,
+      "ci95": [
+       125.938,
+       126.3363
+      ],
+      "p90": 126.9627,
+      "median": 126.0774,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 126.0007,
+      "ci95": [
+       125.8778,
+       126.1364
+      ],
+      "p90": 126.4197,
+      "median": 125.9245,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 126.8118,
+      "ci95": [
+       126.575,
+       127.066
+      ],
+      "p90": 127.8962,
+      "median": 126.602,
+      "n": 30
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.1572,
+      "ci95": [
+       0.1231,
+       0.1928
+      ],
+      "p90": 0.2667,
+      "median": 0.175,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 0.5217,
+      "ci95": [
+       0.4754,
+       0.5628
+      ],
+      "p90": 0.6221,
+      "median": 0.5243,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 0.5787,
+      "ci95": [
+       0.5348,
+       0.6199
+      ],
+      "p90": 0.6329,
+      "median": 0.6301,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 0.2212,
+      "ci95": [
+       0.1715,
+       0.2739
+      ],
+      "p90": 0.4601,
+      "median": 0.1981,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 0.2402,
+      "ci95": [
+       0.1934,
+       0.2843
+      ],
+      "p90": 0.3604,
+      "median": 0.2636,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 0.3438,
+      "ci95": [
+       0.3264,
+       0.3615
+      ],
+      "p90": 0.3958,
+      "median": 0.345,
+      "n": 30
+     }
+    }
+   },
+   "baseline": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.2918,
+      "ci95": [
+       0.2716,
+       0.3212
+      ],
+      "p90": 0.3236,
+      "median": 0.2802,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 0.8291,
+      "ci95": [
+       0.7832,
+       0.8774
+      ],
+      "p90": 1.0168,
+      "median": 0.8232,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 1.5321,
+      "ci95": [
+       1.4853,
+       1.5799
+      ],
+      "p90": 1.6796,
+      "median": 1.5365,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 0.3439,
+      "ci95": [
+       0.3221,
+       0.3677
+      ],
+      "p90": 0.4482,
+      "median": 0.3256,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 0.2712,
+      "ci95": [
+       0.2541,
+       0.2913
+      ],
+      "p90": 0.3229,
+      "median": 0.2594,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 0.6536,
+      "ci95": [
+       0.6409,
+       0.6672
+      ],
+      "p90": 0.6978,
+      "median": 0.6528,
+      "n": 30
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.1775,
+      "ci95": [
+       0.0995,
+       0.3103
+      ],
+      "p90": 0.2728,
+      "median": 0.1227,
+      "n": 3
+     },
+     "shoulder_lift": {
+      "mean": 0.2906,
+      "ci95": [
+       0.1758,
+       0.4377
+      ],
+      "p90": 0.4018,
+      "median": 0.2582,
+      "n": 3
+     },
+     "elbow_flex": {
+      "mean": 2.0179,
+      "ci95": [
+       1.9589,
+       2.0475
+      ],
+      "p90": 2.0474,
+      "median": 2.0473,
+      "n": 3
+     },
+     "wrist_flex": {
+      "mean": 0.2503,
+      "ci95": [
+       0.1188,
+       0.4107
+      ],
+      "p90": 0.3729,
+      "median": 0.2215,
+      "n": 3
+     },
+     "wrist_roll": {
+      "mean": 0.1726,
+      "ci95": [
+       0.134,
+       0.2134
+      ],
+      "p90": 0.2048,
+      "median": 0.1703,
+      "n": 3
+     },
+     "arm_mean": {
+      "mean": 0.5818,
+      "ci95": [
+       0.5252,
+       0.6305
+      ],
+      "p90": 0.6223,
+      "median": 0.5896,
+      "n": 3
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 5.4896,
+      "ci95": [
+       5.2017,
+       5.768
+      ],
+      "p90": 6.5294,
+      "median": 5.5916,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 5.5728,
+      "ci95": [
+       5.3543,
+       5.7854
+      ],
+      "p90": 6.2303,
+      "median": 5.6217,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 4.2411,
+      "ci95": [
+       4.0913,
+       4.3902
+      ],
+      "p90": 4.7072,
+      "median": 4.2903,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 3.308,
+      "ci95": [
+       3.0925,
+       3.5372
+      ],
+      "p90": 4.1353,
+      "median": 3.261,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 3.6293,
+      "ci95": [
+       3.386,
+       3.8816
+      ],
+      "p90": 4.4979,
+      "median": 3.5954,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 4.4482,
+      "ci95": [
+       4.2994,
+       4.5832
+      ],
+      "p90": 4.9224,
+      "median": 4.4736,
+      "n": 30
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.9816,
+      "ci95": [
+       3.9801,
+       3.9831
+      ],
+      "p90": 3.9864,
+      "median": 3.981,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 4.0402,
+      "ci95": [
+       4.0375,
+       4.0429
+      ],
+      "p90": 4.0485,
+      "median": 4.0416,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 4.1907,
+      "ci95": [
+       4.181,
+       4.2002
+      ],
+      "p90": 4.2219,
+      "median": 4.1894,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 3.9481,
+      "ci95": [
+       3.9442,
+       3.9518
+      ],
+      "p90": 3.9604,
+      "median": 3.9479,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 3.9674,
+      "ci95": [
+       3.9643,
+       3.9701
+      ],
+      "p90": 3.9771,
+      "median": 3.969,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 4.0256,
+      "ci95": [
+       4.0229,
+       4.0282
+      ],
+      "p90": 4.0336,
+      "median": 4.0262,
+      "n": 30
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 132.7216,
+      "ci95": [
+       132.67,
+       132.77
+      ],
+      "p90": 132.8813,
+      "median": 132.7001,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 134.6745,
+      "ci95": [
+       134.5844,
+       134.7636
+      ],
+      "p90": 134.9501,
+      "median": 134.7208,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 139.6915,
+      "ci95": [
+       139.3662,
+       140.0056
+      ],
+      "p90": 140.7288,
+      "median": 139.6462,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 131.6032,
+      "ci95": [
+       131.472,
+       131.7253
+      ],
+      "p90": 132.014,
+      "median": 131.597,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 132.2454,
+      "ci95": [
+       132.1432,
+       132.337
+      ],
+      "p90": 132.5711,
+      "median": 132.3003,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 134.1873,
+      "ci95": [
+       134.0956,
+       134.2738
+      ],
+      "p90": 134.4521,
+      "median": 134.2079,
+      "n": 30
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.1556,
+      "ci95": [
+       0.1203,
+       0.1929
+      ],
+      "p90": 0.2996,
+      "median": 0.1474,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 0.3729,
+      "ci95": [
+       0.3109,
+       0.4527
+      ],
+      "p90": 0.5215,
+      "median": 0.3458,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 2.0827,
+      "ci95": [
+       2.0387,
+       2.124
+      ],
+      "p90": 2.1383,
+      "median": 2.1341,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 0.2917,
+      "ci95": [
+       0.2457,
+       0.3396
+      ],
+      "p90": 0.4723,
+      "median": 0.2911,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 0.2291,
+      "ci95": [
+       0.1875,
+       0.2724
+      ],
+      "p90": 0.3938,
+      "median": 0.2219,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 0.6264,
+      "ci95": [
+       0.601,
+       0.6521
+      ],
+      "p90": 0.6992,
+      "median": 0.621,
+      "n": 30
+     }
+    }
+   },
+   "calibrated": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.2883,
+      "ci95": [
+       0.2753,
+       0.3038
+      ],
+      "p90": 0.3224,
+      "median": 0.2857,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 0.4588,
+      "ci95": [
+       0.4387,
+       0.4804
+      ],
+      "p90": 0.5365,
+      "median": 0.455,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 0.8337,
+      "ci95": [
+       0.8036,
+       0.863
+      ],
+      "p90": 0.9259,
+      "median": 0.8237,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 0.2493,
+      "ci95": [
+       0.231,
+       0.2684
+      ],
+      "p90": 0.3297,
+      "median": 0.2493,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 0.2296,
+      "ci95": [
+       0.2171,
+       0.2427
+      ],
+      "p90": 0.2679,
+      "median": 0.2293,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 0.4119,
+      "ci95": [
+       0.4019,
+       0.4224
+      ],
+      "p90": 0.4555,
+      "median": 0.4093,
+      "n": 30
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.1567,
+      "ci95": [
+       0.0422,
+       0.2559
+      ],
+      "p90": 0.2391,
+      "median": 0.1719,
+      "n": 3
+     },
+     "shoulder_lift": {
+      "mean": 0.2301,
+      "ci95": [
+       0.1243,
+       0.37
+      ],
+      "p90": 0.3352,
+      "median": 0.1961,
+      "n": 3
+     },
+     "elbow_flex": {
+      "mean": 0.8425,
+      "ci95": [
+       0.6694,
+       1.0868
+      ],
+      "p90": 1.0237,
+      "median": 0.7713,
+      "n": 3
+     },
+     "wrist_flex": {
+      "mean": 0.128,
+      "ci95": [
+       0.0862,
+       0.1542
+      ],
+      "p90": 0.1521,
+      "median": 0.1435,
+      "n": 3
+     },
+     "wrist_roll": {
+      "mean": 0.1012,
+      "ci95": [
+       0.0618,
+       0.1506
+      ],
+      "p90": 0.1387,
+      "median": 0.0912,
+      "n": 3
+     },
+     "arm_mean": {
+      "mean": 0.2917,
+      "ci95": [
+       0.251,
+       0.3489
+      ],
+      "p90": 0.3342,
+      "median": 0.2752,
+      "n": 3
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 5.4543,
+      "ci95": [
+       5.1726,
+       5.7262
+      ],
+      "p90": 6.469,
+      "median": 5.5594,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 5.725,
+      "ci95": [
+       5.5028,
+       5.9439
+      ],
+      "p90": 6.3278,
+      "median": 5.779,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 4.5536,
+      "ci95": [
+       4.4306,
+       4.675
+      ],
+      "p90": 4.9988,
+      "median": 4.5529,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 3.254,
+      "ci95": [
+       3.0525,
+       3.469
+      ],
+      "p90": 3.9986,
+      "median": 3.2025,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 3.5759,
+      "ci95": [
+       3.342,
+       3.8195
+      ],
+      "p90": 4.4184,
+      "median": 3.5477,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 4.5126,
+      "ci95": [
+       4.3696,
+       4.6437
+      ],
+      "p90": 4.9667,
+      "median": 4.5183,
+      "n": 30
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.9671,
+      "ci95": [
+       3.9651,
+       3.9692
+      ],
+      "p90": 3.9749,
+      "median": 3.9655,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 4.0966,
+      "ci95": [
+       4.0842,
+       4.1107
+      ],
+      "p90": 4.1401,
+      "median": 4.0879,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 4.2871,
+      "ci95": [
+       4.2573,
+       4.317
+      ],
+      "p90": 4.4088,
+      "median": 4.2621,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 3.9184,
+      "ci95": [
+       3.9068,
+       3.9304
+      ],
+      "p90": 3.9677,
+      "median": 3.9137,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 3.9375,
+      "ci95": [
+       3.933,
+       3.9422
+      ],
+      "p90": 3.9556,
+      "median": 3.9364,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 4.0413,
+      "ci95": [
+       4.0337,
+       4.0494
+      ],
+      "p90": 4.0635,
+      "median": 4.0422,
+      "n": 30
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 132.238,
+      "ci95": [
+       132.1714,
+       132.3061
+      ],
+      "p90": 132.4971,
+      "median": 132.1818,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 136.5538,
+      "ci95": [
+       136.1397,
+       137.0223
+      ],
+      "p90": 138.0029,
+      "median": 136.2627,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 142.9017,
+      "ci95": [
+       141.911,
+       143.9008
+      ],
+      "p90": 146.96,
+      "median": 142.0694,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 130.6145,
+      "ci95": [
+       130.2254,
+       131.0133
+      ],
+      "p90": 132.2568,
+      "median": 130.4561,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 131.2502,
+      "ci95": [
+       131.0999,
+       131.408
+      ],
+      "p90": 131.8543,
+      "median": 131.2123,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 134.7116,
+      "ci95": [
+       134.4569,
+       134.9807
+      ],
+      "p90": 135.4508,
+      "median": 134.7388,
+      "n": 30
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.1307,
+      "ci95": [
+       0.0996,
+       0.1631
+      ],
+      "p90": 0.2605,
+      "median": 0.1296,
+      "n": 30
+     },
+     "shoulder_lift": {
+      "mean": 0.3557,
+      "ci95": [
+       0.2971,
+       0.4153
+      ],
+      "p90": 0.5441,
+      "median": 0.3484,
+      "n": 30
+     },
+     "elbow_flex": {
+      "mean": 1.0316,
+      "ci95": [
+       0.947,
+       1.1135
+      ],
+      "p90": 1.3632,
+      "median": 1.0407,
+      "n": 30
+     },
+     "wrist_flex": {
+      "mean": 0.1654,
+      "ci95": [
+       0.1273,
+       0.204
+      ],
+      "p90": 0.3233,
+      "median": 0.1323,
+      "n": 30
+     },
+     "wrist_roll": {
+      "mean": 0.1296,
+      "ci95": [
+       0.0988,
+       0.1623
+      ],
+      "p90": 0.2534,
+      "median": 0.1076,
+      "n": 30
+     },
+     "arm_mean": {
+      "mean": 0.3626,
+      "ci95": [
+       0.3377,
+       0.3887
+      ],
+      "p90": 0.4588,
+      "median": 0.3458,
+      "n": 30
+     }
+    }
+   },
+   "improvement_calibrated_vs_stock": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 4.4069,
+      "ci95": [
+       4.2537,
+       4.5481
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9145,
+      "ci95": [
+       0.9118,
+       0.9169
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9145,
+      "ci95": [
+       -0.9169,
+       -0.9118
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9155,
+      "median_ci95": [
+       -0.9181,
+       -0.9127
+      ],
+      "min": -0.9275,
+      "max": -0.8862
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": 5.5759,
+      "ci95": [
+       5.2714,
+       5.888
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9508,
+      "ci95": [
+       0.9477,
+       0.9537
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9508,
+      "ci95": [
+       -0.9537,
+       -0.9477
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9513,
+      "median_ci95": [
+       -0.9532,
+       -0.9473
+      ],
+      "min": -0.9631,
+      "max": -0.9255
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 5.6745,
+      "ci95": [
+       5.4808,
+       5.8712
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9252,
+      "ci95": [
+       0.9219,
+       0.9287
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9252,
+      "ci95": [
+       -0.9287,
+       -0.9219
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9253,
+      "median_ci95": [
+       -0.929,
+       -0.9189
+      ],
+      "min": -0.9473,
+      "max": -0.9117
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 3.8296,
+      "ci95": [
+       3.6824,
+       3.9831
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8212,
+      "ci95": [
+       0.8133,
+       0.8294
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8212,
+      "ci95": [
+       -0.8294,
+       -0.8133
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.82,
+      "median_ci95": [
+       -0.8258,
+       -0.808
+      ],
+      "min": -0.8719,
+      "max": -0.7799
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 3.3104,
+      "ci95": [
+       3.0604,
+       3.5702
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.93,
+      "ci95": [
+       0.9236,
+       0.9359
+      ]
+     },
+     "rel_change": {
+      "mean": -0.93,
+      "ci95": [
+       -0.9359,
+       -0.9236
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9305,
+      "median_ci95": [
+       -0.9385,
+       -0.9234
+      ],
+      "min": -0.9558,
+      "max": -0.8913
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": 3.6442,
+      "ci95": [
+       3.3826,
+       3.9212
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9407,
+      "ci95": [
+       0.9361,
+       0.9447
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9407,
+      "ci95": [
+       -0.9447,
+       -0.9361
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9422,
+      "median_ci95": [
+       -0.9458,
+       -0.9372
+      ],
+      "min": -0.9568,
+      "max": -0.8847
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    }
+   },
+   "improvement_aligned_vs_stock": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 3.8081,
+      "ci95": [
+       3.6565,
+       3.9482
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.7902,
+      "ci95": [
+       0.7825,
+       0.7968
+      ]
+     },
+     "rel_change": {
+      "mean": -0.7902,
+      "ci95": [
+       -0.7968,
+       -0.7825
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.7939,
+      "median_ci95": [
+       -0.7996,
+       -0.7854
+      ],
+      "min": -0.8155,
+      "max": -0.7321
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": 5.337,
+      "ci95": [
+       5.0512,
+       5.6286
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9101,
+      "ci95": [
+       0.9047,
+       0.9139
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9101,
+      "ci95": [
+       -0.9139,
+       -0.9047
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9131,
+      "median_ci95": [
+       -0.9139,
+       -0.9098
+      ],
+      "min": -0.923,
+      "max": -0.847
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 4.8581,
+      "ci95": [
+       4.659,
+       5.0624
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.7921,
+      "ci95": [
+       0.7796,
+       0.8046
+      ]
+     },
+     "rel_change": {
+      "mean": -0.7921,
+      "ci95": [
+       -0.8046,
+       -0.7796
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.7919,
+      "median_ci95": [
+       -0.8044,
+       -0.7729
+      ],
+      "min": -0.847,
+      "max": -0.7236
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 2.4576,
+      "ci95": [
+       2.2941,
+       2.6214
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.527,
+      "ci95": [
+       0.5031,
+       0.5501
+      ]
+     },
+     "rel_change": {
+      "mean": -0.527,
+      "ci95": [
+       -0.5501,
+       -0.5031
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.5402,
+      "median_ci95": [
+       -0.5629,
+       -0.4872
+      ],
+      "min": -0.6627,
+      "max": -0.3987
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 2.9987,
+      "ci95": [
+       2.7725,
+       3.2352
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8424,
+      "ci95": [
+       0.8356,
+       0.8488
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8424,
+      "ci95": [
+       -0.8488,
+       -0.8356
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8424,
+      "median_ci95": [
+       -0.8525,
+       -0.8326
+      ],
+      "min": -0.8775,
+      "max": -0.8022
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": 3.3889,
+      "ci95": [
+       3.1319,
+       3.6586
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8748,
+      "ci95": [
+       0.8658,
+       0.8816
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8748,
+      "ci95": [
+       -0.8816,
+       -0.8658
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8782,
+      "median_ci95": [
+       -0.8832,
+       -0.8745
+      ],
+      "min": -0.9006,
+      "max": -0.7423
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    }
+   },
+   "improvement_calibrated_vs_baseline": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 0.2417,
+      "ci95": [
+       0.2257,
+       0.2584
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.3697,
+      "ci95": [
+       0.3496,
+       0.3889
+      ]
+     },
+     "rel_change": {
+      "mean": -0.3697,
+      "ci95": [
+       -0.3889,
+       -0.3496
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.3603,
+      "median_ci95": [
+       -0.3894,
+       -0.3493
+      ],
+      "min": -0.4653,
+      "max": -0.2465
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": 0.0035,
+      "ci95": [
+       -0.0077,
+       0.0203
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.0119,
+      "ci95": [
+       -0.0275,
+       0.0615
+      ]
+     },
+     "rel_change": {
+      "mean": -0.0119,
+      "ci95": [
+       -0.0615,
+       0.0275
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": 0.0069,
+      "median_ci95": [
+       -0.0092,
+       0.0302
+      ],
+      "min": -0.3062,
+      "max": 0.1801
+     },
+     "episodes_improved": 13,
+     "episodes_total": 30
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 0.3703,
+      "ci95": [
+       0.325,
+       0.4172
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.4466,
+      "ci95": [
+       0.4097,
+       0.4803
+      ]
+     },
+     "rel_change": {
+      "mean": -0.4466,
+      "ci95": [
+       -0.4803,
+       -0.4097
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.4352,
+      "median_ci95": [
+       -0.4849,
+       -0.4001
+      ],
+      "min": -0.5985,
+      "max": -0.1936
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 0.6984,
+      "ci95": [
+       0.6345,
+       0.7619
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.4558,
+      "ci95": [
+       0.4256,
+       0.4847
+      ]
+     },
+     "rel_change": {
+      "mean": -0.4558,
+      "ci95": [
+       -0.4847,
+       -0.4256
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.4504,
+      "median_ci95": [
+       -0.4839,
+       -0.4209
+      ],
+      "min": -0.631,
+      "max": -0.2531
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 0.0946,
+      "ci95": [
+       0.0779,
+       0.1109
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.2751,
+      "ci95": [
+       0.2339,
+       0.3125
+      ]
+     },
+     "rel_change": {
+      "mean": -0.2751,
+      "ci95": [
+       -0.3125,
+       -0.2339
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.287,
+      "median_ci95": [
+       -0.3288,
+       -0.2435
+      ],
+      "min": -0.4841,
+      "max": -0.0124
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": 0.0417,
+      "ci95": [
+       0.028,
+       0.0564
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.1536,
+      "ci95": [
+       0.1077,
+       0.1995
+      ]
+     },
+     "rel_change": {
+      "mean": -0.1536,
+      "ci95": [
+       -0.1995,
+       -0.1077
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.1225,
+      "median_ci95": [
+       -0.2,
+       -0.0674
+      ],
+      "min": -0.3635,
+      "max": 0.0797
+     },
+     "episodes_improved": 28,
+     "episodes_total": 30
+    }
+   },
+   "improvement_baseline_vs_stock": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 4.1652,
+      "ci95": [
+       4.0062,
+       4.3112
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8644,
+      "ci95": [
+       0.859,
+       0.8693
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8644,
+      "ci95": [
+       -0.8693,
+       -0.859
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.868,
+      "median_ci95": [
+       -0.8718,
+       -0.8595
+      ],
+      "min": -0.8876,
+      "max": -0.8154
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": 5.5725,
+      "ci95": [
+       5.264,
+       5.8861
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9502,
+      "ci95": [
+       0.9447,
+       0.9546
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9502,
+      "ci95": [
+       -0.9546,
+       -0.9447
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9508,
+      "median_ci95": [
+       -0.9547,
+       -0.9478
+      ],
+      "min": -0.9685,
+      "max": -0.8926
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 5.3042,
+      "ci95": [
+       5.1191,
+       5.4939
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8648,
+      "ci95": [
+       0.8572,
+       0.8721
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8648,
+      "ci95": [
+       -0.8721,
+       -0.8572
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8663,
+      "median_ci95": [
+       -0.8734,
+       -0.8623
+      ],
+      "min": -0.9022,
+      "max": -0.8203
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 3.1312,
+      "ci95": [
+       2.9813,
+       3.2881
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.6715,
+      "ci95": [
+       0.6572,
+       0.6847
+      ]
+     },
+     "rel_change": {
+      "mean": -0.6715,
+      "ci95": [
+       -0.6847,
+       -0.6572
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.6722,
+      "median_ci95": [
+       -0.6885,
+       -0.6596
+      ],
+      "min": -0.7328,
+      "max": -0.6001
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 3.2158,
+      "ci95": [
+       2.9665,
+       3.4779
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9034,
+      "ci95": [
+       0.8946,
+       0.9115
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9034,
+      "ci95": [
+       -0.9115,
+       -0.8946
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9041,
+      "median_ci95": [
+       -0.9119,
+       -0.8934
+      ],
+      "min": -0.9345,
+      "max": -0.8459
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": 3.6025,
+      "ci95": [
+       3.3333,
+       3.8873
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.93,
+      "ci95": [
+       0.9218,
+       0.9363
+      ]
+     },
+     "rel_change": {
+      "mean": -0.93,
+      "ci95": [
+       -0.9363,
+       -0.9218
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9351,
+      "median_ci95": [
+       -0.9371,
+       -0.9276
+      ],
+      "min": -0.9569,
+      "max": -0.8188
+     },
+     "episodes_improved": 30,
+     "episodes_total": 30
+    }
+   }
+  },
+  "interleaved": {
+   "n_episodes": 10,
+   "real": {
+    "real_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 5.6038,
+      "ci95": [
+       5.0372,
+       6.2622
+      ],
+      "p90": 6.6657,
+      "median": 5.395,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 6.0579,
+      "ci95": [
+       5.6929,
+       6.4663
+      ],
+      "p90": 6.8867,
+      "median": 5.8992,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.5975,
+      "ci95": [
+       4.3604,
+       4.8174
+      ],
+      "p90": 5.0345,
+      "median": 4.55,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.54,
+      "ci95": [
+       3.162,
+       3.9273
+      ],
+      "p90": 4.4767,
+      "median": 3.5,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.5177,
+      "ci95": [
+       3.0273,
+       4.1909
+      ],
+      "p90": 4.0515,
+      "median": 3.3117,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.6634,
+      "ci95": [
+       4.3255,
+       4.9813
+      ],
+      "p90": 5.1456,
+      "median": 4.7194,
+      "n": 10
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.9875,
+      "ci95": [
+       3.9578,
+       4.0151
+      ],
+      "p90": 4.0352,
+      "median": 3.9986,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 4.0739,
+      "ci95": [
+       4.0472,
+       4.1021
+      ],
+      "p90": 4.1388,
+      "median": 4.0688,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.1182,
+      "ci95": [
+       4.0972,
+       4.1387
+      ],
+      "p90": 4.1671,
+      "median": 4.1196,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.8912,
+      "ci95": [
+       3.8767,
+       3.9061
+      ],
+      "p90": 3.9155,
+      "median": 3.8917,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.9229,
+      "ci95": [
+       3.9042,
+       3.9457
+      ],
+      "p90": 3.9502,
+      "median": 3.9141,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 3.9987,
+      "ci95": [
+       3.9858,
+       4.012
+      ],
+      "p90": 4.0241,
+      "median": 3.9981,
+      "n": 10
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 132.9175,
+      "ci95": [
+       131.9278,
+       133.8383
+      ],
+      "p90": 134.505,
+      "median": 133.288,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 135.7972,
+      "ci95": [
+       134.9068,
+       136.7366
+      ],
+      "p90": 137.9591,
+      "median": 135.628,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 137.2728,
+      "ci95": [
+       136.5717,
+       137.9578
+      ],
+      "p90": 138.9021,
+      "median": 137.3184,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 129.7078,
+      "ci95": [
+       129.2229,
+       130.2023
+      ],
+      "p90": 130.515,
+      "median": 129.7235,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 130.7625,
+      "ci95": [
+       130.1412,
+       131.5249
+      ],
+      "p90": 131.6721,
+      "median": 130.4711,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 133.2916,
+      "ci95": [
+       132.8615,
+       133.7341
+      ],
+      "p90": 134.1369,
+      "median": 133.2705,
+      "n": 10
+     }
+    }
+   },
+   "stock": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 5.9623,
+      "ci95": [
+       5.3848,
+       6.6388
+      ],
+      "p90": 7.055,
+      "median": 5.7222,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 6.5617,
+      "ci95": [
+       6.2084,
+       6.9295
+      ],
+      "p90": 7.3514,
+      "median": 6.4836,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.8246,
+      "ci95": [
+       4.5786,
+       5.048
+      ],
+      "p90": 5.3016,
+      "median": 4.773,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.8577,
+      "ci95": [
+       3.4608,
+       4.2681
+      ],
+      "p90": 4.766,
+      "median": 3.7861,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.787,
+      "ci95": [
+       3.2572,
+       4.4987
+      ],
+      "p90": 4.3751,
+      "median": 3.5666,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.9987,
+      "ci95": [
+       4.6598,
+       5.3201
+      ],
+      "p90": 5.4874,
+      "median": 5.0632,
+      "n": 10
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.1503,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.1503,
+      "median": 0.1503,
+      "n": 1
+     },
+     "shoulder_lift": {
+      "mean": 3.5342,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 3.5342,
+      "median": 3.5342,
+      "n": 1
+     },
+     "elbow_flex": {
+      "mean": 0.2329,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.2329,
+      "median": 0.2329,
+      "n": 1
+     },
+     "wrist_flex": {
+      "mean": 0.359,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.359,
+      "median": 0.359,
+      "n": 1
+     },
+     "wrist_roll": {
+      "mean": 0.2637,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.2637,
+      "median": 0.2637,
+      "n": 1
+     },
+     "arm_mean": {
+      "mean": 0.908,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.908,
+      "median": 0.908,
+      "n": 1
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.4271,
+      "ci95": [
+       0.3962,
+       0.4577
+      ],
+      "p90": 0.4785,
+      "median": 0.4259,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 2.3109,
+      "ci95": [
+       2.195,
+       2.4354
+      ],
+      "p90": 2.5599,
+      "median": 2.2513,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 0.5398,
+      "ci95": [
+       0.5107,
+       0.5618
+      ],
+      "p90": 0.5803,
+      "median": 0.5421,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.7562,
+      "ci95": [
+       0.4866,
+       1.033
+      ],
+      "p90": 1.3038,
+      "median": 0.6176,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.3077,
+      "ci95": [
+       0.2712,
+       0.3508
+      ],
+      "p90": 0.3594,
+      "median": 0.3038,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.8683,
+      "ci95": [
+       0.8108,
+       0.9316
+      ],
+      "p90": 0.981,
+      "median": 0.817,
+      "n": 10
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 0.8204,
+      "ci95": [
+       0.8004,
+       0.8428
+      ],
+      "p90": 0.8611,
+      "median": 0.8185,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.8797,
+      "ci95": [
+       0.8405,
+       0.9227
+      ],
+      "p90": 0.9397,
+      "median": 0.8914,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 0.7802,
+      "ci95": [
+       0.7713,
+       0.7896
+      ],
+      "p90": 0.7946,
+      "median": 0.7807,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.7778,
+      "ci95": [
+       0.7717,
+       0.7841
+      ],
+      "p90": 0.7885,
+      "median": 0.7767,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.7876,
+      "ci95": [
+       0.7805,
+       0.7945
+      ],
+      "p90": 0.8002,
+      "median": 0.7873,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.8091,
+      "ci95": [
+       0.7965,
+       0.8224
+      ],
+      "p90": 0.8414,
+      "median": 0.806,
+      "n": 10
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 27.3464,
+      "ci95": [
+       26.6796,
+       28.0926
+      ],
+      "p90": 28.7034,
+      "median": 27.2835,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 29.3236,
+      "ci95": [
+       28.0151,
+       30.7571
+      ],
+      "p90": 31.3237,
+      "median": 29.7145,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 26.008,
+      "ci95": [
+       25.7103,
+       26.3187
+      ],
+      "p90": 26.487,
+      "median": 26.0225,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 25.9264,
+      "ci95": [
+       25.7235,
+       26.1356
+      ],
+      "p90": 26.2817,
+      "median": 25.8914,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 26.2528,
+      "ci95": [
+       26.0179,
+       26.4825
+      ],
+      "p90": 26.675,
+      "median": 26.2431,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 26.9714,
+      "ci95": [
+       26.5513,
+       27.4149
+      ],
+      "p90": 28.0467,
+      "median": 26.8672,
+      "n": 10
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.1702,
+      "ci95": [
+       0.0862,
+       0.2626
+      ],
+      "p90": 0.3738,
+      "median": 0.1049,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 3.4815,
+      "ci95": [
+       3.4112,
+       3.5606
+      ],
+      "p90": 3.6309,
+      "median": 3.4463,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 0.1687,
+      "ci95": [
+       0.1309,
+       0.2039
+      ],
+      "p90": 0.2329,
+      "median": 0.145,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.2139,
+      "ci95": [
+       0.1448,
+       0.2977
+      ],
+      "p90": 0.3871,
+      "median": 0.1969,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.3251,
+      "ci95": [
+       0.2109,
+       0.4482
+      ],
+      "p90": 0.5448,
+      "median": 0.3076,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.8719,
+      "ci95": [
+       0.8422,
+       0.9001
+      ],
+      "p90": 0.9319,
+      "median": 0.8733,
+      "n": 10
+     }
+    }
+   },
+   "aligned_stock": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.5485,
+      "ci95": [
+       0.489,
+       0.6182
+      ],
+      "p90": 0.6782,
+      "median": 0.5309,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 1.2676,
+      "ci95": [
+       1.1854,
+       1.3445
+      ],
+      "p90": 1.3851,
+      "median": 1.2797,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 2.1732,
+      "ci95": [
+       2.0213,
+       2.325
+      ],
+      "p90": 2.4882,
+      "median": 2.127,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.5879,
+      "ci95": [
+       0.5233,
+       0.6613
+      ],
+      "p90": 0.6665,
+      "median": 0.5747,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.4802,
+      "ci95": [
+       0.4414,
+       0.5325
+      ],
+      "p90": 0.5309,
+      "median": 0.4593,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 1.0115,
+      "ci95": [
+       0.9581,
+       1.0606
+      ],
+      "p90": 1.0933,
+      "median": 1.0308,
+      "n": 10
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.1158,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.1158,
+      "median": 0.1158,
+      "n": 1
+     },
+     "shoulder_lift": {
+      "mean": 0.4168,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.4168,
+      "median": 0.4168,
+      "n": 1
+     },
+     "elbow_flex": {
+      "mean": 0.5431,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.5431,
+      "median": 0.5431,
+      "n": 1
+     },
+     "wrist_flex": {
+      "mean": 0.3543,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.3543,
+      "median": 0.3543,
+      "n": 1
+     },
+     "wrist_roll": {
+      "mean": 0.2637,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.2637,
+      "median": 0.2637,
+      "n": 1
+     },
+     "arm_mean": {
+      "mean": 0.3387,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.3387,
+      "median": 0.3387,
+      "n": 1
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 5.3367,
+      "ci95": [
+       4.8156,
+       5.9468
+      ],
+      "p90": 6.3059,
+      "median": 5.1528,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 5.5838,
+      "ci95": [
+       5.2418,
+       5.9446
+      ],
+      "p90": 6.3803,
+      "median": 5.4545,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 3.7286,
+      "ci95": [
+       3.5024,
+       3.9325
+      ],
+      "p90": 4.0438,
+      "median": 3.7329,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.4805,
+      "ci95": [
+       3.1032,
+       3.8776
+      ],
+      "p90": 4.3491,
+      "median": 3.4492,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.3863,
+      "ci95": [
+       2.9403,
+       3.9976
+      ],
+      "p90": 3.8594,
+      "median": 3.21,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.3032,
+      "ci95": [
+       3.9833,
+       4.597
+      ],
+      "p90": 4.7821,
+      "median": 4.3784,
+      "n": 10
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.8209,
+      "ci95": [
+       3.8008,
+       3.8431
+      ],
+      "p90": 3.861,
+      "median": 3.8208,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 3.8546,
+      "ci95": [
+       3.8307,
+       3.8772
+      ],
+      "p90": 3.8966,
+      "median": 3.8662,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 3.7788,
+      "ci95": [
+       3.7701,
+       3.787
+      ],
+      "p90": 3.794,
+      "median": 3.7805,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.7794,
+      "ci95": [
+       3.7738,
+       3.7854
+      ],
+      "p90": 3.7875,
+      "median": 3.7786,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.7872,
+      "ci95": [
+       3.7799,
+       3.7944
+      ],
+      "p90": 3.8002,
+      "median": 3.7873,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 3.8042,
+      "ci95": [
+       3.7943,
+       3.815
+      ],
+      "p90": 3.8266,
+      "median": 3.801,
+      "n": 10
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 127.3644,
+      "ci95": [
+       126.6942,
+       128.1042
+      ],
+      "p90": 128.6991,
+      "median": 127.3607,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 128.4858,
+      "ci95": [
+       127.6895,
+       129.2395
+      ],
+      "p90": 129.8876,
+      "median": 128.8744,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 125.9591,
+      "ci95": [
+       125.671,
+       126.2318
+      ],
+      "p90": 126.4652,
+      "median": 126.0177,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 125.9812,
+      "ci95": [
+       125.7934,
+       126.1798
+      ],
+      "p90": 126.2515,
+      "median": 125.9526,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 126.239,
+      "ci95": [
+       125.9971,
+       126.4801
+      ],
+      "p90": 126.6739,
+      "median": 126.2431,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 126.8059,
+      "ci95": [
+       126.4777,
+       127.1677
+      ],
+      "p90": 127.5546,
+      "median": 126.7008,
+      "n": 10
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.1703,
+      "ci95": [
+       0.0862,
+       0.2627
+      ],
+      "p90": 0.3738,
+      "median": 0.1049,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.5532,
+      "ci95": [
+       0.4565,
+       0.6489
+      ],
+      "p90": 0.7882,
+      "median": 0.5746,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 0.6403,
+      "ci95": [
+       0.5875,
+       0.7106
+      ],
+      "p90": 0.7368,
+      "median": 0.6314,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.2141,
+      "ci95": [
+       0.145,
+       0.2978
+      ],
+      "p90": 0.3874,
+      "median": 0.1973,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.3251,
+      "ci95": [
+       0.2109,
+       0.4482
+      ],
+      "p90": 0.5448,
+      "median": 0.3076,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.3806,
+      "ci95": [
+       0.3592,
+       0.4037
+      ],
+      "p90": 0.4172,
+      "median": 0.3786,
+      "n": 10
+     }
+    }
+   },
+   "baseline": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.3125,
+      "ci95": [
+       0.2785,
+       0.3439
+      ],
+      "p90": 0.3771,
+      "median": 0.3196,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.8283,
+      "ci95": [
+       0.7803,
+       0.8739
+      ],
+      "p90": 0.9095,
+      "median": 0.8174,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 1.447,
+      "ci95": [
+       1.3613,
+       1.5407
+      ],
+      "p90": 1.6349,
+      "median": 1.412,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.3287,
+      "ci95": [
+       0.3034,
+       0.3541
+      ],
+      "p90": 0.3918,
+      "median": 0.3252,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.2692,
+      "ci95": [
+       0.249,
+       0.2907
+      ],
+      "p90": 0.3128,
+      "median": 0.2589,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.6372,
+      "ci95": [
+       0.6185,
+       0.6598
+      ],
+      "p90": 0.6781,
+      "median": 0.6241,
+      "n": 10
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.077,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.077,
+      "median": 0.077,
+      "n": 1
+     },
+     "shoulder_lift": {
+      "mean": 0.5098,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.5098,
+      "median": 0.5098,
+      "n": 1
+     },
+     "elbow_flex": {
+      "mean": 2.0473,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 2.0473,
+      "median": 2.0473,
+      "n": 1
+     },
+     "wrist_flex": {
+      "mean": 0.4528,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.4528,
+      "median": 0.4528,
+      "n": 1
+     },
+     "wrist_roll": {
+      "mean": 0.2219,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.2219,
+      "median": 0.2219,
+      "n": 1
+     },
+     "arm_mean": {
+      "mean": 0.6618,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.6618,
+      "median": 0.6618,
+      "n": 1
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 5.5667,
+      "ci95": [
+       5.0396,
+       6.1914
+      ],
+      "p90": 6.5357,
+      "median": 5.3463,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 5.9077,
+      "ci95": [
+       5.5869,
+       6.2549
+      ],
+      "p90": 6.6963,
+      "median": 5.7606,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.4239,
+      "ci95": [
+       4.2047,
+       4.6369
+      ],
+      "p90": 4.8407,
+      "median": 4.3651,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.6029,
+      "ci95": [
+       3.2243,
+       3.9965
+      ],
+      "p90": 4.5074,
+      "median": 3.5655,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.5486,
+      "ci95": [
+       3.0703,
+       4.1937
+      ],
+      "p90": 4.0785,
+      "median": 3.3437,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.61,
+      "ci95": [
+       4.2904,
+       4.906
+      ],
+      "p90": 5.0694,
+      "median": 4.6707,
+      "n": 10
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.9777,
+      "ci95": [
+       3.976,
+       3.9793
+      ],
+      "p90": 3.9804,
+      "median": 3.9782,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 4.0439,
+      "ci95": [
+       4.0411,
+       4.0461
+      ],
+      "p90": 4.0472,
+      "median": 4.0443,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.1943,
+      "ci95": [
+       4.1796,
+       4.2096
+      ],
+      "p90": 4.2261,
+      "median": 4.1894,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.948,
+      "ci95": [
+       3.9423,
+       3.9532
+      ],
+      "p90": 3.9561,
+      "median": 3.9499,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.9633,
+      "ci95": [
+       3.9587,
+       3.9676
+      ],
+      "p90": 3.9704,
+      "median": 3.9647,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.0254,
+      "ci95": [
+       4.0224,
+       4.0285
+      ],
+      "p90": 4.0305,
+      "median": 4.0246,
+      "n": 10
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 132.5897,
+      "ci95": [
+       132.5331,
+       132.6422
+      ],
+      "p90": 132.6791,
+      "median": 132.6052,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 134.7979,
+      "ci95": [
+       134.7022,
+       134.8705
+      ],
+      "p90": 134.9066,
+      "median": 134.8111,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 139.8088,
+      "ci95": [
+       139.3191,
+       140.3186
+      ],
+      "p90": 140.8701,
+      "median": 139.6463,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 131.601,
+      "ci95": [
+       131.4087,
+       131.7727
+      ],
+      "p90": 131.8704,
+      "median": 131.6645,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 132.1086,
+      "ci95": [
+       131.9575,
+       132.2547
+      ],
+      "p90": 132.3452,
+      "median": 132.1577,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 134.1812,
+      "ci95": [
+       134.0798,
+       134.2848
+      ],
+      "p90": 134.35,
+      "median": 134.1542,
+      "n": 10
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.1607,
+      "ci95": [
+       0.0766,
+       0.253
+      ],
+      "p90": 0.3588,
+      "median": 0.108,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.4789,
+      "ci95": [
+       0.2487,
+       0.762
+      ],
+      "p90": 1.1689,
+      "median": 0.3024,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 2.144,
+      "ci95": [
+       2.0911,
+       2.2144
+      ],
+      "p90": 2.2407,
+      "median": 2.1353,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.2759,
+      "ci95": [
+       0.2024,
+       0.3448
+      ],
+      "p90": 0.4165,
+      "median": 0.2911,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.2834,
+      "ci95": [
+       0.1691,
+       0.4065
+      ],
+      "p90": 0.5031,
+      "median": 0.2658,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.6686,
+      "ci95": [
+       0.5989,
+       0.7485
+      ],
+      "p90": 0.8768,
+      "median": 0.6295,
+      "n": 10
+     }
+    }
+   },
+   "calibrated": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.3213,
+      "ci95": [
+       0.2882,
+       0.3579
+      ],
+      "p90": 0.385,
+      "median": 0.3155,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.4981,
+      "ci95": [
+       0.4691,
+       0.5283
+      ],
+      "p90": 0.5544,
+      "median": 0.4916,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 0.8572,
+      "ci95": [
+       0.7989,
+       0.9172
+      ],
+      "p90": 0.9959,
+      "median": 0.8367,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.2274,
+      "ci95": [
+       0.2047,
+       0.2493
+      ],
+      "p90": 0.2603,
+      "median": 0.2343,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.2329,
+      "ci95": [
+       0.2069,
+       0.2631
+      ],
+      "p90": 0.2753,
+      "median": 0.2277,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.4274,
+      "ci95": [
+       0.4078,
+       0.4467
+      ],
+      "p90": 0.4569,
+      "median": 0.4277,
+      "n": 10
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.0607,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.0607,
+      "median": 0.0607,
+      "n": 1
+     },
+     "shoulder_lift": {
+      "mean": 0.105,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.105,
+      "median": 0.105,
+      "n": 1
+     },
+     "elbow_flex": {
+      "mean": 0.7265,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.7265,
+      "median": 0.7265,
+      "n": 1
+     },
+     "wrist_flex": {
+      "mean": 0.3072,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.3072,
+      "median": 0.3072,
+      "n": 1
+     },
+     "wrist_roll": {
+      "mean": 0.1136,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.1136,
+      "median": 0.1136,
+      "n": 1
+     },
+     "arm_mean": {
+      "mean": 0.2626,
+      "ci95": [
+       null,
+       null
+      ],
+      "p90": 0.2626,
+      "median": 0.2626,
+      "n": 1
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 5.5368,
+      "ci95": [
+       5.0187,
+       6.1491
+      ],
+      "p90": 6.5004,
+      "median": 5.3217,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 6.0431,
+      "ci95": [
+       5.7198,
+       6.3954
+      ],
+      "p90": 6.8269,
+      "median": 5.9074,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.7153,
+      "ci95": [
+       4.498,
+       4.888
+      ],
+      "p90": 5.0342,
+      "median": 4.7814,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.5342,
+      "ci95": [
+       3.1763,
+       3.902
+      ],
+      "p90": 4.3833,
+      "median": 3.4848,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.4983,
+      "ci95": [
+       3.0368,
+       4.12
+      ],
+      "p90": 4.0134,
+      "median": 3.3076,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.6655,
+      "ci95": [
+       4.3464,
+       4.961
+      ],
+      "p90": 5.1462,
+      "median": 4.7289,
+      "n": 10
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.9681,
+      "ci95": [
+       3.9642,
+       3.9716
+      ],
+      "p90": 3.9742,
+      "median": 3.9688,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 4.088,
+      "ci95": [
+       4.0769,
+       4.1001
+      ],
+      "p90": 4.115,
+      "median": 4.086,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.269,
+      "ci95": [
+       4.2236,
+       4.3178
+      ],
+      "p90": 4.3606,
+      "median": 4.2545,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.9121,
+      "ci95": [
+       3.8964,
+       3.9273
+      ],
+      "p90": 3.9411,
+      "median": 3.9126,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.9374,
+      "ci95": [
+       3.9294,
+       3.9441
+      ],
+      "p90": 3.9515,
+      "median": 3.9388,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.0349,
+      "ci95": [
+       4.0229,
+       4.0493
+      ],
+      "p90": 4.0625,
+      "median": 4.0276,
+      "n": 10
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 132.2713,
+      "ci95": [
+       132.1412,
+       132.3862
+      ],
+      "p90": 132.473,
+      "median": 132.2946,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 136.2663,
+      "ci95": [
+       135.8961,
+       136.6695
+      ],
+      "p90": 137.167,
+      "median": 136.1985,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 142.2988,
+      "ci95": [
+       140.7863,
+       143.9255
+      ],
+      "p90": 145.353,
+      "median": 141.8173,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 130.4026,
+      "ci95": [
+       129.88,
+       130.9116
+      ],
+      "p90": 131.3703,
+      "median": 130.4202,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 131.2459,
+      "ci95": [
+       130.9808,
+       131.4708
+      ],
+      "p90": 131.7163,
+      "median": 131.2947,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 134.497,
+      "ci95": [
+       134.0983,
+       134.9767
+      ],
+      "p90": 135.4182,
+      "median": 134.2548,
+      "n": 10
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.1498,
+      "ci95": [
+       0.0805,
+       0.2257
+      ],
+      "p90": 0.3106,
+      "median": 0.0992,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.3416,
+      "ci95": [
+       0.2297,
+       0.4461
+      ],
+      "p90": 0.5254,
+      "median": 0.3542,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 1.0966,
+      "ci95": [
+       0.9781,
+       1.2113
+      ],
+      "p90": 1.3072,
+      "median": 1.1045,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.1312,
+      "ci95": [
+       0.0806,
+       0.19
+      ],
+      "p90": 0.1964,
+      "median": 0.1461,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.1987,
+      "ci95": [
+       0.1161,
+       0.2957
+      ],
+      "p90": 0.3613,
+      "median": 0.1477,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.3836,
+      "ci95": [
+       0.3558,
+       0.4107
+      ],
+      "p90": 0.4356,
+      "median": 0.3879,
+      "n": 10
+     }
+    }
+   },
+   "improvement_calibrated_vs_stock": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 4.5713,
+      "ci95": [
+       4.2401,
+       4.8751
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9145,
+      "ci95": [
+       0.9103,
+       0.9181
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9145,
+      "ci95": [
+       -0.9181,
+       -0.9103
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9154,
+      "median_ci95": [
+       -0.9192,
+       -0.9091
+      ],
+      "min": -0.9236,
+      "max": -0.9011
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": 5.6411,
+      "ci95": [
+       5.0917,
+       6.2978
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9461,
+      "ci95": [
+       0.9433,
+       0.9488
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9461,
+      "ci95": [
+       -0.9488,
+       -0.9433
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9465,
+      "median_ci95": [
+       -0.9496,
+       -0.9422
+      ],
+      "min": -0.9554,
+      "max": -0.9376
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 6.0637,
+      "ci95": [
+       5.7078,
+       6.4325
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9241,
+      "ci95": [
+       0.9175,
+       0.9299
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9241,
+      "ci95": [
+       -0.9299,
+       -0.9175
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9259,
+      "median_ci95": [
+       -0.9313,
+       -0.914
+      ],
+      "min": -0.9378,
+      "max": -0.9048
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 3.9673,
+      "ci95": [
+       3.7499,
+       4.1774
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8223,
+      "ci95": [
+       0.8106,
+       0.832
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8223,
+      "ci95": [
+       -0.832,
+       -0.8106
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8246,
+      "median_ci95": [
+       -0.832,
+       -0.816
+      ],
+      "min": -0.8481,
+      "max": -0.7795
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 3.6303,
+      "ci95": [
+       3.2323,
+       4.0305
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9411,
+      "ci95": [
+       0.9316,
+       0.949
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9411,
+      "ci95": [
+       -0.949,
+       -0.9316
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9412,
+      "median_ci95": [
+       -0.9534,
+       -0.923
+      ],
+      "min": -0.9565,
+      "max": -0.916
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": 3.554,
+      "ci95": [
+       3.0374,
+       4.2366
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9385,
+      "ci95": [
+       0.9299,
+       0.9453
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9385,
+      "ci95": [
+       -0.9453,
+       -0.9299
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9421,
+      "median_ci95": [
+       -0.9458,
+       -0.9246
+      ],
+      "min": -0.9541,
+      "max": -0.9064
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    }
+   },
+   "improvement_aligned_vs_stock": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 3.9872,
+      "ci95": [
+       3.6825,
+       4.2764
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.7977,
+      "ci95": [
+       0.7881,
+       0.8063
+      ]
+     },
+     "rel_change": {
+      "mean": -0.7977,
+      "ci95": [
+       -0.8063,
+       -0.7881
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.7995,
+      "median_ci95": [
+       -0.8112,
+       -0.7809
+      ],
+      "min": -0.8145,
+      "max": -0.7764
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": 5.4138,
+      "ci95": [
+       4.8925,
+       6.0382
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.908,
+      "ci95": [
+       0.9047,
+       0.9116
+      ]
+     },
+     "rel_change": {
+      "mean": -0.908,
+      "ci95": [
+       -0.9116,
+       -0.9047
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.907,
+      "median_ci95": [
+       -0.9124,
+       -0.9028
+      ],
+      "min": -0.9203,
+      "max": -0.901
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 5.2941,
+      "ci95": [
+       4.9782,
+       5.6298
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8068,
+      "ci95": [
+       0.7964,
+       0.8189
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8068,
+      "ci95": [
+       -0.8189,
+       -0.7964
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8045,
+      "median_ci95": [
+       -0.8164,
+       -0.791
+      ],
+      "min": -0.8454,
+      "max": -0.7846
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 2.6514,
+      "ci95": [
+       2.4654,
+       2.8654
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.5496,
+      "ci95": [
+       0.5246,
+       0.5782
+      ]
+     },
+     "rel_change": {
+      "mean": -0.5496,
+      "ci95": [
+       -0.5782,
+       -0.5246
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.5299,
+      "median_ci95": [
+       -0.582,
+       -0.516
+      ],
+      "min": -0.6364,
+      "max": -0.4964
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 3.2698,
+      "ci95": [
+       2.9302,
+       3.6132
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8476,
+      "ci95": [
+       0.8387,
+       0.8557
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8476,
+      "ci95": [
+       -0.8557,
+       -0.8387
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8523,
+      "median_ci95": [
+       -0.8585,
+       -0.8318
+      ],
+      "min": -0.8635,
+      "max": -0.827
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": 3.3068,
+      "ci95": [
+       2.8089,
+       3.964
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8732,
+      "ci95": [
+       0.8606,
+       0.8838
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8732,
+      "ci95": [
+       -0.8838,
+       -0.8606
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8695,
+      "median_ci95": [
+       -0.8882,
+       -0.8555
+      ],
+      "min": -0.896,
+      "max": -0.8338
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    }
+   },
+   "improvement_calibrated_vs_baseline": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 0.2098,
+      "ci95": [
+       0.1844,
+       0.2395
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.3293,
+      "ci95": [
+       0.2939,
+       0.3669
+      ]
+     },
+     "rel_change": {
+      "mean": -0.3293,
+      "ci95": [
+       -0.3669,
+       -0.2939
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.3172,
+      "median_ci95": [
+       -0.3708,
+       -0.279
+      ],
+      "min": -0.448,
+      "max": -0.2468
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": -0.0087,
+      "ci95": [
+       -0.0293,
+       0.0069
+      ]
+     },
+     "rel_reduction": {
+      "mean": -0.028,
+      "ci95": [
+       -0.0931,
+       0.0227
+      ]
+     },
+     "rel_change": {
+      "mean": 0.028,
+      "ci95": [
+       -0.0227,
+       0.0931
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.0061,
+      "median_ci95": [
+       -0.0308,
+       0.0893
+      ],
+      "min": -0.0701,
+      "max": 0.2408
+     },
+     "episodes_improved": 5,
+     "episodes_total": 10
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 0.3302,
+      "ci95": [
+       0.282,
+       0.3779
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.3987,
+      "ci95": [
+       0.3527,
+       0.4393
+      ]
+     },
+     "rel_change": {
+      "mean": -0.3987,
+      "ci95": [
+       -0.4393,
+       -0.3527
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.4126,
+      "median_ci95": [
+       -0.4728,
+       -0.3199
+      ],
+      "min": -0.4759,
+      "max": -0.2896
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 0.5898,
+      "ci95": [
+       0.4749,
+       0.7038
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.4076,
+      "ci95": [
+       0.3429,
+       0.4626
+      ]
+     },
+     "rel_change": {
+      "mean": -0.4076,
+      "ci95": [
+       -0.4626,
+       -0.3429
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.4268,
+      "median_ci95": [
+       -0.4753,
+       -0.315
+      ],
+      "min": -0.5323,
+      "max": -0.2183
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 0.1013,
+      "ci95": [
+       0.0821,
+       0.1218
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.3083,
+      "ci95": [
+       0.258,
+       0.3624
+      ]
+     },
+     "rel_change": {
+      "mean": -0.3083,
+      "ci95": [
+       -0.3624,
+       -0.258
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.2773,
+      "median_ci95": [
+       -0.3824,
+       -0.2395
+      ],
+      "min": -0.4583,
+      "max": -0.1838
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": 0.0363,
+      "ci95": [
+       0.0027,
+       0.0598
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.1349,
+      "ci95": [
+       0.0122,
+       0.2171
+      ]
+     },
+     "rel_change": {
+      "mean": -0.1349,
+      "ci95": [
+       -0.2171,
+       -0.0122
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.1699,
+      "median_ci95": [
+       -0.2437,
+       -0.0985
+      ],
+      "min": -0.295,
+      "max": 0.3906
+     },
+     "episodes_improved": 9,
+     "episodes_total": 10
+    }
+   },
+   "improvement_baseline_vs_stock": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 4.3615,
+      "ci95": [
+       4.0217,
+       4.6767
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8725,
+      "ci95": [
+       0.8633,
+       0.8807
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8725,
+      "ci95": [
+       -0.8807,
+       -0.8633
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8701,
+      "median_ci95": [
+       -0.8865,
+       -0.8598
+      ],
+      "min": -0.8913,
+      "max": -0.8467
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": 5.6498,
+      "ci95": [
+       5.0948,
+       6.3221
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9476,
+      "ci95": [
+       0.9423,
+       0.9524
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9476,
+      "ci95": [
+       -0.9524,
+       -0.9423
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9449,
+      "median_ci95": [
+       -0.9548,
+       -0.9409
+      ],
+      "min": -0.9604,
+      "max": -0.9329
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 5.7335,
+      "ci95": [
+       5.4032,
+       6.0819
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8738,
+      "ci95": [
+       0.8664,
+       0.8812
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8738,
+      "ci95": [
+       -0.8812,
+       -0.8664
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8761,
+      "median_ci95": [
+       -0.882,
+       -0.8615
+      ],
+      "min": -0.8939,
+      "max": -0.8549
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 3.3775,
+      "ci95": [
+       3.154,
+       3.6029
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.7001,
+      "ci95": [
+       0.6827,
+       0.7204
+      ]
+     },
+     "rel_change": {
+      "mean": -0.7001,
+      "ci95": [
+       -0.7204,
+       -0.6827
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.6853,
+      "median_ci95": [
+       -0.7206,
+       -0.6773
+      ],
+      "min": -0.7654,
+      "max": -0.6659
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 3.529,
+      "ci95": [
+       3.1376,
+       3.9346
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9148,
+      "ci95": [
+       0.904,
+       0.9242
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9148,
+      "ci95": [
+       -0.9242,
+       -0.904
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.912,
+      "median_ci95": [
+       -0.9305,
+       -0.8952
+      ],
+      "min": -0.9346,
+      "max": -0.8928
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": 3.5177,
+      "ci95": [
+       2.9826,
+       4.234
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9289,
+      "ci95": [
+       0.9136,
+       0.9427
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9289,
+      "ci95": [
+       -0.9427,
+       -0.9136
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9241,
+      "median_ci95": [
+       -0.9386,
+       -0.9075
+      ],
+      "min": -0.9629,
+      "max": -0.8815
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    }
+   },
+   "workspace_outside_fit_range_frac": {
+    "shoulder_pan": 0.0,
+    "shoulder_lift": 0.0,
+    "elbow_flex": 0.0,
+    "wrist_flex": 0.0,
+    "wrist_roll": 0.0
+   },
+   "outside_twin_range_frac": {
+    "stock": {
+     "shoulder_pan": 0.0,
+     "shoulder_lift": 0.3391,
+     "elbow_flex": 0.2759,
+     "wrist_flex": 0.0483,
+     "wrist_roll": 0.0
+    },
+    "calibrated": {
+     "shoulder_pan": 0.0,
+     "shoulder_lift": 0.0,
+     "elbow_flex": 0.0,
+     "wrist_flex": 0.0,
+     "wrist_roll": 0.0
+    }
+   }
+  },
+  "future": {
+   "n_episodes": 10,
+   "real": {
+    "real_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 6.7591,
+      "ci95": [
+       6.4881,
+       7.0188
+      ],
+      "p90": 7.2981,
+      "median": 6.8137,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 4.5919,
+      "ci95": [
+       4.2898,
+       4.9006
+      ],
+      "p90": 5.2241,
+      "median": 4.5279,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.2681,
+      "ci95": [
+       4.0567,
+       4.4835
+      ],
+      "p90": 4.691,
+      "median": 4.3229,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 2.7984,
+      "ci95": [
+       2.4782,
+       3.1023
+      ],
+      "p90": 3.3533,
+      "median": 2.8485,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 5.2468,
+      "ci95": [
+       4.9689,
+       5.5495
+      ],
+      "p90": 5.881,
+      "median": 5.0722,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.7329,
+      "ci95": [
+       4.5364,
+       4.9265
+      ],
+      "p90": 5.0611,
+      "median": 4.7498,
+      "n": 10
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.9911,
+      "ci95": [
+       3.9773,
+       4.005
+      ],
+      "p90": 4.0183,
+      "median": 3.9911,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 3.9979,
+      "ci95": [
+       3.9689,
+       4.0287
+      ],
+      "p90": 4.0704,
+      "median": 3.9841,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.122,
+      "ci95": [
+       4.0993,
+       4.1446
+      ],
+      "p90": 4.1672,
+      "median": 4.1245,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.872,
+      "ci95": [
+       3.8476,
+       3.8977
+      ],
+      "p90": 3.9247,
+      "median": 3.8587,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 4.0001,
+      "ci95": [
+       3.9783,
+       4.0233
+      ],
+      "p90": 4.0577,
+      "median": 3.9874,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 3.9966,
+      "ci95": [
+       3.9881,
+       4.0054
+      ],
+      "p90": 4.0062,
+      "median": 3.9975,
+      "n": 10
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 133.0374,
+      "ci95": [
+       132.5768,
+       133.5005
+      ],
+      "p90": 133.9432,
+      "median": 133.0382,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 133.263,
+      "ci95": [
+       132.2972,
+       134.2898
+      ],
+      "p90": 135.6817,
+      "median": 132.8049,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 137.4008,
+      "ci95": [
+       136.6445,
+       138.1528
+      ],
+      "p90": 138.9083,
+      "median": 137.484,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 129.0674,
+      "ci95": [
+       128.2533,
+       129.925
+      ],
+      "p90": 130.8237,
+      "median": 128.6223,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 133.3365,
+      "ci95": [
+       132.6084,
+       134.1095
+      ],
+      "p90": 135.2558,
+      "median": 132.9135,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 133.221,
+      "ci95": [
+       132.9374,
+       133.5129
+      ],
+      "p90": 133.5395,
+      "median": 133.2493,
+      "n": 10
+     }
+    }
+   },
+   "stock": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 7.237,
+      "ci95": [
+       6.9671,
+       7.4971
+      ],
+      "p90": 7.7752,
+      "median": 7.2665,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 5.0949,
+      "ci95": [
+       4.814,
+       5.3906
+      ],
+      "p90": 5.8394,
+      "median": 5.0146,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.476,
+      "ci95": [
+       4.2407,
+       4.7124
+      ],
+      "p90": 4.9579,
+      "median": 4.515,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.0885,
+      "ci95": [
+       2.6985,
+       3.4962
+      ],
+      "p90": 3.8541,
+      "median": 3.0749,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 6.8485,
+      "ci95": [
+       6.6142,
+       7.1014
+      ],
+      "p90": 7.4562,
+      "median": 6.8687,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 5.349,
+      "ci95": [
+       5.1429,
+       5.5377
+      ],
+      "p90": 5.6584,
+      "median": 5.388,
+      "n": 10
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.3661,
+      "ci95": [
+       0.3342,
+       0.398
+      ],
+      "p90": 0.3916,
+      "median": 0.3661,
+      "n": 2
+     },
+     "shoulder_lift": {
+      "mean": 3.0324,
+      "ci95": [
+       2.5306,
+       3.5343
+      ],
+      "p90": 3.4339,
+      "median": 3.0324,
+      "n": 2
+     },
+     "elbow_flex": {
+      "mean": 0.2328,
+      "ci95": [
+       0.057,
+       0.4086
+      ],
+      "p90": 0.3735,
+      "median": 0.2328,
+      "n": 2
+     },
+     "wrist_flex": {
+      "mean": 0.2235,
+      "ci95": [
+       0.1086,
+       0.3384
+      ],
+      "p90": 0.3154,
+      "median": 0.2235,
+      "n": 2
+     },
+     "wrist_roll": {
+      "mean": 3.2947,
+      "ci95": [
+       0.1758,
+       6.4136
+      ],
+      "p90": 5.7898,
+      "median": 3.2947,
+      "n": 2
+     },
+     "arm_mean": {
+      "mean": 1.4299,
+      "ci95": [
+       0.9123,
+       1.9475
+      ],
+      "p90": 1.844,
+      "median": 1.4299,
+      "n": 2
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.5091,
+      "ci95": [
+       0.4947,
+       0.5253
+      ],
+      "p90": 0.5467,
+      "median": 0.4974,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 2.3625,
+      "ci95": [
+       2.2482,
+       2.5161
+      ],
+      "p90": 2.5572,
+      "median": 2.3289,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 0.5818,
+      "ci95": [
+       0.5449,
+       0.6195
+      ],
+      "p90": 0.6539,
+      "median": 0.5931,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.4999,
+      "ci95": [
+       0.2295,
+       1.0142
+      ],
+      "p90": 0.5458,
+      "median": 0.2607,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 4.349,
+      "ci95": [
+       4.038,
+       4.6371
+      ],
+      "p90": 4.6866,
+      "median": 4.5629,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 1.6605,
+      "ci95": [
+       1.5698,
+       1.7883
+      ],
+      "p90": 1.7842,
+      "median": 1.6298,
+      "n": 10
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 0.7939,
+      "ci95": [
+       0.7861,
+       0.8015
+      ],
+      "p90": 0.8083,
+      "median": 0.793,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.9069,
+      "ci95": [
+       0.8328,
+       0.9944
+      ],
+      "p90": 1.1341,
+      "median": 0.8389,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 0.7703,
+      "ci95": [
+       0.7603,
+       0.7797
+      ],
+      "p90": 0.789,
+      "median": 0.7723,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.7886,
+      "ci95": [
+       0.7797,
+       0.7977
+      ],
+      "p90": 0.8085,
+      "median": 0.7881,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.7985,
+      "ci95": [
+       0.7753,
+       0.8191
+      ],
+      "p90": 0.8375,
+      "median": 0.8048,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.8117,
+      "ci95": [
+       0.7923,
+       0.8328
+      ],
+      "p90": 0.8635,
+      "median": 0.8051,
+      "n": 10
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 26.4636,
+      "ci95": [
+       26.2026,
+       26.7171
+      ],
+      "p90": 26.9423,
+      "median": 26.4345,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 30.2316,
+      "ci95": [
+       27.7586,
+       33.1458
+      ],
+      "p90": 37.8021,
+      "median": 27.9621,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 25.6769,
+      "ci95": [
+       25.3442,
+       25.9884
+      ],
+      "p90": 26.3,
+      "median": 25.7433,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 26.2876,
+      "ci95": [
+       25.9907,
+       26.5897
+      ],
+      "p90": 26.9487,
+      "median": 26.2697,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 26.6157,
+      "ci95": [
+       25.845,
+       27.3041
+      ],
+      "p90": 27.918,
+      "median": 26.8261,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 27.0551,
+      "ci95": [
+       26.4096,
+       27.7586
+      ],
+      "p90": 28.7823,
+      "median": 26.8361,
+      "n": 10
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.2055,
+      "ci95": [
+       0.1155,
+       0.3101
+      ],
+      "p90": 0.3705,
+      "median": 0.1557,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 2.9819,
+      "ci95": [
+       2.3255,
+       3.4463
+      ],
+      "p90": 3.4551,
+      "median": 3.4463,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 0.3296,
+      "ci95": [
+       0.2153,
+       0.4352
+      ],
+      "p90": 0.5054,
+      "median": 0.4087,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.349,
+      "ci95": [
+       0.1935,
+       0.5712
+      ],
+      "p90": 0.6171,
+      "median": 0.2435,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.2373,
+      "ci95": [
+       0.1846,
+       0.2812
+      ],
+      "p90": 0.3515,
+      "median": 0.2636,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.8206,
+      "ci95": [
+       0.7183,
+       0.8933
+      ],
+      "p90": 0.9233,
+      "median": 0.8692,
+      "n": 10
+     }
+    }
+   },
+   "aligned_stock": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.6293,
+      "ci95": [
+       0.593,
+       0.6628
+      ],
+      "p90": 0.6873,
+      "median": 0.6446,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 1.0064,
+      "ci95": [
+       0.9307,
+       1.0998
+      ],
+      "p90": 1.1088,
+      "median": 0.9867,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 2.2552,
+      "ci95": [
+       2.1474,
+       2.3604
+      ],
+      "p90": 2.4276,
+      "median": 2.2783,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.5247,
+      "ci95": [
+       0.4802,
+       0.5728
+      ],
+      "p90": 0.6093,
+      "median": 0.5283,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.6393,
+      "ci95": [
+       0.597,
+       0.6808
+      ],
+      "p90": 0.7197,
+      "median": 0.6433,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 1.011,
+      "ci95": [
+       0.9782,
+       1.0478
+      ],
+      "p90": 1.1021,
+      "median": 1.004,
+      "n": 10
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.3724,
+      "ci95": [
+       0.3463,
+       0.3985
+      ],
+      "p90": 0.3933,
+      "median": 0.3724,
+      "n": 2
+     },
+     "shoulder_lift": {
+      "mean": 0.9102,
+      "ci95": [
+       0.7007,
+       1.1197
+      ],
+      "p90": 1.0778,
+      "median": 0.9102,
+      "n": 2
+     },
+     "elbow_flex": {
+      "mean": 0.4286,
+      "ci95": [
+       0.3678,
+       0.4895
+      ],
+      "p90": 0.4773,
+      "median": 0.4286,
+      "n": 2
+     },
+     "wrist_flex": {
+      "mean": 0.2387,
+      "ci95": [
+       0.109,
+       0.3684
+      ],
+      "p90": 0.3425,
+      "median": 0.2387,
+      "n": 2
+     },
+     "wrist_roll": {
+      "mean": 0.2914,
+      "ci95": [
+       0.1757,
+       0.4071
+      ],
+      "p90": 0.384,
+      "median": 0.2914,
+      "n": 2
+     },
+     "arm_mean": {
+      "mean": 0.4483,
+      "ci95": [
+       0.3399,
+       0.5567
+      ],
+      "p90": 0.535,
+      "median": 0.4483,
+      "n": 2
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 6.3457,
+      "ci95": [
+       6.1048,
+       6.5723
+      ],
+      "p90": 6.8289,
+      "median": 6.3955,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 4.3106,
+      "ci95": [
+       4.0105,
+       4.6188
+      ],
+      "p90": 4.9149,
+      "median": 4.2781,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 3.3254,
+      "ci95": [
+       3.06,
+       3.5886
+      ],
+      "p90": 3.8076,
+      "median": 3.3009,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 2.7647,
+      "ci95": [
+       2.4615,
+       3.0596
+      ],
+      "p90": 3.2476,
+      "median": 2.8489,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 4.933,
+      "ci95": [
+       4.6824,
+       5.1903
+      ],
+      "p90": 5.4683,
+      "median": 4.8012,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.3359,
+      "ci95": [
+       4.1387,
+       4.5186
+      ],
+      "p90": 4.6544,
+      "median": 4.3386,
+      "n": 10
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.7946,
+      "ci95": [
+       3.7874,
+       3.8016
+      ],
+      "p90": 3.8092,
+      "median": 3.7948,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 3.8397,
+      "ci95": [
+       3.8093,
+       3.8744
+      ],
+      "p90": 3.9142,
+      "median": 3.8158,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 3.7708,
+      "ci95": [
+       3.7608,
+       3.7799
+      ],
+      "p90": 3.7882,
+      "median": 3.7734,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.7881,
+      "ci95": [
+       3.7801,
+       3.7962
+      ],
+      "p90": 3.8065,
+      "median": 3.7883,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.7967,
+      "ci95": [
+       3.7893,
+       3.8043
+      ],
+      "p90": 3.8102,
+      "median": 3.7943,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 3.798,
+      "ci95": [
+       3.7897,
+       3.8061
+      ],
+      "p90": 3.8155,
+      "median": 3.796,
+      "n": 10
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 126.4858,
+      "ci95": [
+       126.2483,
+       126.7215
+      ],
+      "p90": 126.9748,
+      "median": 126.4939,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 127.9916,
+      "ci95": [
+       126.9769,
+       129.148
+      ],
+      "p90": 130.4731,
+      "median": 127.1947,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 125.6931,
+      "ci95": [
+       125.3614,
+       125.9953
+      ],
+      "p90": 126.2736,
+      "median": 125.7801,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 126.2692,
+      "ci95": [
+       126.0029,
+       126.5394
+      ],
+      "p90": 126.8836,
+      "median": 126.2767,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 126.5562,
+      "ci95": [
+       126.3095,
+       126.8116
+      ],
+      "p90": 127.006,
+      "median": 126.4751,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 126.5992,
+      "ci95": [
+       126.3229,
+       126.8693
+      ],
+      "p90": 127.1819,
+      "median": 126.5321,
+      "n": 10
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.2055,
+      "ci95": [
+       0.1155,
+       0.3101
+      ],
+      "p90": 0.3705,
+      "median": 0.1557,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.6326,
+      "ci95": [
+       0.5202,
+       0.7268
+      ],
+      "p90": 0.7184,
+      "median": 0.7001,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 0.518,
+      "ci95": [
+       0.4302,
+       0.6063
+      ],
+      "p90": 0.7192,
+      "median": 0.5002,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.3492,
+      "ci95": [
+       0.1938,
+       0.5713
+      ],
+      "p90": 0.6174,
+      "median": 0.244,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.2373,
+      "ci95": [
+       0.1846,
+       0.2812
+      ],
+      "p90": 0.3515,
+      "median": 0.2636,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.3885,
+      "ci95": [
+       0.3485,
+       0.431
+      ],
+      "p90": 0.4719,
+      "median": 0.3728,
+      "n": 10
+     }
+    }
+   },
+   "baseline": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.2989,
+      "ci95": [
+       0.2874,
+       0.3113
+      ],
+      "p90": 0.3284,
+      "median": 0.2937,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.5863,
+      "ci95": [
+       0.5324,
+       0.6533
+      ],
+      "p90": 0.6328,
+      "median": 0.5776,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 1.5797,
+      "ci95": [
+       1.5425,
+       1.6158
+      ],
+      "p90": 1.6351,
+      "median": 1.5805,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.3708,
+      "ci95": [
+       0.3361,
+       0.4119
+      ],
+      "p90": 0.4221,
+      "median": 0.3621,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.3376,
+      "ci95": [
+       0.3036,
+       0.3822
+      ],
+      "p90": 0.4384,
+      "median": 0.3101,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.6347,
+      "ci95": [
+       0.6147,
+       0.6575
+      ],
+      "p90": 0.684,
+      "median": 0.6195,
+      "n": 10
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.4038,
+      "ci95": [
+       0.3775,
+       0.43
+      ],
+      "p90": 0.4248,
+      "median": 0.4038,
+      "n": 2
+     },
+     "shoulder_lift": {
+      "mean": 0.2317,
+      "ci95": [
+       0.1693,
+       0.294
+      ],
+      "p90": 0.2816,
+      "median": 0.2317,
+      "n": 2
+     },
+     "elbow_flex": {
+      "mean": 1.8278,
+      "ci95": [
+       1.7838,
+       1.8717
+      ],
+      "p90": 1.8629,
+      "median": 1.8278,
+      "n": 2
+     },
+     "wrist_flex": {
+      "mean": 0.26,
+      "ci95": [
+       0.2027,
+       0.3173
+      ],
+      "p90": 0.3058,
+      "median": 0.26,
+      "n": 2
+     },
+     "wrist_roll": {
+      "mean": 0.282,
+      "ci95": [
+       0.134,
+       0.4299
+      ],
+      "p90": 0.4003,
+      "median": 0.282,
+      "n": 2
+     },
+     "arm_mean": {
+      "mean": 0.601,
+      "ci95": [
+       0.5511,
+       0.651
+      ],
+      "p90": 0.641,
+      "median": 0.601,
+      "n": 2
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 6.7426,
+      "ci95": [
+       6.5012,
+       6.9676
+      ],
+      "p90": 7.214,
+      "median": 6.7749,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 4.6019,
+      "ci95": [
+       4.3238,
+       4.8872
+      ],
+      "p90": 5.2937,
+      "median": 4.5766,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.0265,
+      "ci95": [
+       3.7544,
+       4.2959
+      ],
+      "p90": 4.5535,
+      "median": 3.9615,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 2.8543,
+      "ci95": [
+       2.5388,
+       3.163
+      ],
+      "p90": 3.3694,
+      "median": 2.9445,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 5.2024,
+      "ci95": [
+       4.952,
+       5.4616
+      ],
+      "p90": 5.7262,
+      "median": 5.0767,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.6855,
+      "ci95": [
+       4.4866,
+       4.8761
+      ],
+      "p90": 5.0324,
+      "median": 4.6717,
+      "n": 10
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.988,
+      "ci95": [
+       3.987,
+       3.9891
+      ],
+      "p90": 3.9897,
+      "median": 3.9876,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 4.0401,
+      "ci95": [
+       4.0356,
+       4.0441
+      ],
+      "p90": 4.0469,
+      "median": 4.0417,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.1993,
+      "ci95": [
+       4.1892,
+       4.2089
+      ],
+      "p90": 4.2191,
+      "median": 4.1997,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.944,
+      "ci95": [
+       3.9362,
+       3.9515
+      ],
+      "p90": 3.9595,
+      "median": 3.9426,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.978,
+      "ci95": [
+       3.9743,
+       3.981
+      ],
+      "p90": 3.9829,
+      "median": 3.9799,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.0299,
+      "ci95": [
+       4.027,
+       4.0327
+      ],
+      "p90": 4.036,
+      "median": 4.03,
+      "n": 10
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 132.9342,
+      "ci95": [
+       132.8995,
+       132.9687
+      ],
+      "p90": 132.9908,
+      "median": 132.9213,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 134.669,
+      "ci95": [
+       134.5197,
+       134.8045
+      ],
+      "p90": 134.8964,
+      "median": 134.7243,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 139.9759,
+      "ci95": [
+       139.6395,
+       140.2982
+      ],
+      "p90": 140.638,
+      "median": 139.9904,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 131.467,
+      "ci95": [
+       131.2059,
+       131.7165
+      ],
+      "p90": 131.9837,
+      "median": 131.4208,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 132.6004,
+      "ci95": [
+       132.4769,
+       132.701
+      ],
+      "p90": 132.7635,
+      "median": 132.6637,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 134.3293,
+      "ci95": [
+       134.2322,
+       134.4231
+      ],
+      "p90": 134.533,
+      "median": 134.3336,
+      "n": 10
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.2069,
+      "ci95": [
+       0.1143,
+       0.3092
+      ],
+      "p90": 0.3573,
+      "median": 0.1886,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.2982,
+      "ci95": [
+       0.1463,
+       0.5138
+      ],
+      "p90": 0.5941,
+      "median": 0.1705,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 2.0221,
+      "ci95": [
+       1.9343,
+       2.1105
+      ],
+      "p90": 2.2224,
+      "median": 2.0042,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.4298,
+      "ci95": [
+       0.2572,
+       0.6609
+      ],
+      "p90": 0.7114,
+      "median": 0.3378,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.2037,
+      "ci95": [
+       0.1586,
+       0.2479
+      ],
+      "p90": 0.3087,
+      "median": 0.2218,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.6322,
+      "ci95": [
+       0.571,
+       0.7124
+      ],
+      "p90": 0.7277,
+      "median": 0.5991,
+      "n": 10
+     }
+    }
+   },
+   "calibrated": {
+    "sim_vs_real_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.3253,
+      "ci95": [
+       0.3092,
+       0.3414
+      ],
+      "p90": 0.3543,
+      "median": 0.325,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.4354,
+      "ci95": [
+       0.4107,
+       0.4567
+      ],
+      "p90": 0.4667,
+      "median": 0.4511,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 0.8658,
+      "ci95": [
+       0.8116,
+       0.9195
+      ],
+      "p90": 0.9762,
+      "median": 0.8468,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.3066,
+      "ci95": [
+       0.2689,
+       0.3484
+      ],
+      "p90": 0.4006,
+      "median": 0.2942,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.3584,
+      "ci95": [
+       0.3155,
+       0.4075
+      ],
+      "p90": 0.4374,
+      "median": 0.3507,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.4583,
+      "ci95": [
+       0.4385,
+       0.4812
+      ],
+      "p90": 0.4836,
+      "median": 0.4549,
+      "n": 10
+     }
+    },
+    "static_frame_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 0.2829,
+      "ci95": [
+       0.2825,
+       0.2833
+      ],
+      "p90": 0.2832,
+      "median": 0.2829,
+      "n": 2
+     },
+     "shoulder_lift": {
+      "mean": 0.2596,
+      "ci95": [
+       0.2234,
+       0.2958
+      ],
+      "p90": 0.2886,
+      "median": 0.2596,
+      "n": 2
+     },
+     "elbow_flex": {
+      "mean": 0.9237,
+      "ci95": [
+       0.904,
+       0.9434
+      ],
+      "p90": 0.9394,
+      "median": 0.9237,
+      "n": 2
+     },
+     "wrist_flex": {
+      "mean": 0.1599,
+      "ci95": [
+       0.1565,
+       0.1633
+      ],
+      "p90": 0.1626,
+      "median": 0.1599,
+      "n": 2
+     },
+     "wrist_roll": {
+      "mean": 0.1971,
+      "ci95": [
+       0.0915,
+       0.3027
+      ],
+      "p90": 0.2816,
+      "median": 0.1971,
+      "n": 2
+     },
+     "arm_mean": {
+      "mean": 0.3646,
+      "ci95": [
+       0.3553,
+       0.374
+      ],
+      "p90": 0.3721,
+      "median": 0.3646,
+      "n": 2
+     }
+    },
+    "sim_tracking_rmse_deg": {
+     "shoulder_pan": {
+      "mean": 6.6757,
+      "ci95": [
+       6.4391,
+       6.8971
+      ],
+      "p90": 7.1351,
+      "median": 6.7043,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 4.7115,
+      "ci95": [
+       4.449,
+       4.988
+      ],
+      "p90": 5.3968,
+      "median": 4.6792,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.4255,
+      "ci95": [
+       4.2151,
+       4.6376
+      ],
+      "p90": 4.8589,
+      "median": 4.4748,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 2.8077,
+      "ci95": [
+       2.5137,
+       3.0951
+      ],
+      "p90": 3.3017,
+      "median": 2.8935,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 5.0751,
+      "ci95": [
+       4.8376,
+       5.3215
+      ],
+      "p90": 5.5716,
+      "median": 4.958,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.7391,
+      "ci95": [
+       4.5548,
+       4.9145
+      ],
+      "p90": 5.0429,
+      "median": 4.751,
+      "n": 10
+     }
+    },
+    "lag_frames": {
+     "shoulder_pan": {
+      "mean": 3.9614,
+      "ci95": [
+       3.9598,
+       3.9631
+      ],
+      "p90": 3.9648,
+      "median": 3.9606,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 4.1163,
+      "ci95": [
+       4.0921,
+       4.1432
+      ],
+      "p90": 4.1716,
+      "median": 4.1028,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 4.3705,
+      "ci95": [
+       4.3018,
+       4.4396
+      ],
+      "p90": 4.5047,
+      "median": 4.3703,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 3.9142,
+      "ci95": [
+       3.9,
+       3.93
+      ],
+      "p90": 3.9441,
+      "median": 3.9131,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 3.9113,
+      "ci95": [
+       3.9071,
+       3.9155
+      ],
+      "p90": 3.918,
+      "median": 3.9129,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 4.0548,
+      "ci95": [
+       4.0399,
+       4.0709
+      ],
+      "p90": 4.0887,
+      "median": 4.0504,
+      "n": 10
+     }
+    },
+    "lag_ms": {
+     "shoulder_pan": {
+      "mean": 132.0481,
+      "ci95": [
+       131.9938,
+       132.1032
+      ],
+      "p90": 132.1609,
+      "median": 132.0195,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 137.209,
+      "ci95": [
+       136.4039,
+       138.107
+      ],
+      "p90": 139.0538,
+      "median": 136.7599,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 145.6848,
+      "ci95": [
+       143.3948,
+       147.9864
+      ],
+      "p90": 150.1572,
+      "median": 145.6761,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 130.4734,
+      "ci95": [
+       130.0016,
+       130.9989
+      ],
+      "p90": 131.4708,
+      "median": 130.4358,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 130.3781,
+      "ci95": [
+       130.2367,
+       130.5181
+      ],
+      "p90": 130.601,
+      "median": 130.4298,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 135.1587,
+      "ci95": [
+       134.6622,
+       135.6971
+      ],
+      "p90": 136.2916,
+      "median": 135.0118,
+      "n": 10
+     }
+    },
+    "final_pose_gap_deg": {
+     "shoulder_pan": {
+      "mean": 0.1634,
+      "ci95": [
+       0.0889,
+       0.244
+      ],
+      "p90": 0.2912,
+      "median": 0.1507,
+      "n": 10
+     },
+     "shoulder_lift": {
+      "mean": 0.3181,
+      "ci95": [
+       0.1838,
+       0.4675
+      ],
+      "p90": 0.6645,
+      "median": 0.2581,
+      "n": 10
+     },
+     "elbow_flex": {
+      "mean": 1.1831,
+      "ci95": [
+       1.091,
+       1.2639
+      ],
+      "p90": 1.2962,
+      "median": 1.2528,
+      "n": 10
+     },
+     "wrist_flex": {
+      "mean": 0.2895,
+      "ci95": [
+       0.1456,
+       0.4964
+      ],
+      "p90": 0.4868,
+      "median": 0.1796,
+      "n": 10
+     },
+     "wrist_roll": {
+      "mean": 0.0969,
+      "ci95": [
+       0.0575,
+       0.1371
+      ],
+      "p90": 0.1798,
+      "median": 0.0989,
+      "n": 10
+     },
+     "arm_mean": {
+      "mean": 0.4102,
+      "ci95": [
+       0.361,
+       0.4738
+      ],
+      "p90": 0.4914,
+      "median": 0.3877,
+      "n": 10
+     }
+    }
+   },
+   "improvement_calibrated_vs_stock": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 4.8907,
+      "ci95": [
+       4.685,
+       5.0768
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9143,
+      "ci95": [
+       0.9093,
+       0.9191
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9143,
+      "ci95": [
+       -0.9191,
+       -0.9093
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9128,
+      "median_ci95": [
+       -0.922,
+       -0.9069
+      ],
+      "min": -0.9258,
+      "max": -0.9026
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": 6.9117,
+      "ci95": [
+       6.6521,
+       7.1659
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.955,
+      "ci95": [
+       0.9532,
+       0.9567
+      ]
+     },
+     "rel_change": {
+      "mean": -0.955,
+      "ci95": [
+       -0.9567,
+       -0.9532
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9556,
+      "median_ci95": [
+       -0.9574,
+       -0.9526
+      ],
+      "min": -0.9595,
+      "max": -0.9501
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 4.6595,
+      "ci95": [
+       4.3849,
+       4.9581
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9145,
+      "ci95": [
+       0.9078,
+       0.9202
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9145,
+      "ci95": [
+       -0.9202,
+       -0.9078
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9182,
+      "median_ci95": [
+       -0.923,
+       -0.9039
+      ],
+      "min": -0.925,
+      "max": -0.895
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 3.6102,
+      "ci95": [
+       3.3707,
+       3.8681
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8066,
+      "ci95": [
+       0.79,
+       0.8233
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8066,
+      "ci95": [
+       -0.8233,
+       -0.79
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.7942,
+      "median_ci95": [
+       -0.8247,
+       -0.7882
+      ],
+      "min": -0.8573,
+      "max": -0.7663
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 2.7819,
+      "ci95": [
+       2.3838,
+       3.1955
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9007,
+      "ci95": [
+       0.8811,
+       0.917
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9007,
+      "ci95": [
+       -0.917,
+       -0.8811
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.899,
+      "median_ci95": [
+       -0.9276,
+       -0.8674
+      ],
+      "min": -0.9303,
+      "max": -0.8476
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": 6.4901,
+      "ci95": [
+       6.2694,
+       6.7191
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9477,
+      "ci95": [
+       0.9416,
+       0.9535
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9477,
+      "ci95": [
+       -0.9535,
+       -0.9416
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9489,
+      "median_ci95": [
+       -0.9568,
+       -0.9391
+      ],
+      "min": -0.9592,
+      "max": -0.9316
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    }
+   },
+   "improvement_aligned_vs_stock": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 4.338,
+      "ci95": [
+       4.1449,
+       4.5142
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.811,
+      "ci95": [
+       0.8036,
+       0.8179
+      ]
+     },
+     "rel_change": {
+      "mean": -0.811,
+      "ci95": [
+       -0.8179,
+       -0.8036
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.813,
+      "median_ci95": [
+       -0.8202,
+       -0.8011
+      ],
+      "min": -0.8275,
+      "max": -0.7872
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": 6.6077,
+      "ci95": [
+       6.3721,
+       6.8375
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.913,
+      "ci95": [
+       0.911,
+       0.9152
+      ]
+     },
+     "rel_change": {
+      "mean": -0.913,
+      "ci95": [
+       -0.9152,
+       -0.911
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9123,
+      "median_ci95": [
+       -0.9171,
+       -0.91
+      ],
+      "min": -0.9175,
+      "max": -0.9074
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 4.0885,
+      "ci95": [
+       3.7979,
+       4.4028
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8025,
+      "ci95": [
+       0.7806,
+       0.8212
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8025,
+      "ci95": [
+       -0.8212,
+       -0.7806
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8069,
+      "median_ci95": [
+       -0.8279,
+       -0.7781
+      ],
+      "min": -0.8419,
+      "max": -0.7304
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 2.2208,
+      "ci95": [
+       1.956,
+       2.4849
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.4962,
+      "ci95": [
+       0.4577,
+       0.532
+      ]
+     },
+     "rel_change": {
+      "mean": -0.4962,
+      "ci95": [
+       -0.532,
+       -0.4577
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.5077,
+      "median_ci95": [
+       -0.5477,
+       -0.4292
+      ],
+      "min": -0.5779,
+      "max": -0.4016
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 2.5638,
+      "ci95": [
+       2.1927,
+       2.9511
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8301,
+      "ci95": [
+       0.8117,
+       0.8465
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8301,
+      "ci95": [
+       -0.8465,
+       -0.8117
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8264,
+      "median_ci95": [
+       -0.8546,
+       -0.8002
+      ],
+      "min": -0.8676,
+      "max": -0.7797
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": 6.2092,
+      "ci95": [
+       5.9978,
+       6.4349
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9066,
+      "ci95": [
+       0.9022,
+       0.9114
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9066,
+      "ci95": [
+       -0.9114,
+       -0.9022
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9061,
+      "median_ci95": [
+       -0.9133,
+       -0.8987
+      ],
+      "min": -0.9206,
+      "max": -0.898
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    }
+   },
+   "improvement_calibrated_vs_baseline": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 0.1764,
+      "ci95": [
+       0.1534,
+       0.2038
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.2779,
+      "ci95": [
+       0.244,
+       0.3153
+      ]
+     },
+     "rel_change": {
+      "mean": -0.2779,
+      "ci95": [
+       -0.3153,
+       -0.244
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.2568,
+      "median_ci95": [
+       -0.3268,
+       -0.2389
+      ],
+      "min": -0.3935,
+      "max": -0.2022
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": -0.0264,
+      "ci95": [
+       -0.0348,
+       -0.0186
+      ]
+     },
+     "rel_reduction": {
+      "mean": -0.0882,
+      "ci95": [
+       -0.116,
+       -0.0634
+      ]
+     },
+     "rel_change": {
+      "mean": 0.0882,
+      "ci95": [
+       0.0634,
+       0.116
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": 0.0913,
+      "median_ci95": [
+       0.0503,
+       0.1057
+      ],
+      "min": 0.0239,
+      "max": 0.1903
+     },
+     "episodes_improved": 0,
+     "episodes_total": 10
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 0.1509,
+      "ci95": [
+       0.1005,
+       0.2111
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.2574,
+      "ci95": [
+       0.1858,
+       0.3287
+      ]
+     },
+     "rel_change": {
+      "mean": -0.2574,
+      "ci95": [
+       -0.3287,
+       -0.1858
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.2262,
+      "median_ci95": [
+       -0.3355,
+       -0.1488
+      ],
+      "min": -0.4304,
+      "max": -0.0887
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 0.7139,
+      "ci95": [
+       0.6311,
+       0.7935
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.4519,
+      "ci95": [
+       0.4076,
+       0.4926
+      ]
+     },
+     "rel_change": {
+      "mean": -0.4519,
+      "ci95": [
+       -0.4926,
+       -0.4076
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.4506,
+      "median_ci95": [
+       -0.5124,
+       -0.3992
+      ],
+      "min": -0.552,
+      "max": -0.3162
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 0.0642,
+      "ci95": [
+       0.0449,
+       0.0839
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.1732,
+      "ci95": [
+       0.1207,
+       0.2277
+      ]
+     },
+     "rel_change": {
+      "mean": -0.1732,
+      "ci95": [
+       -0.2277,
+       -0.1207
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.1644,
+      "median_ci95": [
+       -0.2386,
+       -0.1089
+      ],
+      "min": -0.3137,
+      "max": -0.0364
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": -0.0208,
+      "ci95": [
+       -0.0507,
+       0.0091
+      ]
+     },
+     "rel_reduction": {
+      "mean": -0.0615,
+      "ci95": [
+       -0.1527,
+       0.0247
+      ]
+     },
+     "rel_change": {
+      "mean": 0.0615,
+      "ci95": [
+       -0.0247,
+       0.1527
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": 0.0826,
+      "median_ci95": [
+       -0.0818,
+       0.1751
+      ],
+      "min": -0.1117,
+      "max": 0.3174
+     },
+     "episodes_improved": 4,
+     "episodes_total": 10
+    }
+   },
+   "improvement_baseline_vs_stock": {
+    "arm_mean": {
+     "abs_reduction_deg": {
+      "mean": 4.7143,
+      "ci95": [
+       4.5055,
+       4.9
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8813,
+      "ci95": [
+       0.8748,
+       0.8867
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8813,
+      "ci95": [
+       -0.8867,
+       -0.8748
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8799,
+      "median_ci95": [
+       -0.8894,
+       -0.8779
+      ],
+      "min": -0.8929,
+      "max": -0.8556
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_pan": {
+     "abs_reduction_deg": {
+      "mean": 6.9381,
+      "ci95": [
+       6.6742,
+       7.1964
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9587,
+      "ci95": [
+       0.9571,
+       0.9604
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9587,
+      "ci95": [
+       -0.9604,
+       -0.9571
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9586,
+      "median_ci95": [
+       -0.9604,
+       -0.9562
+      ],
+      "min": -0.9635,
+      "max": -0.9552
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "shoulder_lift": {
+     "abs_reduction_deg": {
+      "mean": 4.5086,
+      "ci95": [
+       4.2206,
+       4.8146
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8849,
+      "ci95": [
+       0.8697,
+       0.8974
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8849,
+      "ci95": [
+       -0.8974,
+       -0.8697
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8881,
+      "median_ci95": [
+       -0.9016,
+       -0.8684
+      ],
+      "min": -0.9149,
+      "max": -0.8337
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "elbow_flex": {
+     "abs_reduction_deg": {
+      "mean": 2.8963,
+      "ci95": [
+       2.6643,
+       3.1317
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.6471,
+      "ci95": [
+       0.6259,
+       0.6645
+      ]
+     },
+     "rel_change": {
+      "mean": -0.6471,
+      "ci95": [
+       -0.6645,
+       -0.6259
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.6539,
+      "median_ci95": [
+       -0.6698,
+       -0.6205
+      ],
+      "min": -0.6877,
+      "max": -0.5791
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_flex": {
+     "abs_reduction_deg": {
+      "mean": 2.7177,
+      "ci95": [
+       2.3212,
+       3.1218
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.8799,
+      "ci95": [
+       0.8602,
+       0.8967
+      ]
+     },
+     "rel_change": {
+      "mean": -0.8799,
+      "ci95": [
+       -0.8967,
+       -0.8602
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.8783,
+      "median_ci95": [
+       -0.9079,
+       -0.8477
+      ],
+      "min": -0.9136,
+      "max": -0.8225
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    },
+    "wrist_roll": {
+     "abs_reduction_deg": {
+      "mean": 6.5109,
+      "ci95": [
+       6.271,
+       6.755
+      ]
+     },
+     "rel_reduction": {
+      "mean": 0.9507,
+      "ci95": [
+       0.944,
+       0.9555
+      ]
+     },
+     "rel_change": {
+      "mean": -0.9507,
+      "ci95": [
+       -0.9555,
+       -0.944
+      ]
+     },
+     "per_episode_rel_change": {
+      "median": -0.9544,
+      "median_ci95": [
+       -0.9559,
+       -0.9471
+      ],
+      "min": -0.9591,
+      "max": -0.9245
+     },
+     "episodes_improved": 10,
+     "episodes_total": 10
+    }
+   },
+   "workspace_outside_fit_range_frac": {
+    "shoulder_pan": 0.3219,
+    "shoulder_lift": 0.0,
+    "elbow_flex": 0.0,
+    "wrist_flex": 0.0,
+    "wrist_roll": 0.2523
+   },
+   "outside_twin_range_frac": {
+    "stock": {
+     "shoulder_pan": 0.0,
+     "shoulder_lift": 0.3538,
+     "elbow_flex": 0.3534,
+     "wrist_flex": 0.0152,
+     "wrist_roll": 0.2472
+    },
+    "calibrated": {
+     "shoulder_pan": 0.0,
+     "shoulder_lift": 0.0,
+     "elbow_flex": 0.0,
+     "wrist_flex": 0.0,
+     "wrist_roll": 0.0
+    }
+   }
+  }
+ },
+ "episodes": [
+  {
+   "episode": 0,
+   "set": "fit",
+   "frames": 303,
+   "stock_rmse_deg": [
+    4.07,
+    5.258,
+    3.796,
+    2.349,
+    2.3
+   ],
+   "aligned_stock_rmse_deg": [
+    0.367,
+    1.342,
+    1.994,
+    0.465,
+    0.593
+   ],
+   "baseline_rmse_deg": [
+    0.212,
+    0.805,
+    1.518,
+    0.329,
+    0.417
+   ],
+   "calibrated_rmse_deg": [
+    0.216,
+    0.464,
+    0.821,
+    0.255,
+    0.265
+   ]
+  },
+  {
+   "episode": 5,
+   "set": "fit",
+   "frames": 231,
+   "stock_rmse_deg": [
+    5.174,
+    6.523,
+    5.131,
+    4.176,
+    3.575
+   ],
+   "aligned_stock_rmse_deg": [
+    0.464,
+    1.367,
+    2.354,
+    0.588,
+    0.506
+   ],
+   "baseline_rmse_deg": [
+    0.275,
+    1.039,
+    1.649,
+    0.325,
+    0.321
+   ],
+   "calibrated_rmse_deg": [
+    0.274,
+    0.446,
+    0.889,
+    0.198,
+    0.266
+   ]
+  },
+  {
+   "episode": 6,
+   "set": "fit",
+   "frames": 224,
+   "stock_rmse_deg": [
+    5.038,
+    6.314,
+    4.498,
+    3.48,
+    3.27
+   ],
+   "aligned_stock_rmse_deg": [
+    0.521,
+    1.401,
+    1.918,
+    0.563,
+    0.626
+   ],
+   "baseline_rmse_deg": [
+    0.313,
+    0.862,
+    1.366,
+    0.326,
+    0.429
+   ],
+   "calibrated_rmse_deg": [
+    0.292,
+    0.532,
+    0.868,
+    0.201,
+    0.283
+   ]
+  },
+  {
+   "episode": 7,
+   "set": "fit",
+   "frames": 203,
+   "stock_rmse_deg": [
+    5.462,
+    6.703,
+    4.952,
+    3.662,
+    3.585
+   ],
+   "aligned_stock_rmse_deg": [
+    0.456,
+    1.518,
+    2.152,
+    0.515,
+    0.419
+   ],
+   "baseline_rmse_deg": [
+    0.258,
+    0.926,
+    1.345,
+    0.309,
+    0.216
+   ],
+   "calibrated_rmse_deg": [
+    0.266,
+    0.577,
+    0.788,
+    0.179,
+    0.167
+   ]
+  },
+  {
+   "episode": 8,
+   "set": "fit",
+   "frames": 226,
+   "stock_rmse_deg": [
+    5.853,
+    6.605,
+    5.037,
+    4.647,
+    3.467
+   ],
+   "aligned_stock_rmse_deg": [
+    0.555,
+    1.325,
+    2.282,
+    0.828,
+    0.427
+   ],
+   "baseline_rmse_deg": [
+    0.323,
+    0.842,
+    1.577,
+    0.514,
+    0.22
+   ],
+   "calibrated_rmse_deg": [
+    0.321,
+    0.452,
+    0.907,
+    0.356,
+    0.238
+   ]
+  },
+  {
+   "episode": 9,
+   "set": "fit",
+   "frames": 204,
+   "stock_rmse_deg": [
+    5.511,
+    7.51,
+    4.947,
+    5.027,
+    2.784
+   ],
+   "aligned_stock_rmse_deg": [
+    0.503,
+    1.242,
+    2.029,
+    0.677,
+    0.384
+   ],
+   "baseline_rmse_deg": [
+    0.283,
+    0.878,
+    1.505,
+    0.34,
+    0.204
+   ],
+   "calibrated_rmse_deg": [
+    0.287,
+    0.434,
+    0.925,
+    0.222,
+    0.198
+   ]
+  },
+  {
+   "episode": 10,
+   "set": "fit",
+   "frames": 216,
+   "stock_rmse_deg": [
+    6.699,
+    6.918,
+    4.764,
+    4.427,
+    4.212
+   ],
+   "aligned_stock_rmse_deg": [
+    0.604,
+    1.137,
+    2.064,
+    0.734,
+    0.512
+   ],
+   "baseline_rmse_deg": [
+    0.327,
+    0.744,
+    1.555,
+    0.452,
+    0.26
+   ],
+   "calibrated_rmse_deg": [
+    0.313,
+    0.582,
+    0.91,
+    0.334,
+    0.206
+   ]
+  },
+  {
+   "episode": 12,
+   "set": "fit",
+   "frames": 210,
+   "stock_rmse_deg": [
+    7.013,
+    6.721,
+    4.092,
+    5.542,
+    3.897
+   ],
+   "aligned_stock_rmse_deg": [
+    0.653,
+    1.028,
+    2.163,
+    0.822,
+    0.464
+   ],
+   "baseline_rmse_deg": [
+    0.331,
+    0.733,
+    1.377,
+    0.376,
+    0.248
+   ],
+   "calibrated_rmse_deg": [
+    0.355,
+    0.591,
+    0.788,
+    0.342,
+    0.233
+   ]
+  },
+  {
+   "episode": 13,
+   "set": "fit",
+   "frames": 231,
+   "stock_rmse_deg": [
+    6.373,
+    6.192,
+    4.828,
+    3.686,
+    4.388
+   ],
+   "aligned_stock_rmse_deg": [
+    0.545,
+    1.537,
+    1.777,
+    0.484,
+    0.51
+   ],
+   "baseline_rmse_deg": [
+    0.316,
+    1.037,
+    1.369,
+    0.281,
+    0.189
+   ],
+   "calibrated_rmse_deg": [
+    0.299,
+    0.506,
+    0.793,
+    0.264,
+    0.203
+   ]
+  },
+  {
+   "episode": 14,
+   "set": "fit",
+   "frames": 223,
+   "stock_rmse_deg": [
+    6.17,
+    6.61,
+    4.694,
+    3.973,
+    3.972
+   ],
+   "aligned_stock_rmse_deg": [
+    0.536,
+    1.096,
+    2.266,
+    0.635,
+    0.485
+   ],
+   "baseline_rmse_deg": [
+    0.293,
+    0.774,
+    1.489,
+    0.407,
+    0.284
+   ],
+   "calibrated_rmse_deg": [
+    0.289,
+    0.349,
+    0.827,
+    0.244,
+    0.221
+   ]
+  },
+  {
+   "episode": 15,
+   "set": "fit",
+   "frames": 226,
+   "stock_rmse_deg": [
+    5.921,
+    6.345,
+    4.327,
+    3.574,
+    3.025
+   ],
+   "aligned_stock_rmse_deg": [
+    0.514,
+    1.063,
+    2.109,
+    0.552,
+    0.41
+   ],
+   "baseline_rmse_deg": [
+    0.263,
+    0.711,
+    1.432,
+    0.347,
+    0.266
+   ],
+   "calibrated_rmse_deg": [
+    0.262,
+    0.418,
+    0.863,
+    0.179,
+    0.209
+   ]
+  },
+  {
+   "episode": 16,
+   "set": "fit",
+   "frames": 201,
+   "stock_rmse_deg": [
+    6.331,
+    6.616,
+    4.775,
+    3.915,
+    4.388
+   ],
+   "aligned_stock_rmse_deg": [
+    0.539,
+    1.106,
+    2.055,
+    0.575,
+    0.526
+   ],
+   "baseline_rmse_deg": [
+    0.292,
+    0.896,
+    1.392,
+    0.287,
+    0.257
+   ],
+   "calibrated_rmse_deg": [
+    0.297,
+    0.467,
+    0.93,
+    0.204,
+    0.235
+   ]
+  },
+  {
+   "episode": 17,
+   "set": "fit",
+   "frames": 243,
+   "stock_rmse_deg": [
+    5.659,
+    6.045,
+    4.815,
+    3.816,
+    3.935
+   ],
+   "aligned_stock_rmse_deg": [
+    0.528,
+    1.329,
+    2.412,
+    0.467,
+    0.468
+   ],
+   "baseline_rmse_deg": [
+    0.294,
+    0.781,
+    1.639,
+    0.255,
+    0.248
+   ],
+   "calibrated_rmse_deg": [
+    0.276,
+    0.458,
+    0.774,
+    0.189,
+    0.225
+   ]
+  },
+  {
+   "episode": 19,
+   "set": "fit",
+   "frames": 210,
+   "stock_rmse_deg": [
+    6.054,
+    6.448,
+    4.748,
+    3.02,
+    3.951
+   ],
+   "aligned_stock_rmse_deg": [
+    0.493,
+    1.449,
+    1.849,
+    0.429,
+    0.462
+   ],
+   "baseline_rmse_deg": [
+    0.262,
+    0.925,
+    1.334,
+    0.258,
+    0.248
+   ],
+   "calibrated_rmse_deg": [
+    0.264,
+    0.519,
+    0.996,
+    0.184,
+    0.247
+   ]
+  },
+  {
+   "episode": 20,
+   "set": "fit",
+   "frames": 243,
+   "stock_rmse_deg": [
+    4.775,
+    5.826,
+    4.515,
+    2.56,
+    3.417
+   ],
+   "aligned_stock_rmse_deg": [
+    0.424,
+    1.373,
+    1.523,
+    0.482,
+    0.437
+   ],
+   "baseline_rmse_deg": [
+    0.292,
+    0.757,
+    1.4,
+    0.344,
+    0.285
+   ],
+   "calibrated_rmse_deg": [
+    0.286,
+    0.463,
+    0.994,
+    0.259,
+    0.201
+   ]
+  },
+  {
+   "episode": 21,
+   "set": "fit",
+   "frames": 224,
+   "stock_rmse_deg": [
+    5.172,
+    5.893,
+    4.771,
+    3.332,
+    3.089
+   ],
+   "aligned_stock_rmse_deg": [
+    0.447,
+    1.528,
+    2.109,
+    0.476,
+    0.407
+   ],
+   "baseline_rmse_deg": [
+    0.262,
+    0.996,
+    1.589,
+    0.307,
+    0.259
+   ],
+   "calibrated_rmse_deg": [
+    0.272,
+    0.515,
+    0.86,
+    0.238,
+    0.18
+   ]
+  },
+  {
+   "episode": 22,
+   "set": "fit",
+   "frames": 237,
+   "stock_rmse_deg": [
+    4.401,
+    5.413,
+    4.538,
+    3.432,
+    2.758
+   ],
+   "aligned_stock_rmse_deg": [
+    0.451,
+    1.233,
+    2.728,
+    0.533,
+    0.46
+   ],
+   "baseline_rmse_deg": [
+    0.301,
+    0.702,
+    1.785,
+    0.317,
+    0.269
+   ],
+   "calibrated_rmse_deg": [
+    0.282,
+    0.389,
+    0.659,
+    0.223,
+    0.252
+   ]
+  },
+  {
+   "episode": 25,
+   "set": "fit",
+   "frames": 220,
+   "stock_rmse_deg": [
+    5.152,
+    6.338,
+    5.3,
+    4.249,
+    3.65
+   ],
+   "aligned_stock_rmse_deg": [
+    0.452,
+    1.451,
+    2.142,
+    0.66,
+    0.461
+   ],
+   "baseline_rmse_deg": [
+    0.277,
+    0.87,
+    1.584,
+    0.334,
+    0.273
+   ],
+   "calibrated_rmse_deg": [
+    0.268,
+    0.428,
+    0.901,
+    0.314,
+    0.175
+   ]
+  },
+  {
+   "episode": 26,
+   "set": "fit",
+   "frames": 199,
+   "stock_rmse_deg": [
+    5.177,
+    6.348,
+    5.3,
+    2.774,
+    3.587
+   ],
+   "aligned_stock_rmse_deg": [
+    0.45,
+    1.522,
+    2.261,
+    0.491,
+    0.419
+   ],
+   "baseline_rmse_deg": [
+    0.271,
+    1.014,
+    1.416,
+    0.332,
+    0.229
+   ],
+   "calibrated_rmse_deg": [
+    0.293,
+    0.438,
+    0.679,
+    0.212,
+    0.189
+   ]
+  },
+  {
+   "episode": 28,
+   "set": "fit",
+   "frames": 224,
+   "stock_rmse_deg": [
+    4.727,
+    6.354,
+    5.114,
+    3.217,
+    3.486
+   ],
+   "aligned_stock_rmse_deg": [
+    0.381,
+    1.305,
+    2.348,
+    0.539,
+    0.402
+   ],
+   "baseline_rmse_deg": [
+    0.259,
+    0.854,
+    1.646,
+    0.325,
+    0.229
+   ],
+   "calibrated_rmse_deg": [
+    0.27,
+    0.404,
+    0.82,
+    0.189,
+    0.191
+   ]
+  },
+  {
+   "episode": 29,
+   "set": "fit",
+   "frames": 223,
+   "stock_rmse_deg": [
+    4.756,
+    6.566,
+    5.719,
+    3.184,
+    3.135
+   ],
+   "aligned_stock_rmse_deg": [
+    0.465,
+    1.628,
+    2.522,
+    0.492,
+    0.418
+   ],
+   "baseline_rmse_deg": [
+    0.322,
+    1.18,
+    1.621,
+    0.29,
+    0.275
+   ],
+   "calibrated_rmse_deg": [
+    0.299,
+    0.474,
+    0.823,
+    0.215,
+    0.197
+   ]
+  },
+  {
+   "episode": 30,
+   "set": "fit",
+   "frames": 288,
+   "stock_rmse_deg": [
+    7.06,
+    5.476,
+    4.449,
+    3.28,
+    4.76
+   ],
+   "aligned_stock_rmse_deg": [
+    0.642,
+    1.095,
+    2.335,
+    0.464,
+    0.585
+   ],
+   "baseline_rmse_deg": [
+    0.295,
+    0.747,
+    1.625,
+    0.321,
+    0.311
+   ],
+   "calibrated_rmse_deg": [
+    0.331,
+    0.463,
+    0.905,
+    0.216,
+    0.309
+   ]
+  },
+  {
+   "episode": 31,
+   "set": "fit",
+   "frames": 272,
+   "stock_rmse_deg": [
+    6.586,
+    5.606,
+    4.292,
+    3.211,
+    4.225
+   ],
+   "aligned_stock_rmse_deg": [
+    0.569,
+    0.935,
+    2.336,
+    0.52,
+    0.523
+   ],
+   "baseline_rmse_deg": [
+    0.293,
+    0.658,
+    1.632,
+    0.304,
+    0.275
+   ],
+   "calibrated_rmse_deg": [
+    0.295,
+    0.413,
+    0.769,
+    0.285,
+    0.262
+   ]
+  },
+  {
+   "episode": 32,
+   "set": "fit",
+   "frames": 270,
+   "stock_rmse_deg": [
+    6.026,
+    5.118,
+    4.486,
+    2.923,
+    3.792
+   ],
+   "aligned_stock_rmse_deg": [
+    0.922,
+    1.414,
+    2.575,
+    0.536,
+    0.472
+   ],
+   "baseline_rmse_deg": [
+    0.647,
+    0.858,
+    1.627,
+    0.324,
+    0.251
+   ],
+   "calibrated_rmse_deg": [
+    0.449,
+    0.393,
+    0.68,
+    0.265,
+    0.241
+   ]
+  },
+  {
+   "episode": 33,
+   "set": "fit",
+   "frames": 239,
+   "stock_rmse_deg": [
+    6.898,
+    5.868,
+    4.471,
+    3.652,
+    5.007
+   ],
+   "aligned_stock_rmse_deg": [
+    0.572,
+    0.936,
+    2.523,
+    0.611,
+    0.549
+   ],
+   "baseline_rmse_deg": [
+    0.276,
+    0.574,
+    1.746,
+    0.454,
+    0.285
+   ],
+   "calibrated_rmse_deg": [
+    0.286,
+    0.42,
+    0.785,
+    0.311,
+    0.265
+   ]
+  },
+  {
+   "episode": 35,
+   "set": "fit",
+   "frames": 262,
+   "stock_rmse_deg": [
+    6.48,
+    5.27,
+    4.337,
+    2.74,
+    4.439
+   ],
+   "aligned_stock_rmse_deg": [
+    0.499,
+    1.005,
+    2.538,
+    0.521,
+    0.472
+   ],
+   "baseline_rmse_deg": [
+    0.237,
+    0.701,
+    1.672,
+    0.402,
+    0.253
+   ],
+   "calibrated_rmse_deg": [
+    0.249,
+    0.431,
+    0.781,
+    0.257,
+    0.204
+   ]
+  },
+  {
+   "episode": 36,
+   "set": "fit",
+   "frames": 254,
+   "stock_rmse_deg": [
+    6.468,
+    5.427,
+    4.394,
+    2.905,
+    4.494
+   ],
+   "aligned_stock_rmse_deg": [
+    0.514,
+    1.122,
+    2.336,
+    0.563,
+    0.447
+   ],
+   "baseline_rmse_deg": [
+    0.239,
+    0.678,
+    1.488,
+    0.448,
+    0.251
+   ],
+   "calibrated_rmse_deg": [
+    0.239,
+    0.458,
+    0.809,
+    0.3,
+    0.223
+   ]
+  },
+  {
+   "episode": 37,
+   "set": "fit",
+   "frames": 227,
+   "stock_rmse_deg": [
+    7.291,
+    6.28,
+    4.703,
+    3.996,
+    5.576
+   ],
+   "aligned_stock_rmse_deg": [
+    0.626,
+    1.281,
+    2.605,
+    0.558,
+    0.627
+   ],
+   "baseline_rmse_deg": [
+    0.23,
+    0.745,
+    1.771,
+    0.262,
+    0.255
+   ],
+   "calibrated_rmse_deg": [
+    0.271,
+    0.424,
+    0.824,
+    0.258,
+    0.241
+   ]
+  },
+  {
+   "episode": 38,
+   "set": "fit",
+   "frames": 256,
+   "stock_rmse_deg": [
+    6.469,
+    5.362,
+    3.795,
+    2.615,
+    4.78
+   ],
+   "aligned_stock_rmse_deg": [
+    0.508,
+    1.026,
+    1.881,
+    0.457,
+    0.508
+   ],
+   "baseline_rmse_deg": [
+    0.235,
+    0.674,
+    1.398,
+    0.312,
+    0.292
+   ],
+   "calibrated_rmse_deg": [
+    0.241,
+    0.391,
+    0.733,
+    0.255,
+    0.264
+   ]
+  },
+  {
+   "episode": 39,
+   "set": "fit",
+   "frames": 238,
+   "stock_rmse_deg": [
+    7.159,
+    6.045,
+    4.308,
+    3.428,
+    5.268
+   ],
+   "aligned_stock_rmse_deg": [
+    0.618,
+    1.461,
+    1.984,
+    0.595,
+    0.568
+   ],
+   "baseline_rmse_deg": [
+    0.278,
+    0.912,
+    1.418,
+    0.434,
+    0.341
+   ],
+   "calibrated_rmse_deg": [
+    0.309,
+    0.468,
+    0.909,
+    0.329,
+    0.295
+   ]
+  },
+  {
+   "episode": 1,
+   "set": "interleaved",
+   "frames": 266,
+   "stock_rmse_deg": [
+    4.963,
+    5.633,
+    4.006,
+    2.751,
+    2.566
+   ],
+   "aligned_stock_rmse_deg": [
+    0.491,
+    1.143,
+    1.894,
+    0.404,
+    0.426
+   ],
+   "baseline_rmse_deg": [
+    0.333,
+    0.817,
+    1.338,
+    0.262,
+    0.304
+   ],
+   "calibrated_rmse_deg": [
+    0.31,
+    0.525,
+    0.683,
+    0.214,
+    0.24
+   ]
+  },
+  {
+   "episode": 2,
+   "set": "interleaved",
+   "frames": 230,
+   "stock_rmse_deg": [
+    5.585,
+    6.258,
+    4.764,
+    3.666,
+    3.293
+   ],
+   "aligned_stock_rmse_deg": [
+    0.553,
+    1.333,
+    2.226,
+    0.634,
+    0.479
+   ],
+   "baseline_rmse_deg": [
+    0.312,
+    0.876,
+    1.364,
+    0.393,
+    0.311
+   ],
+   "calibrated_rmse_deg": [
+    0.316,
+    0.596,
+    0.844,
+    0.243,
+    0.263
+   ]
+  },
+  {
+   "episode": 3,
+   "set": "interleaved",
+   "frames": 183,
+   "stock_rmse_deg": [
+    6.406,
+    7.66,
+    5.407,
+    4.067,
+    3.571
+   ],
+   "aligned_stock_rmse_deg": [
+    0.611,
+    1.457,
+    1.966,
+    0.572,
+    0.513
+   ],
+   "baseline_rmse_deg": [
+    0.389,
+    0.904,
+    1.269,
+    0.273,
+    0.24
+   ],
+   "calibrated_rmse_deg": [
+    0.379,
+    0.477,
+    0.992,
+    0.191,
+    0.217
+   ]
+  },
+  {
+   "episode": 4,
+   "set": "interleaved",
+   "frames": 215,
+   "stock_rmse_deg": [
+    5.859,
+    6.907,
+    5.123,
+    5.007,
+    3.562
+   ],
+   "aligned_stock_rmse_deg": [
+    0.514,
+    1.371,
+    2.486,
+    0.842,
+    0.515
+   ],
+   "baseline_rmse_deg": [
+    0.327,
+    0.957,
+    1.626,
+    0.348,
+    0.329
+   ],
+   "calibrated_rmse_deg": [
+    0.315,
+    0.501,
+    0.853,
+    0.257,
+    0.269
+   ]
+  },
+  {
+   "episode": 11,
+   "set": "interleaved",
+   "frames": 201,
+   "stock_rmse_deg": [
+    6.324,
+    7.317,
+    4.782,
+    4.739,
+    4.065
+   ],
+   "aligned_stock_rmse_deg": [
+    0.548,
+    1.131,
+    2.408,
+    0.647,
+    0.455
+   ],
+   "baseline_rmse_deg": [
+    0.294,
+    0.776,
+    1.492,
+    0.31,
+    0.219
+   ],
+   "calibrated_rmse_deg": [
+    0.316,
+    0.55,
+    0.804,
+    0.226,
+    0.186
+   ]
+  },
+  {
+   "episode": 18,
+   "set": "interleaved",
+   "frames": 214,
+   "stock_rmse_deg": [
+    6.914,
+    6.622,
+    4.692,
+    4.05,
+    4.14
+   ],
+   "aligned_stock_rmse_deg": [
+    0.667,
+    1.216,
+    2.028,
+    0.578,
+    0.461
+   ],
+   "baseline_rmse_deg": [
+    0.376,
+    0.818,
+    1.377,
+    0.325,
+    0.254
+   ],
+   "calibrated_rmse_deg": [
+    0.367,
+    0.459,
+    1.035,
+    0.176,
+    0.235
+   ]
+  },
+  {
+   "episode": 23,
+   "set": "interleaved",
+   "frames": 211,
+   "stock_rmse_deg": [
+    4.824,
+    6.379,
+    5.29,
+    3.835,
+    3.346
+   ],
+   "aligned_stock_rmse_deg": [
+    0.446,
+    1.374,
+    2.51,
+    0.543,
+    0.42
+   ],
+   "baseline_rmse_deg": [
+    0.285,
+    0.79,
+    1.718,
+    0.313,
+    0.263
+   ],
+   "calibrated_rmse_deg": [
+    0.277,
+    0.414,
+    0.803,
+    0.175,
+    0.19
+   ]
+  },
+  {
+   "episode": 24,
+   "set": "interleaved",
+   "frames": 223,
+   "stock_rmse_deg": [
+    5.169,
+    6.373,
+    4.484,
+    3.044,
+    2.954
+   ],
+   "aligned_stock_rmse_deg": [
+    0.457,
+    1.227,
+    1.81,
+    0.474,
+    0.4
+   ],
+   "baseline_rmse_deg": [
+    0.205,
+    0.859,
+    1.447,
+    0.325,
+    0.247
+   ],
+   "calibrated_rmse_deg": [
+    0.231,
+    0.503,
+    0.83,
+    0.256,
+    0.174
+   ]
+  },
+  {
+   "episode": 27,
+   "set": "interleaved",
+   "frames": 203,
+   "stock_rmse_deg": [
+    5.252,
+    6.588,
+    4.759,
+    3.737,
+    3.878
+   ],
+   "aligned_stock_rmse_deg": [
+    0.419,
+    1.377,
+    2.013,
+    0.639,
+    0.458
+   ],
+   "baseline_rmse_deg": [
+    0.252,
+    0.817,
+    1.263,
+    0.392,
+    0.283
+   ],
+   "calibrated_rmse_deg": [
+    0.265,
+    0.482,
+    0.826,
+    0.288,
+    0.22
+   ]
+  },
+  {
+   "episode": 34,
+   "set": "interleaved",
+   "frames": 207,
+   "stock_rmse_deg": [
+    8.327,
+    5.881,
+    4.938,
+    3.68,
+    6.494
+   ],
+   "aligned_stock_rmse_deg": [
+    0.778,
+    1.046,
+    2.39,
+    0.547,
+    0.676
+   ],
+   "baseline_rmse_deg": [
+    0.353,
+    0.669,
+    1.578,
+    0.347,
+    0.241
+   ],
+   "calibrated_rmse_deg": [
+    0.438,
+    0.475,
+    0.904,
+    0.249,
+    0.335
+   ]
+  },
+  {
+   "episode": 40,
+   "set": "future",
+   "frames": 293,
+   "stock_rmse_deg": [
+    7.318,
+    5.85,
+    4.524,
+    2.061,
+    6.432
+   ],
+   "aligned_stock_rmse_deg": [
+    0.662,
+    1.081,
+    2.317,
+    0.454,
+    0.565
+   ],
+   "baseline_rmse_deg": [
+    0.328,
+    0.599,
+    1.568,
+    0.366,
+    0.306
+   ],
+   "calibrated_rmse_deg": [
+    0.365,
+    0.451,
+    0.922,
+    0.314,
+    0.333
+   ]
+  },
+  {
+   "episode": 41,
+   "set": "future",
+   "frames": 306,
+   "stock_rmse_deg": [
+    6.555,
+    4.435,
+    4.015,
+    2.259,
+    6.402
+   ],
+   "aligned_stock_rmse_deg": [
+    0.546,
+    0.965,
+    2.402,
+    0.474,
+    0.648
+   ],
+   "baseline_rmse_deg": [
+    0.294,
+    0.591,
+    1.69,
+    0.359,
+    0.483
+   ],
+   "calibrated_rmse_deg": [
+    0.322,
+    0.465,
+    0.837,
+    0.247,
+    0.429
+   ]
+  },
+  {
+   "episode": 42,
+   "set": "future",
+   "frames": 263,
+   "stock_rmse_deg": [
+    7.148,
+    5.039,
+    5.11,
+    4.315,
+    6.6
+   ],
+   "aligned_stock_rmse_deg": [
+    0.627,
+    1.358,
+    2.414,
+    0.572,
+    0.638
+   ],
+   "baseline_rmse_deg": [
+    0.294,
+    0.838,
+    1.628,
+    0.398,
+    0.294
+   ],
+   "calibrated_rmse_deg": [
+    0.304,
+    0.477,
+    0.729,
+    0.312,
+    0.269
+   ]
+  },
+  {
+   "episode": 43,
+   "set": "future",
+   "frames": 281,
+   "stock_rmse_deg": [
+    7.215,
+    4.99,
+    3.912,
+    2.828,
+    6.811
+   ],
+   "aligned_stock_rmse_deg": [
+    0.596,
+    0.796,
+    2.266,
+    0.536,
+    0.541
+   ],
+   "baseline_rmse_deg": [
+    0.297,
+    0.564,
+    1.537,
+    0.412,
+    0.278
+   ],
+   "calibrated_rmse_deg": [
+    0.328,
+    0.375,
+    0.844,
+    0.397,
+    0.3
+   ]
+  },
+  {
+   "episode": 44,
+   "set": "future",
+   "frames": 261,
+   "stock_rmse_deg": [
+    7.587,
+    4.53,
+    4.506,
+    3.803,
+    6.943
+   ],
+   "aligned_stock_rmse_deg": [
+    0.683,
+    1.035,
+    2.547,
+    0.602,
+    0.633
+   ],
+   "baseline_rmse_deg": [
+    0.289,
+    0.556,
+    1.601,
+    0.331,
+    0.312
+   ],
+   "calibrated_rmse_deg": [
+    0.307,
+    0.459,
+    0.734,
+    0.265,
+    0.284
+   ]
+  },
+  {
+   "episode": 45,
+   "set": "future",
+   "frames": 250,
+   "stock_rmse_deg": [
+    7.88,
+    5.838,
+    4.941,
+    3.312,
+    7.046
+   ],
+   "aligned_stock_rmse_deg": [
+    0.691,
+    0.923,
+    2.154,
+    0.52,
+    0.717
+   ],
+   "baseline_rmse_deg": [
+    0.287,
+    0.609,
+    1.543,
+    0.362,
+    0.305
+   ],
+   "calibrated_rmse_deg": [
+    0.342,
+    0.463,
+    0.927,
+    0.252,
+    0.368
+   ]
+  },
+  {
+   "episode": 46,
+   "set": "future",
+   "frames": 303,
+   "stock_rmse_deg": [
+    6.559,
+    4.635,
+    4.28,
+    2.97,
+    6.342
+   ],
+   "aligned_stock_rmse_deg": [
+    0.541,
+    0.998,
+    2.006,
+    0.54,
+    0.547
+   ],
+   "baseline_rmse_deg": [
+    0.273,
+    0.61,
+    1.463,
+    0.327,
+    0.308
+   ],
+   "calibrated_rmse_deg": [
+    0.28,
+    0.364,
+    1.0,
+    0.276,
+    0.288
+   ]
+  },
+  {
+   "episode": 47,
+   "set": "future",
+   "frames": 259,
+   "stock_rmse_deg": [
+    7.764,
+    5.407,
+    4.714,
+    3.18,
+    6.927
+   ],
+   "aligned_stock_rmse_deg": [
+    0.683,
+    0.935,
+    2.178,
+    0.421,
+    0.706
+   ],
+   "baseline_rmse_deg": [
+    0.332,
+    0.46,
+    1.629,
+    0.275,
+    0.32
+   ],
+   "calibrated_rmse_deg": [
+    0.353,
+    0.405,
+    0.842,
+    0.227,
+    0.422
+   ]
+  },
+  {
+   "episode": 48,
+   "set": "future",
+   "frames": 272,
+   "stock_rmse_deg": [
+    6.928,
+    5.257,
+    4.074,
+    2.715,
+    7.536
+   ],
+   "aligned_stock_rmse_deg": [
+    0.577,
+    0.988,
+    2.291,
+    0.449,
+    0.653
+   ],
+   "baseline_rmse_deg": [
+    0.277,
+    0.487,
+    1.546,
+    0.362,
+    0.337
+   ],
+   "calibrated_rmse_deg": [
+    0.301,
+    0.444,
+    0.85,
+    0.339,
+    0.381
+   ]
+  },
+  {
+   "episode": 49,
+   "set": "future",
+   "frames": 271,
+   "stock_rmse_deg": [
+    7.415,
+    4.968,
+    4.684,
+    3.443,
+    7.447
+   ],
+   "aligned_stock_rmse_deg": [
+    0.687,
+    0.986,
+    1.977,
+    0.678,
+    0.744
+   ],
+   "baseline_rmse_deg": [
+    0.32,
+    0.55,
+    1.593,
+    0.517,
+    0.433
+   ],
+   "calibrated_rmse_deg": [
+    0.352,
+    0.451,
+    0.974,
+    0.437,
+    0.509
+   ]
+  }
+ ],
+ "audit": {
+  "gravity_sag_nominal_mapping": {
+   "n_static_frames": 143,
+   "n_excluded_possible_table_contact": 138,
+   "n_frames_used": 5,
+   "n_episodes": 4,
+   "clearance_m": 0.03,
+   "joints": {
+    "shoulder_pan": {
+     "testable": false,
+     "why": "gravity torque ~constant over the selected static poses",
+     "gravity_torque_std_Nm": 0.0,
+     "gravity_torque_rms_Nm": 0.0,
+     "n_frames": 5,
+     "n_episodes": 4
+    },
+    "shoulder_lift": {
+     "testable": false,
+     "why": "too few static off-table frames/episodes",
+     "gravity_torque_std_Nm": 0.0341,
+     "gravity_torque_rms_Nm": 0.2075,
+     "n_frames": 5,
+     "n_episodes": 4
+    },
+    "elbow_flex": {
+     "testable": false,
+     "why": "gravity torque ~constant over the selected static poses",
+     "gravity_torque_std_Nm": 0.0055,
+     "gravity_torque_rms_Nm": 0.3536,
+     "n_frames": 5,
+     "n_episodes": 4
+    },
+    "wrist_flex": {
+     "testable": false,
+     "why": "gravity torque ~constant over the selected static poses",
+     "gravity_torque_std_Nm": 0.0043,
+     "gravity_torque_rms_Nm": 0.0045,
+     "n_frames": 5,
+     "n_episodes": 4
+    },
+    "wrist_roll": {
+     "testable": false,
+     "why": "gravity torque ~constant over the selected static poses",
+     "gravity_torque_std_Nm": 0.0001,
+     "gravity_torque_rms_Nm": 0.0001,
+     "n_frames": 5,
+     "n_episodes": 4
+    }
+   }
+  },
+  "forward_kinematics": {
+   "frames_checked": 3995,
+   "stride": 3,
+   "assumption": "the base body sits on the work surface; gripper/base lowest points from geom bounding boxes",
+   "ee_minus_base_lowest_m": {
+    "p1": 0.013,
+    "p5": 0.014,
+    "p50": 0.032,
+    "min": 0.003
+   },
+   "frac_frames_ee_below_base_by_2cm": 0.0,
+   "stock_limits_deg": [
+    [
+     -110.0,
+     110.0
+    ],
+    [
+     -100.0,
+     100.0
+    ],
+    [
+     -96.83,
+     96.83
+    ],
+    [
+     -95.0,
+     95.0
+    ],
+    [
+     -157.21,
+     162.79
+    ]
+   ],
+   "frac_frames_within_1deg_of_stock_limit": {
+    "shoulder_pan": 0.0,
+    "shoulder_lift": 0.0093,
+    "elbow_flex": 0.3404,
+    "wrist_flex": 0.0058,
+    "wrist_roll": 0.0108
+   },
+   "frac_frames_beyond_stock_limit": {
+    "shoulder_pan": 0.0,
+    "shoulder_lift": 0.3479,
+    "elbow_flex": 0.0,
+    "wrist_flex": 0.0298,
+    "wrist_roll": 0.0596
+   }
+  },
+  "released_limits": {
+   "shoulder_pan": {
+    "lower": false,
+    "upper": false
+   },
+   "shoulder_lift": {
+    "lower": true,
+    "upper": false
+   },
+   "elbow_flex": {
+    "lower": false,
+    "upper": true
+   },
+   "wrist_flex": {
+    "lower": false,
+    "upper": true
+   },
+   "wrist_roll": {
+    "lower": true,
+    "upper": false
+   }
+  },
+  "stock_range_deg": [
+   [
+    -110.0,
+    110.0
+   ],
+   [
+    -100.0,
+    100.0
+   ],
+   [
+    -96.83,
+    96.83
+   ],
+   [
+    -95.0,
+    95.0
+   ],
+   [
+    -157.21,
+    162.79
+   ]
+  ],
+  "calibrated_range_deg": [
+   [
+    -110.0,
+    110.0
+   ],
+   [
+    -360.0,
+    100.0
+   ],
+   [
+    -96.83,
+    360.0
+   ],
+   [
+    -95.0,
+    360.0
+   ],
+   [
+    -360.0,
+    162.79
+   ]
+  ]
+ },
+ "package": {
+  "file": "calibrated_twin.json",
+  "sha256": "7024ed557bf5a40b6498e8681e27d6f8cfcc0b35f76196141c5d5faef652ca3d"
+ },
+ "limitations": [
+  "Dataset recorded in LeRobot RANGE_M100_100 (normalized) units; converted to degrees with the follower's calibrated range recovered from the encoder-tick lattice of observation.state (ranges in ticks: [2505, 2388, 2231, 2359, 4095]). Readings clipped at +-100 (fraction per joint: [0.0, 0.0, 0.0, 0.0, 0.0]) are true positions beyond the calibrated range and are compared as recorded.",
+  "Open-loop joint-space replay only: contacts are disabled in simulation, objects/table are not modelled; episodes where the real arm pushes on the world show up as sim-vs-real error that no actuator calibration can remove.",
+  "Gripper excluded from all metrics (object contact); it is driven by a linear map of its 0-100 range onto the MJCF jaw range.",
+  "The servo is modelled as MuJoCo's ideal PD position actuator with a torque limit (stock forcerange); the real STS3215 firmware (P-only position loop, acceleration profile, deadband) is approximated, not reproduced. The fitted kp is therefore a bandwidth parameter of that model, not the servo's static stiffness (compare the gravity-sag audit).",
+  "Fitted per joint: kp, kv, frictionloss; shared: integer command delay. Armature is fixed at the stock value (only the bandwidth kp/I_eff is identifiable from position trajectories); the identifiable combinations (natural frequency, damping ratio) are reported with CIs.",
+  "Zero offsets are NOT fitted: the twin uses the documented calibration convention (sign checked per joint). In v1 fitted offsets were unidentified, went to their +-20 deg bounds and degraded forward-kinematic plausibility. A robot whose calibration zero differs from the convention is therefore modelled with a wrong gravity load.",
+  "Joint limits: a stock MJCF limit that the fit episodes cross by > 0.5 deg is released (no stop); others stay at stock. Held-out motion past a non-released stock limit is clipped by the twin (fraction reported).",
+  "Command delay is an integer number of frames shared by all joints.",
+  "Dataset timestamps are nominal (frame_index/fps); real control-loop timing, jitter and overruns are unobservable and unmodelled.",
+  "One dataset = one physical robot and setup: the calibrated twin is a model of that robot, not of the robot type; transfer to other units is not tested here.",
+  "Confidence intervals are percentile bootstraps over episodes (whole episodes resampled, 10,000 draws, fixed seed); with 10 future / 10 interleaved held-out episodes they are approximate and tend to be slightly too narrow. They do not cover the choice of split, of fit configuration, or of dataset.",
+  "info.json robot_type is 'so100_follower' but the twin (robotstudio_so101) was chosen from the dataset name/card; SO-100 and SO-101 share servos and LeRobot code, but link geometry differs, so a hardware/twin mismatch cannot be excluded.",
+  "Stock MJCF limits crossed by the fit episodes and released in the aligned/calibrated twins: shoulder_lift lower, elbow_flex upper, wrist_flex upper, wrist_roll lower. The stock twin is held at those limits (counted as stock-twin error).",
+  "future held-out episodes leave the fit episodes' range of motion (+-2 deg) on more than 5% of frames: {'shoulder_pan': 0.3219, 'wrist_roll': 0.2523}.",
+  "interleaved: final-pose (static) gap is larger for the calibrated twin than for stock on elbow_flex by point estimate; CIs separate on elbow_flex.",
+  "future: final-pose (static) gap is larger for the calibrated twin than for stock on elbow_flex by point estimate; CIs separate on elbow_flex."
+ ],
+ "plots": {
+  "episode": "heldout_episode.svg",
+  "episode_set": "future",
+  "episode_index": 44,
+  "bars_interleaved": "rmse_by_joint.svg",
+  "bars_future": "rmse_by_joint_future.svg"
+ },
+ "content_sha256": "71fd766908a20570a63dd103021ec039f42a059d58102d6ed313e8f205000521",
+ "results_sha256": "17a67f70aa05c8f875295b681833b2020b17cb45aeafbfdee7e5a53975be962c",
+ "volatile": {
+  "runtime_s": 87.0,
+  "git": {
+   "commit": "3ec53a7c87b6fe0406bc05afc6b9d2305a73906b",
+   "lab_code_dirty_or_untracked": false
+  }
+ }
+}

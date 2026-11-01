@@ -1,0 +1,460 @@
+{
+ "schema": "meatspace.twin-gap-report/v2",
+ "dataset": {
+  "id": "lerobot/svla_so100_pickplace",
+  "revision_requested": "728583b5eaf9e739a7f119e2def466fa1d552402",
+  "revision_sha": "728583b5eaf9e739a7f119e2def466fa1d552402",
+  "codebase_version": "v3.0",
+  "robot_type": "so100",
+  "fps": 30.0,
+  "episodes_in_repo": 50,
+  "max_episodes_loaded": 200,
+  "episodes_total": 50,
+  "episodes_dropped": [],
+  "frames_used": 19631,
+  "files": [
+   {
+    "path": "data/chunk-000/file-000.parquet",
+    "sha256": "e74b2786f24bc5bb8d9e6b82f5f16cc4ae921fcaf42cabdcb9bf939ca78767e1",
+    "bytes": 476455
+   }
+  ],
+  "timestamps": {
+   "max_abs_dev_from_frame_index_over_fps_s": 9e-07,
+   "nominal": true,
+   "note": "timestamps equal frame_index/fps: loop timing is not recorded, the jitter check in data.py cannot fire"
+  }
+ },
+ "units": {
+  "convention": "lerobot-legacy",
+  "zero_reference": "calibration_zero_pose",
+  "encodings": [
+   {
+    "joint": "shoulder_pan",
+    "kind": "legacy_degrees",
+    "step": 0.087890625,
+    "max_resid_steps": 1.4210854715202004e-14,
+    "range_ticks": null,
+    "deg_per_unit": 1.0,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "shoulder_lift",
+    "kind": "legacy_degrees",
+    "step": 0.087890625,
+    "max_resid_steps": 1.4210854715202004e-14,
+    "range_ticks": null,
+    "deg_per_unit": 1.0,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "elbow_flex",
+    "kind": "legacy_degrees",
+    "step": 0.087890625,
+    "max_resid_steps": 1.4210854715202004e-14,
+    "range_ticks": null,
+    "deg_per_unit": 1.0,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "wrist_flex",
+    "kind": "legacy_degrees",
+    "step": 0.087890625,
+    "max_resid_steps": 2.842170943040401e-14,
+    "range_ticks": null,
+    "deg_per_unit": 1.0,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "wrist_roll",
+    "kind": "legacy_degrees",
+    "step": 0.087890625,
+    "max_resid_steps": 0.0,
+    "range_ticks": null,
+    "deg_per_unit": 1.0,
+    "saturated_frac": 0.0
+   },
+   {
+    "joint": "gripper",
+    "kind": "linear_0_100",
+    "step": 0.06906077017878542,
+    "max_resid_steps": 5.048491539128008e-05,
+    "range_ticks": null,
+    "deg_per_unit": null,
+    "saturated_frac": 0.0
+   }
+  ],
+  "supported": true,
+  "reason": "legacy LeRobot degrees (tick = 180/2048 deg verified on every arm joint)",
+  "decided_on": "fit episodes",
+  "heldout_agrees": true,
+  "heldout_kinds": [
+   "legacy_degrees",
+   "legacy_degrees",
+   "legacy_degrees",
+   "legacy_degrees",
+   "legacy_degrees"
+  ],
+  "heldout_range_ticks": [
+   null,
+   null,
+   null,
+   null,
+   null
+  ]
+ },
+ "environment": {
+  "python": "3.13.18",
+  "mujoco": "3.17.0",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pandas": "3.1.0",
+  "pyarrow": "26.0.0",
+  "huggingface_hub": "2.4.0",
+  "meatspace_lab": "2.0.0",
+  "code_sha256": "924eb3d8364be665182088e3811bd50a322342a6ab1856e47930f5c6ec527779",
+  "platform": {
+   "machine": "x86_64",
+   "system": "Linux",
+   "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz"
+  },
+  "blas": [
+   {
+    "package": "numpy",
+    "lib": "libscipy_openblas64_-f48b354e.so",
+    "corename": "SkylakeX",
+    "config": "OpenBLAS 0.3.34.106.0  USE64BITINT DYNAMIC_ARCH NO_AFFINITY SkylakeX MAX_THREADS=64"
+   },
+   {
+    "package": "scipy",
+    "lib": "libscipy_openblas-5f890258.so",
+    "corename": "SkylakeX",
+    "config": "OpenBLAS 0.3.31.dev DYNAMIC_ARCH NO_AFFINITY SkylakeX MAX_THREADS=64"
+   }
+  ]
+ },
+ "conventions": {
+  "recording": "Legacy LeRobot (ManipulatorRobot.teleop_step, `main_*` names): the goal a[t] is WRITTEN to the follower first and the follower state x[t] is READ afterwards (a few ms later), so x[t] may already contain a few ms of response to a[t] (act-then-observe).",
+  "recording_convention": "lerobot-legacy",
+  "replay": "Replay (identical for both conventions): q_sim[0]=x[0] (zero velocity); for t=0..T-2 apply ctrl=a[t-d] (d = fitted integer command delay, stock d=0) for the whole frame, step `substeps` physics steps (timestep set so substeps*timestep = 1/fps exactly), record q_sim[t+1]; sim and real are compared at the same index t=1..T-1. The real sub-frame send-to-read offset (legacy: a[t] sent a few ms BEFORE x[t] is read; current: a[t] sent a few ms AFTER) is not modelled; it is absorbed by the fitted dynamics/delay, and it shifts lags between the two conventions by a fraction of a frame in opposite directions.",
+  "lag": "lag = argmin_L Var(a[t] - y[t+L]) over a fixed window t in [0, T-10), parabolic sub-frame refinement; y = real or sim state. Includes the 1-frame sampling offset: in the replay and in observe-then-act (current LeRobot) recordings an instantaneous actuator measures 1.0 frame; in act-then-observe (legacy) recordings it would measure ~0, and a realistic servo measures its delay minus the few-ms write-to-read gap. Lags are therefore directly comparable between sim and real within one dataset, and only approximately (fraction of a frame) across codebases. Also reported in ms, since datasets differ in fps. Joints with command std < 1 deg in an episode are skipped.",
+  "angles": "physical degrees (encoder ticks * 360/4096), arm joints only",
+  "change": "relative change of an error metric, new/reference - 1; NEGATIVE = better",
+  "unit_sources": {
+   "lerobot_repo": "https://github.com/huggingface/lerobot",
+   "lerobot_main_sha": "3f797de5952432284a7c77ad2760218cb74e2f26",
+   "normalize": "src/lerobot/motors/motors_bus.py::_normalize/_unnormalize/record_calibration",
+   "legacy_calibration": "lerobot/common/robot_devices/robots/feetech_calibration.py @ e23b41e7~1",
+   "always_degrees_commit": "6600b60e (2026-02-13): SO follower/leader default use_degrees=True"
+  }
+ },
+ "split": {
+  "method": "future = last round(n*test_frac) episodes by index; interleaved = round(n*test_frac) episodes of the rest drawn by numpy default_rng(seed).permutation, plus every remaining episode beyond the fit cap; fit = the remaining episodes (<= max_train_episodes)",
+  "seed": 0,
+  "test_frac": 0.2,
+  "fit": [
+   0,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   19,
+   20,
+   21,
+   22,
+   25,
+   26,
+   28,
+   29,
+   30,
+   31,
+   32,
+   33,
+   35,
+   36,
+   37,
+   38,
+   39
+  ],
+  "interleaved_heldout": [
+   1,
+   2,
+   3,
+   4,
+   11,
+   18,
+   23,
+   24,
+   27,
+   34
+  ],
+  "future_heldout": [
+   40,
+   41,
+   42,
+   43,
+   44,
+   45,
+   46,
+   47,
+   48,
+   49
+  ],
+  "unused_train_in_interleaved": [],
+  "overlap": []
+ },
+ "twin": {
+  "id": "trs_so_arm100",
+  "menagerie_repo": "https://github.com/google-deepmind/mujoco_menagerie",
+  "menagerie_sha": "b0655057a9df2abe39ea7fc989914ba6f248301c",
+  "twin_dir_content_sha256": "4f3b0f21b8a2b889ebac185992053e143ef772da3f38e33615193547007e8858",
+  "xml": "so_arm100.xml",
+  "stock_timestep": 0.002,
+  "timestep_used": 0.00196078431372549,
+  "substeps_per_frame": 17,
+  "contacts": "disabled",
+  "stock_params": {
+   "kp": [
+    50.0,
+    50.0,
+    50.0,
+    50.0,
+    50.0
+   ],
+   "kv": [
+    5.12815,
+    4.960962,
+    4.62994,
+    4.493448,
+    4.473104
+   ],
+   "damping": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "armature": [
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1
+   ],
+   "frictionloss": [
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1
+   ],
+   "offset_deg": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "delay_frames": 0,
+   "jnt_range_rad": null
+  }
+ },
+ "mapping_checks": [
+  {
+   "joint": 0,
+   "p1_p99_deg": [
+    -32.78,
+    69.79
+   ],
+   "mjcf_range_deg": [
+    -110.01,
+    110.01
+   ],
+   "shift_needed_documented_sign_deg": 0.0,
+   "shift_needed_flipped_sign_deg": 0.0,
+   "decision": "documented sign (flipped sign would also fit: sign not identified by range)"
+  },
+  {
+   "joint": 1,
+   "p1_p99_deg": [
+    -88.68,
+    38.24
+   ],
+   "mjcf_range_deg": [
+    -190.22,
+    9.97
+   ],
+   "shift_needed_documented_sign_deg": 28.27,
+   "shift_needed_flipped_sign_deg": 78.71,
+   "decision": "rejected"
+  },
+  {
+   "joint": 2,
+   "p1_p99_deg": [
+    -28.12,
+    74.97
+   ],
+   "mjcf_range_deg": [
+    -9.97,
+    179.91
+   ],
+   "shift_needed_documented_sign_deg": 18.16,
+   "shift_needed_flipped_sign_deg": 65.0,
+   "decision": "documented sign"
+  },
+  {
+   "joint": 3,
+   "p1_p99_deg": [
+    20.73,
+    88.15
+   ],
+   "mjcf_range_deg": [
+    -95.11,
+    95.11
+   ],
+   "shift_needed_documented_sign_deg": 0.0,
+   "shift_needed_flipped_sign_deg": 0.0,
+   "decision": "documented sign (flipped sign would also fit: sign not identified by range)"
+  },
+  {
+   "joint": 4,
+   "p1_p99_deg": [
+    68.73,
+    120.32
+   ],
+   "mjcf_range_deg": [
+    -159.86,
+    159.86
+   ],
+   "shift_needed_documented_sign_deg": 0.0,
+   "shift_needed_flipped_sign_deg": 0.0,
+   "decision": "documented sign (flipped sign would also fit: sign not identified by range)"
+  }
+ ],
+ "mapping_gate_robustness": {
+  "all_episodes": {
+   "signs": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "rejected": false,
+   "shift_needed_documented_sign_deg": [
+    0.0,
+    17.45,
+    4.44,
+    0.0,
+    0.0
+   ]
+  },
+  "heldout_only": {
+   "signs": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "rejected": false,
+   "shift_needed_documented_sign_deg": [
+    0.0,
+    2.86,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "fit": {
+   "signs": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "rejected": true,
+   "shift_needed_documented_sign_deg": [
+    0.0,
+    28.27,
+    18.16,
+    0.0,
+    0.0
+   ]
+  },
+  "agree": false
+ },
+ "forward_kinematics_documented_mapping": {
+  "frames_checked": 6559,
+  "stride": 3,
+  "assumption": "the base body sits on the work surface; gripper/base lowest points from geom bounding boxes",
+  "ee_minus_base_lowest_m": {
+   "p1": -0.132,
+   "p5": -0.113,
+   "p50": 0.136,
+   "min": -0.139
+  },
+  "frac_frames_ee_below_base_by_2cm": 0.2392,
+  "stock_limits_deg": [
+   [
+    -110.01,
+    110.01
+   ],
+   [
+    -190.22,
+    9.97
+   ],
+   [
+    -9.97,
+    179.91
+   ],
+   [
+    -95.11,
+    95.11
+   ],
+   [
+    -159.86,
+    159.86
+   ]
+  ],
+  "frac_frames_within_1deg_of_stock_limit": {
+   "shoulder_pan": 0.0,
+   "shoulder_lift": 0.0066,
+   "elbow_flex": 0.0009,
+   "wrist_flex": 0.0005,
+   "wrist_roll": 0.0
+  },
+  "frac_frames_beyond_stock_limit": {
+   "shoulder_pan": 0.0,
+   "shoulder_lift": 0.0598,
+   "elbow_flex": 0.0116,
+   "wrist_flex": 0.0,
+   "wrist_roll": 0.0
+  }
+ },
+ "status": "unsupported",
+ "reason": "recorded range of motion does not fit the twin's joint range under the documented calibration convention with either sign (zero shift > 20 deg) for: shoulder_lift [-88.68, 38.24] vs MJCF [-190.22, 9.97]; this robot's calibration does not follow the convention, so no mapping is asserted",
+ "limitations": [
+  "recorded range of motion does not fit the twin's joint range under the documented calibration convention with either sign (zero shift > 20 deg) for: shoulder_lift [-88.68, 38.24] vs MJCF [-190.22, 9.97]; this robot's calibration does not follow the convention, so no mapping is asserted",
+  "The mapping gate is FRAGILE for this dataset: the same rule on other episode subsets gives a different decision (all episodes: accepted, held-out only: accepted); the decision on the fit episodes is the one used."
+ ],
+ "content_sha256": "2ced9b252f3ad0b0daa8d3bb1746eaefc09cba5398cc0e0f29c900760c4966e8",
+ "results_sha256": "3be7b06ef86449680eebab3d62edc2397aba177bf8a5d0fc5d48a2f7092af852",
+ "volatile": {
+  "runtime_s": 1.6,
+  "git": {
+   "commit": "3ec53a7c87b6fe0406bc05afc6b9d2305a73906b",
+   "lab_code_dirty_or_untracked": false
+  }
+ }
+}

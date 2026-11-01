@@ -1,0 +1,154 @@
+{
+ "schema": "meatspace.calibrated-twin/v1",
+ "twin": "trs_so_arm100",
+ "joints_mjcf": [
+  "Rotation",
+  "Pitch",
+  "Elbow",
+  "Wrist_Pitch",
+  "Wrist_Roll"
+ ],
+ "joints_canonical": [
+  "shoulder_pan",
+  "shoulder_lift",
+  "elbow_flex",
+  "wrist_flex",
+  "wrist_roll"
+ ],
+ "mapping": {
+  "sign": [
+   1,
+   -1,
+   1,
+   1,
+   1
+  ],
+  "nominal_offset_deg": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "zero_reference": "calibration_zero_pose",
+  "note": "legacy LeRobot zero pose = arm straight horizontal (feetech_calibration.py); the MJCF zero (from the SO-ARM100 URDF) is also the arm stretched horizontally forward, so nominal offsets are 0. Documented signs +1 (MJCF joint axes); legacy LeRobot sets each motor's direction from the user's 'rotated position', so signs are checked per dataset against the recorded range of motion (mapping_checks).",
+  "fitted_offset_correction_deg": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "formula": "q_rad = sign*deg2rad(x_deg) + deg2rad(nominal_offset_deg + fitted_offset_correction_deg)"
+ },
+ "params": {
+  "kp": [
+   71.8225,
+   53.2572,
+   14.947,
+   6.5491,
+   41.1184
+  ],
+  "kv": [
+   9.114419,
+   8.210709,
+   0.760773,
+   0.914438,
+   4.510141
+  ],
+  "damping": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "armature": [
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1
+  ],
+  "frictionloss": [
+   0.718208,
+   0.999994,
+   0.674098,
+   0.204024,
+   0.588449
+  ]
+ },
+ "jnt_range_rad": [
+  [
+   -1.92,
+   1.92
+  ],
+  [
+   -6.283185,
+   0.174
+  ],
+  [
+   -0.174,
+   3.14
+  ],
+  [
+   -1.66,
+   6.283185
+  ],
+  [
+   -2.79,
+   2.79
+  ]
+ ],
+ "command_delay_frames": 0,
+ "options": {
+  "timestep": 0.00196078431372549,
+  "substeps_per_frame": 17,
+  "contacts": "disabled"
+ },
+ "meta": {
+  "dataset": "xsatvik/mixer_on_off_new_1",
+  "dataset_revision_sha": "73dc943767d2bc0fb3518844d59b0afc03561a51",
+  "menagerie_sha": "b0655057a9df2abe39ea7fc989914ba6f248301c",
+  "fitted_on_episodes": [
+   0,
+   3,
+   5,
+   6,
+   7,
+   8,
+   9,
+   10,
+   12,
+   13,
+   14,
+   15,
+   16,
+   17,
+   22,
+   24,
+   25,
+   26,
+   28,
+   29,
+   30,
+   31,
+   32,
+   33,
+   34,
+   35,
+   36,
+   37,
+   38,
+   39,
+   40,
+   41,
+   44,
+   45
+  ],
+  "mujoco": "3.17.0",
+  "offsets": "documented calibration convention (not fitted)",
+  "joint_limits": "stock, except limits falsified by the fit episodes, released to +-2 pi"
+ },
+ "sha256": "c1455c192517fd7924e9e768430dd5d2f5b4364c7db6d855c4c70e2f240d1ced"
+}

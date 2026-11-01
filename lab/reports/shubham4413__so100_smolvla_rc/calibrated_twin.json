@@ -1,0 +1,160 @@
+{
+ "schema": "meatspace.calibrated-twin/v1",
+ "twin": "trs_so_arm100",
+ "joints_mjcf": [
+  "Rotation",
+  "Pitch",
+  "Elbow",
+  "Wrist_Pitch",
+  "Wrist_Roll"
+ ],
+ "joints_canonical": [
+  "shoulder_pan",
+  "shoulder_lift",
+  "elbow_flex",
+  "wrist_flex",
+  "wrist_roll"
+ ],
+ "mapping": {
+  "sign": [
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "nominal_offset_deg": [
+   0.0,
+   -90.1263,
+   84.9696,
+   0.0,
+   0.0
+  ],
+  "zero_reference": "mid_range",
+  "note": "LeRobot MotorsBus zero = middle of the calibrated range; nominal offset = middle of the MJCF joint range (assumes the robot was calibrated over the same mechanical range as the MJCF).",
+  "fitted_offset_correction_deg": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "formula": "q_rad = sign*deg2rad(x_deg) + deg2rad(nominal_offset_deg + fitted_offset_correction_deg)"
+ },
+ "params": {
+  "kp": [
+   18.5722,
+   8.5669,
+   12.8785,
+   19.7374,
+   24.4812
+  ],
+  "kv": [
+   1.988116,
+   1.153461,
+   1.627821,
+   2.440747,
+   2.749565
+  ],
+  "damping": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "armature": [
+   0.1,
+   0.1,
+   0.1,
+   0.1,
+   0.1
+  ],
+  "frictionloss": [
+   0.150789,
+   0.171972,
+   0.675129,
+   0.146999,
+   0.09556
+  ]
+ },
+ "jnt_range_rad": [
+  [
+   -1.92,
+   1.92
+  ],
+  [
+   -6.283185,
+   0.174
+  ],
+  [
+   -0.174,
+   6.283185
+  ],
+  [
+   -1.66,
+   6.283185
+  ],
+  [
+   -2.79,
+   2.79
+  ]
+ ],
+ "command_delay_frames": 0,
+ "options": {
+  "timestep": 0.00196078431372549,
+  "substeps_per_frame": 17,
+  "contacts": "disabled"
+ },
+ "meta": {
+  "dataset": "shubham4413/so100_smolvla_rc",
+  "dataset_revision_sha": "b829fbf12935c4575ce8d276e3884a3d6dbf0103",
+  "menagerie_sha": "b0655057a9df2abe39ea7fc989914ba6f248301c",
+  "fitted_on_episodes": [
+   2,
+   3,
+   4,
+   6,
+   8,
+   9,
+   10,
+   15,
+   17,
+   18,
+   19,
+   20,
+   22,
+   25,
+   27,
+   28,
+   30,
+   35,
+   42,
+   44,
+   52,
+   55,
+   65,
+   67,
+   68,
+   72,
+   75,
+   82,
+   85,
+   86,
+   87,
+   91,
+   92,
+   96,
+   99,
+   108,
+   110,
+   115,
+   116,
+   118
+  ],
+  "mujoco": "3.17.0",
+  "offsets": "documented calibration convention (not fitted)",
+  "joint_limits": "stock, except limits falsified by the fit episodes, released to +-2 pi"
+ },
+ "sha256": "2ac5a6d895d7ad5b415c4f648cfa38bf71de9b8b24718a0eb21374f5b03cecd7"
+}

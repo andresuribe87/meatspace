@@ -1,0 +1,548 @@
+{
+ "schema": "meatspace.candidate-pool/v1",
+ "scanned": "2026-11-01 with `python -m meatspace_lab scan` (meta/info.json + first 3 data files at the listed sha)",
+ "pool": "2 seed datasets named in the project brief, plus 28 single-arm SO-100/SO-101 candidates hand-picked by the v1 builder from the top-60 Hugging Face Hub search results for 'so100' and 'so101' (2026-11-01). The criterion of that hand-pick was not recorded. The pick and the scan (14:01-14:04) preceded every v1 report run (first at ~14:24); before that, sim-vs-real numbers existed only for the two seeds (a prior quick replay).",
+ "selection_rule": "v2 (pre-declared, outcome-independent): every candidate whose scan verdict is 'ok' is run with the same pipeline and configuration and listed in INDEX.md whatever its result; at most the first 200 episodes by index are loaded (compute cap). Twin: robotstudio_so101 if 'so101' appears in the dataset id or robot_type, else trs_so_arm100.",
+ "v1_selection": "v1 reported 6 of the 23 scan-ok datasets (2 seeds + 21 of the 28-candidate pool) without stating a rule. 3 more (CarolinePascal/plug_socket_moved, jccj/so100_block_in_cup, julyfun/so100_pick_and_place_v4_50) were downloaded together with the reported ones at 14:21-14:23, before any v1 report was written; no v1 log shows them being run, and why they were left out is not recorded.",
+ "candidates": [
+  {
+   "dataset": "lerobot/svla_so100_pickplace",
+   "sha": "728583b5eaf9e739a7f119e2def466fa1d552402",
+   "source": "seed (named in the project brief)",
+   "scan_verdict": "ok",
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "lerobot/svla_so101_pickplace",
+   "sha": "f641879e22172be7e8161d5e6c1503c2d2feb657",
+   "source": "seed (named in the project brief)",
+   "scan_verdict": "ok",
+   "twin": "robotstudio_so101"
+  },
+  {
+   "dataset": "jchandru08/so100_press_red_button",
+   "sha": "b8544ee7cb9075efbf5f4d2c49f7a6aa93fe0e09",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 29,
+   "total_frames": 19028,
+   "scan_verdict": "not a single SO arm: cannot map joint 'shoulder_pan' in names ['left_shoulder_pan', 'left_shoulder_lift', 'left_elbow_flex', 'left_wrist_flex', 'left_wrist_roll",
+   "scan_units": null
+  },
+  {
+   "dataset": "Chojins/chess_game_001_blue_stereo",
+   "sha": "32e5130eeba23302baf15ceb014124f3e50e3052",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100-blue",
+   "fps": 30,
+   "total_episodes": 577,
+   "total_frames": 233817,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "VoicAndrei/so100_kitchen",
+   "sha": "838ad7bb6d118630c1c49cc2ee8ab9edef933c79",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 1801,
+   "total_frames": 476841,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "shubham4413/so100_smolvla_rc",
+   "sha": "b829fbf12935c4575ce8d276e3884a3d6dbf0103",
+   "source": "scan pool",
+   "codebase_version": "v3.0",
+   "robot_type": "so_follower",
+   "fps": 30,
+   "total_episodes": 160,
+   "total_frames": 77104,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "Loki0929/so100_lan",
+   "sha": "17852d65f6b871a62d760adce88e1dd899663585",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 800,
+   "total_frames": 256427,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "xsatvik/mixer_on_off_new_1",
+   "sha": "73dc943767d2bc0fb3518844d59b0afc03561a51",
+   "source": "scan pool",
+   "codebase_version": "v2.0",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 60,
+   "total_frames": 41082,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "unknown"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "shylee/so100_pengripG",
+   "sha": "ade2e0afcac795b99e36b22c3ef734b877de0410",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 300,
+   "total_frames": 63435,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "apayan/so100_ball8",
+   "sha": "f318cc9490b327bd1382e29c528f7d7348aa4716",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 104,
+   "total_frames": 110416,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "CarolinePascal/plug_socket_moved",
+   "sha": "4336e5a0d67e050ba0ec41ec3a294da75d689ae2",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 44,
+   "total_frames": 15772,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "unknown"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "00ri/so100_battery",
+   "sha": "f619ae763ab6c4e7488c32a4c51f99246a761f5d",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 50,
+   "total_frames": 24263,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "jccj/so100_block_in_cup",
+   "sha": "87a2b14997c2fabe117ca2b1fa4e7a8a42356623",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 50,
+   "total_frames": 21782,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "samsitol/so100_PnPacorn",
+   "sha": "e6df029701efdd46cf260eb26303f2d67005abfb",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 150,
+   "total_frames": 84752,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "youliangtan/so100_strawberry_grape",
+   "sha": "824bec87a1befd17bf4b0985f41cc0a00191b2db",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 40,
+   "total_frames": 32628,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "julyfun/so100_pick_and_place_v4_50",
+   "sha": "0f93d5ec05075a83a55b2a793d205dee6b27b763",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 50,
+   "total_frames": 13638,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "aaronsu11/so100_instrument",
+   "sha": "32acf178fc1f70ba4649e36e083da6a91aa018b1",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so100",
+   "fps": 30,
+   "total_episodes": 125,
+   "total_frames": 25882,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "trs_so_arm100"
+  },
+  {
+   "dataset": "IlyaGusev/so101_pick_gum",
+   "sha": "82136b23ac2a6bbb9927baca8e79ae98da53db79",
+   "source": "scan pool",
+   "codebase_version": "v3.0",
+   "robot_type": "so_follower",
+   "fps": 20,
+   "total_episodes": 155,
+   "total_frames": 27147,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "linear_0_100"
+   ],
+   "twin": "robotstudio_so101"
+  },
+  {
+   "dataset": "hungho77/so101_left_arm_pick_red_cube_into_pot",
+   "sha": "62d3cb12cc705fd39c851833853ec49b2ca20fe4",
+   "source": "scan pool",
+   "codebase_version": "v3.0",
+   "robot_type": "so_follower",
+   "fps": 30,
+   "total_episodes": 50,
+   "total_frames": 37536,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "linear_0_100"
+   ],
+   "twin": "robotstudio_so101"
+  },
+  {
+   "dataset": "G3nadh/so101_pick_place",
+   "sha": "f760e93d322ff2994d7d23e3fc153d33e8845d09",
+   "source": "scan pool",
+   "codebase_version": null,
+   "robot_type": null,
+   "fps": null,
+   "total_episodes": null,
+   "total_frames": null,
+   "scan_verdict": "error: RemoteEntryNotFoundError: 404 Client Error. (Request ID: Root=1-6ae746bb-27d5ed1a14b0d48840c88af4;35b8d28e-224b-4210-9909-51dd9773f8b4)",
+   "scan_units": null
+  },
+  {
+   "dataset": "QianGroup/so101_pick_place",
+   "sha": "e6cfc54d3d2a853d046750c2e779da5fa0092e18",
+   "source": "scan pool",
+   "codebase_version": null,
+   "robot_type": null,
+   "fps": null,
+   "total_episodes": null,
+   "total_frames": null,
+   "scan_verdict": "error: RemoteEntryNotFoundError: 404 Client Error. (Request ID: Root=1-6ae746bc-5ef164f90a309c4d03209f6c;b2112d3d-b9cd-4185-a0e2-fac1d987b3ea)",
+   "scan_units": null
+  },
+  {
+   "dataset": "legalaspro/so101-pick-and-place-cube-lerobot-30hz",
+   "sha": "1c2225ee8f4659cc02ce4c2fbcf596bf37c9f628",
+   "source": "scan pool",
+   "codebase_version": "v3.0",
+   "robot_type": "so101",
+   "fps": 30,
+   "total_episodes": 51,
+   "total_frames": 19764,
+   "scan_verdict": "unsupported units",
+   "scan_units": [
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "linear_0_100"
+   ]
+  },
+  {
+   "dataset": "theconstruct-ai/so101_pickplace_auto_v1",
+   "sha": "9ca7baf8edb5b93b0d0fd78bec75afd68953830c",
+   "source": "scan pool",
+   "codebase_version": "v3.0",
+   "robot_type": "so101",
+   "fps": 50,
+   "total_episodes": 181,
+   "total_frames": 114814,
+   "scan_verdict": "unsupported units",
+   "scan_units": [
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "linear_0_100"
+   ]
+  },
+  {
+   "dataset": "cagataydev/so101-tic-tac-toe",
+   "sha": "b9a751f9641e42294fb57222bbf8f25c8fa3250f",
+   "source": "scan pool",
+   "codebase_version": "v3.0",
+   "robot_type": "so_follower",
+   "fps": 30,
+   "total_episodes": 210,
+   "total_frames": 57092,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "linear_0_100"
+   ],
+   "twin": "robotstudio_so101"
+  },
+  {
+   "dataset": "aswinkumar99/LeRobot-SO101-Pick-Place",
+   "sha": "6f1ceec7b23629d9fcdaf819a7d312f019172977",
+   "source": "scan pool",
+   "codebase_version": null,
+   "robot_type": null,
+   "fps": null,
+   "total_episodes": null,
+   "total_frames": null,
+   "scan_verdict": "error: RemoteEntryNotFoundError: 404 Client Error. (Request ID: Root=1-6ae746c2-4c9769a530ac3e8043c53985;c6e5a758-1624-43d4-b011-e65f923de903)",
+   "scan_units": null
+  },
+  {
+   "dataset": "Jeevesh2009/so101_gray_block_lowvar_test",
+   "sha": "649f2f48bf5ddc9ab289c221aa72976996903e38",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so101",
+   "fps": 30,
+   "total_episodes": 100,
+   "total_frames": 39229,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "robotstudio_so101"
+  },
+  {
+   "dataset": "siyavash/so101_test",
+   "sha": "91435fb531908146edeb823d0a5499d796798c35",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so101",
+   "fps": 30,
+   "total_episodes": 50,
+   "total_frames": 22350,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "robotstudio_so101"
+  },
+  {
+   "dataset": "sincostangerines/stack_cubes_100",
+   "sha": "ee6ddf88fc34cdb62431989c4f99ebab3003c68a",
+   "source": "scan pool",
+   "codebase_version": "v2.1",
+   "robot_type": "so101",
+   "fps": 30,
+   "total_episodes": 31,
+   "total_frames": 22419,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "legacy_degrees",
+    "linear_0_100"
+   ],
+   "twin": "robotstudio_so101"
+  },
+  {
+   "dataset": "Aneysait/so101_pick_red_all",
+   "sha": "296c2bc9d2afbfa0fd05d8c51f7143cf7c9fd883",
+   "source": "scan pool",
+   "codebase_version": "v3.0",
+   "robot_type": "so_follower",
+   "fps": 30,
+   "total_episodes": 116,
+   "total_frames": 39181,
+   "scan_verdict": "ok",
+   "scan_units": [
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "degrees_mode",
+    "linear_0_100"
+   ],
+   "twin": "robotstudio_so101"
+  },
+  {
+   "dataset": "gpudad/so101_pick_cube_chunked",
+   "sha": "e123f74b755f16f54bdb9d629cbc7cc2dc9426b0",
+   "source": "scan pool",
+   "codebase_version": "v3.0",
+   "robot_type": "so101",
+   "fps": 30,
+   "total_episodes": 10990,
+   "total_frames": 1456443,
+   "scan_verdict": "unsupported units",
+   "scan_units": [
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown",
+    "unknown"
+   ]
+  }
+ ]
+}

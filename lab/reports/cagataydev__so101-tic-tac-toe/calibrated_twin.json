@@ -1,0 +1,160 @@
+{
+ "schema": "meatspace.calibrated-twin/v1",
+ "twin": "robotstudio_so101",
+ "joints_mjcf": [
+  "shoulder_pan",
+  "shoulder_lift",
+  "elbow_flex",
+  "wrist_flex",
+  "wrist_roll"
+ ],
+ "joints_canonical": [
+  "shoulder_pan",
+  "shoulder_lift",
+  "elbow_flex",
+  "wrist_flex",
+  "wrist_roll"
+ ],
+ "mapping": {
+  "sign": [
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "nominal_offset_deg": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "zero_reference": "mid_range",
+  "note": "MJCF derived from TheRobotStudio so101_new_calib.xml, whose zero is the LeRobot 'middle of range' calibration pose; nominal offsets 0, documented signs +1 (checked per dataset against the recorded range of motion, mapping_checks).",
+  "fitted_offset_correction_deg": [
+   0.0,
+   0.0,
+   0.0,
+   0.0,
+   0.0
+  ],
+  "formula": "q_rad = sign*deg2rad(x_deg) + deg2rad(nominal_offset_deg + fitted_offset_correction_deg)"
+ },
+ "params": {
+  "kp": [
+   13.9276,
+   17.0686,
+   14.0099,
+   13.929,
+   13.7763
+  ],
+  "kv": [
+   0.705711,
+   0.926253,
+   0.669315,
+   0.703306,
+   0.737295
+  ],
+  "damping": [
+   0.6,
+   0.6,
+   0.6,
+   0.6,
+   0.6
+  ],
+  "armature": [
+   0.028,
+   0.028,
+   0.028,
+   0.028,
+   0.028
+  ],
+  "frictionloss": [
+   0.080797,
+   0.349025,
+   0.327976,
+   0.107878,
+   0.064957
+  ]
+ },
+ "jnt_range_rad": [
+  [
+   -1.91986,
+   1.91986
+  ],
+  [
+   -6.283185,
+   1.745329
+  ],
+  [
+   -1.69,
+   1.69
+  ],
+  [
+   -1.658063,
+   6.283185
+  ],
+  [
+   -2.743847,
+   2.841206
+  ]
+ ],
+ "command_delay_frames": 0,
+ "options": {
+  "timestep": 0.0047619047619047615,
+  "substeps_per_frame": 7,
+  "contacts": "disabled"
+ },
+ "meta": {
+  "dataset": "cagataydev/so101-tic-tac-toe",
+  "dataset_revision_sha": "b9a751f9641e42294fb57222bbf8f25c8fa3250f",
+  "menagerie_sha": "b0655057a9df2abe39ea7fc989914ba6f248301c",
+  "fitted_on_episodes": [
+   1,
+   2,
+   8,
+   9,
+   11,
+   19,
+   20,
+   22,
+   23,
+   25,
+   27,
+   34,
+   36,
+   37,
+   38,
+   39,
+   40,
+   43,
+   44,
+   48,
+   50,
+   74,
+   80,
+   87,
+   91,
+   93,
+   94,
+   105,
+   108,
+   111,
+   116,
+   122,
+   123,
+   124,
+   134,
+   136,
+   140,
+   141,
+   154,
+   157
+  ],
+  "mujoco": "3.17.0",
+  "offsets": "documented calibration convention (not fitted)",
+  "joint_limits": "stock, except limits falsified by the fit episodes, released to +-2 pi"
+ },
+ "sha256": "b35b3a32c727fbdfd279a662b1f85e3eba6b4978faaf590b97f7297447308408"
+}
