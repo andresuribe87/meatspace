@@ -14,8 +14,8 @@ export const REPO_URL = 'https://github.com/andresuribe87/meatspace'
  * lab/ or the memo yet). Each sha is on GitHub; move LAB_REF forward once the v0.2 lab code is pushed.
  */
 export const REPO_REFS = {
-  /** First commit with lab/ and the published Twin Gap Reports. */
-  lab: '2611ceaa14ab86a8529d920a85c73089842cbeee',
+  /** Lab code that produced the published reports, including the trace.json export (v0.2.0). */
+  lab: '58159103270aeec6193d5e3ef2a54a9fdf689769',
   /** The PMF memo, with the bar written down before the batch ran (its commit date is the proof). */
   memo: '05b56a18d1de75f087183f60c9c762b74c72afae',
   /** The SO-101 cell plan. */
