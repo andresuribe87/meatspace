@@ -8,13 +8,15 @@
 # CSS); 'unsafe-inline' in style-src covers React style attributes. font-src allows data: because
 # Vite inlines font files under build.assetsInlineLimit (4 KiB) as data: URIs; the
 # @fontsource-variable/jetbrains-mono cyrillic-ext subset (2 KB) is one of them.
+# Cloudflare Web Analytics is injected on the zone: its beacon loads from static.cloudflareinsights.com
+# and reports to cloudflareinsights.com. Any other zone-level script injection stays blocked.
 
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=()
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' wss: ws:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' wss: ws: https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
 
 # Vite's content-hashed bundles.
 /assets/*
