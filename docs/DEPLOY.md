@@ -4,18 +4,18 @@ One Worker (`meatspace`) carries everything: static assets, the `/v1` API, the `
 
 ## 1. API token
 
-Create a token at **dash.cloudflare.com → My Profile → API Tokens → Create Token**. Start from the **Edit Cloudflare Workers** template, then:
+Use an **account-owned** token (dashboard → Manage account → Account API tokens, or Terraform `cloudflare_account_token`). Wrangler accepts it as long as `CLOUDFLARE_ACCOUNT_ID` is also set, and it needs no user-level permissions. Minimum set:
 
-| Scope | Permission | Why |
+| Resource | Permission group | Why |
 | --- | --- | --- |
-| Account → Workers Scripts | Edit | upload the Worker, Durable Object migrations |
-| Account → D1 | Edit | auto-provision `meatspace-waitlist`, apply migrations |
-| Account → Account Settings | Read | wrangler account lookup |
-| Zone `meatspace.sh` → Workers Routes | Edit | attach the Custom Domain |
-| Zone `meatspace.sh` → Zone | Read | resolve the zone for the Custom Domain |
-| User → Memberships, User Details | Read | wrangler `whoami` (included in the template) |
+| Account | Workers Scripts Write | upload the Worker, static assets, Durable Object migration, bindings |
+| Account | D1 Write | auto-provision `meatspace-waitlist`, apply migrations |
+| Account | Account Settings Read | wrangler account lookup |
+| Account | Workers Tail Read | optional: `wrangler tail` when debugging |
+| Zone `meatspace.sh` | Workers Routes Write | attach the Custom Domain |
+| Zone `meatspace.sh` | Zone Read | resolve the zone for the Custom Domain |
 
-Limit **Account Resources** to your account and **Zone Resources** to `meatspace.sh`.
+Scope the zone policy to `meatspace.sh` only, and set an expiry. KV, R2, Pages and the other groups in the **Edit Cloudflare Workers** template are not used by this project.
 
 Export it with your account ID (dashboard → Workers & Pages → right sidebar):
 
