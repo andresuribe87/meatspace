@@ -1,5 +1,4 @@
-import '@fontsource-variable/jetbrains-mono'
-import '@fontsource-variable/inter'
+// Fonts: self-hosted latin subsets in public/fonts, declared with @font-face in index.css (design system v1.0).
 import './index.css'
 
 import { StrictMode } from 'react'

@@ -1,12 +1,62 @@
 /**
- * Shared UI vocabulary. Every zone builds from these so the terminal look stays consistent.
- * Rules: monospace, 0px radius, 1px #222630 borders, no shadows/gradients, palette tokens only
- * (bg, panel, line, fg, muted, emerald, amber).
+ * Shared UI vocabulary, v0.1. Design system v1.0 "Instrument" lives in src/ds (API: src/ds/README.md);
+ * its components are re-exported below so call sites can move one import at a time.
+ * The v0.1 components in this file keep their markup unchanged until their pages move (v0.2):
+ *   BracketButton -> Key (variant ghost keeps the [ ] brackets as CSS)   StatusTag -> Lamp (shared/status.ts)
+ *   Panel         -> ds Panel (uncal prop)                               CopyButton -> CopyKey / CodeBlock
+ *   Meter         -> IntervalMeter
+ * Rules: 0px radius, 1px borders (line = structure, edge = control boundary), no shadows, palette tokens only.
  */
 import { Check, Copy } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 
 import { copyText } from '../lib/clipboard'
+
+export {
+  Callout,
+  CertificateHeader,
+  ChannelKeys,
+  Check,
+  CheckPoll,
+  CIBars,
+  CodeBlock,
+  CommandLine,
+  ConceptBanner,
+  Console,
+  CopyKey,
+  CurlBlock,
+  Dialog,
+  Field,
+  FieldGrid,
+  Figure,
+  Ids,
+  Input,
+  IntervalMeter,
+  Key,
+  LagReadout,
+  Lamp,
+  Ledger,
+  ModeSwitch,
+  Num,
+  PowerSelector,
+  ProvenanceFrame,
+  Reading,
+  RevisionTable,
+  Ruler,
+  ScopePlot,
+  ScopeStrips,
+  ScrollBox,
+  Seal,
+  SectionHeader,
+  Select,
+  SignalChain,
+  SkipLink,
+  StatusLine,
+  Table,
+  Tabs,
+  Textarea,
+  TitleBlock,
+} from '../ds'
 
 type Tone = 'default' | 'primary' | 'amber' | 'muted'
 
@@ -25,7 +75,10 @@ export interface BracketButtonProps extends ButtonHTMLAttributes<HTMLButtonEleme
   icon?: ReactNode
 }
 
-/** Terminal-style `[ LABEL ]` button. Disabled = muted, no hover. */
+/**
+ * Terminal-style `[ LABEL ]` button. Disabled = muted, no hover.
+ * @deprecated v0.1. Use `<Key variant="ghost">` (or primary / secondary / run / caution) from src/ds.
+ */
 export function BracketButton({ tone = 'default', className = '', children, icon, disabled, type, ...rest }: BracketButtonProps) {
   return (
     <button
@@ -58,7 +111,10 @@ export interface PanelProps {
   as?: 'section' | 'div' | 'aside'
 }
 
-/** Bordered panel with a thin header bar. */
+/**
+ * Bordered panel with a thin header bar.
+ * @deprecated v0.1. Use `Panel` from src/ds (adds `uncal`, heading level and flush body).
+ */
 export function Panel({ title, actions, children, className = '', bodyClassName = '', id, as: Tag = 'section' }: PanelProps) {
   return (
     <Tag id={id} className={`border border-line bg-panel ${className}`}>
@@ -80,7 +136,10 @@ export interface CopyButtonProps {
   ariaLabel?: string
 }
 
-/** `[ COPY ]` -> `[ COPIED ]` for 1.6s. */
+/**
+ * `[ COPY ]` -> `[ COPIED ]` for 1.6s.
+ * @deprecated v0.1. Use `CopyKey` (or `CodeBlock`, which copies exactly without the prompt) from src/ds.
+ */
 export function CopyButton({ text, label = 'COPY', className = '', ariaLabel }: CopyButtonProps) {
   const [state, setState] = useState<'idle' | 'copied' | 'error'>('idle')
   const timer = useRef<number | undefined>(undefined)
@@ -113,12 +172,18 @@ const TAG_TONES: Record<TagTone, string> = {
   fg: 'text-fg',
 }
 
-/** Inline `[STATUS]` tag. */
+/**
+ * Inline `[STATUS]` tag.
+ * @deprecated v0.1. Use `<Lamp status="PREVIEW" />` from src/ds: shape + word + colour from shared/status.ts.
+ */
 export function StatusTag({ children, tone = 'muted', className = '' }: { children: ReactNode; tone?: TagTone; className?: string }) {
   return <span className={`whitespace-nowrap ${TAG_TONES[tone]} ${className}`}>[{children}]</span>
 }
 
-/** 1px-bordered horizontal meter, 0..100. */
+/**
+ * 1px-bordered horizontal meter, 0..100.
+ * @deprecated v0.1. Use `IntervalMeter` from src/ds (track + CI band + point).
+ */
 export function Meter({ value, tone = 'emerald', label, className = '' }: { value: number; tone?: 'emerald' | 'amber' | 'muted'; label: string; className?: string }) {
   const v = Math.max(0, Math.min(100, value))
   const fill = tone === 'amber' ? 'bg-amber' : tone === 'muted' ? 'bg-muted' : 'bg-emerald'

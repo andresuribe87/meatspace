@@ -220,19 +220,32 @@ test.describe('docs, installer, waitlist', () => {
 })
 
 test.describe('design system audit', () => {
-  test('closed palette, monospace, 0px radius, no gradients or shadows', async ({ page }) => {
+  test('closed palette, faces by role, 0px radius, gradients only where allowed, no shadows', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByRole('banner').first()).toContainText('LIVE', { timeout: 10_000 })
     const violations = await page.evaluate(() => {
+      // Design system v1.0 "Instrument" closed palette (src/index.css). #64748B muted is gone (3.90 on panel).
       const ALLOWED = [
-        [9, 10, 12],
-        [17, 19, 24],
-        [34, 38, 48],
-        [226, 232, 240],
-        [100, 116, 139],
-        [16, 185, 129],
-        [245, 158, 11],
+        [9, 10, 12], // bg carbon
+        [17, 19, 24], // panel
+        [23, 26, 32], // raised
+        [34, 38, 48], // line (structure only)
+        [107, 117, 136], // edge (control boundary)
+        [226, 232, 240], // fg
+        [136, 147, 162], // muted
+        [92, 100, 111], // dim (disabled, decoration)
+        [16, 185, 129], // emerald
+        [245, 158, 11], // amber
+        [26, 29, 36], // grat
+        [43, 48, 58], // grat-axis
+        [0, 162, 206], // cyan, CH2 stock (data only)
+        [176, 68, 154], // orchid, CH3 calibrated (data only)
       ]
+      // background-image only on the ruler, the CONCEPT hatch and the select chevron.
+      const GRADIENT_OK = '.ruler, .ann--concept, .concept, .ctl select'
+      // Prose roles are Atkinson Hyperlegible Next; terminal islands inside prose stay mono.
+      const PROSE = '.t-lede, .t-prose, .t-caption, .tlink, .co > .bd, .chain p, .tbl caption'
+      const MONO_ISLAND = 'code, kbd, samp, pre, .ann, .key, .ref, .t-legend, .num'
       const canvas = document.createElement('canvas')
       canvas.width = canvas.height = 1
       const ctx = canvas.getContext('2d', { willReadFrequently: true })!
@@ -268,16 +281,23 @@ test.describe('design system audit', () => {
         for (const corner of ['border-top-left-radius', 'border-top-right-radius', 'border-bottom-left-radius', 'border-bottom-right-radius']) {
           if (cs.getPropertyValue(corner) !== '0px') out.push(`${desc}: ${corner} ${cs.getPropertyValue(corner)}`)
         }
-        if (cs.backgroundImage !== 'none' && !cs.backgroundImage.startsWith('url(')) out.push(`${desc}: background-image ${cs.backgroundImage}`)
+        if (cs.backgroundImage !== 'none' && !cs.backgroundImage.startsWith('url(') && !el.matches(GRADIENT_OK)) out.push(`${desc}: background-image ${cs.backgroundImage}`)
         if (cs.boxShadow !== 'none') out.push(`${desc}: box-shadow ${cs.boxShadow}`)
         if (cs.textShadow !== 'none') out.push(`${desc}: text-shadow ${cs.textShadow}`)
         const hasOwnText = [...el.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim())
         if (hasOwnText) {
-          const mono = /JetBrains Mono/.test(cs.fontFamily)
+          const mono = /JetBrains Mono|Martian Mono/.test(cs.fontFamily)
+          const sans = /Atkinson Hyperlegible Next/.test(cs.fontFamily)
+          const prose = el.closest(PROSE)
+          const island = el.closest(MONO_ISLAND)
+          // v0.1 value prop: prose without a role class until the v0.2 hero replaces it.
           const inProp = valueProp?.contains(el) ?? false
           const isCode = el.tagName === 'CODE'
-          if (inProp && !isCode && mono) out.push(`${desc}: value prop must be sans`)
-          if (!inProp && !mono) out.push(`${desc}: font-family ${cs.fontFamily}`)
+          if (inProp) {
+            if (!isCode && !sans) out.push(`${desc}: value prop must be Atkinson Hyperlegible Next`)
+          } else if (prose && !(island && prose.contains(island))) {
+            if (!sans) out.push(`${desc}: prose role must be Atkinson Hyperlegible Next, got ${cs.fontFamily}`)
+          } else if (!mono) out.push(`${desc}: font-family ${cs.fontFamily}`)
         }
       }
       return out

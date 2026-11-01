@@ -1,29 +1,408 @@
 @import 'tailwindcss';
+/* Component layer of the design system (C-01 to C-24 + data-viz). Token-only, see src/ds/README.md. */
+@import './ds/instrument.css';
 
-/*
- * meatspace.sh design tokens. The palette is CLOSED: default Tailwind colors are removed so
- * nothing outside the handoff palette can be used. Use opacity modifiers (bg-emerald/10) for tints.
- */
-@theme {
+/* =====================================================================================
+   meatspace.sh design system v1.0 "INSTRUMENT" (rev B, converged).
+   The palette is CLOSED: Tailwind's default colours are removed, so nothing outside these tokens
+   can be used. Contrast = WCAG 2.x ratio, computed against carbon #090A0C / panel #111318 / raised #171A20.
+   The living reference is src/pages/DesignPage.tsx; the API reference is src/ds/README.md.
+   ===================================================================================== */
+
+/* ---- Fonts: all SIL OFL 1.1, self-hosted, latin subset only (licences in public/fonts/OFL-*.txt) ----
+   Files are copied byte-for-byte from the pinned @fontsource-variable packages (devDependencies, 5.3.0):
+     jetbrains-mono-latin-wght.woff2        <- jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2       40.4 KB
+     martian-mono-latin-standard.woff2      <- martian-mono/files/martian-mono-latin-standard-normal.woff2       38.5 KB
+     atkinson-hyperlegible-next-latin-wght  <- atkinson-hyperlegible-next/files/...-latin-wght-normal.woff2      34.0 KB
+   plus ms-glyphs.woff2 (4.8 KB): pyftsubset of JetBrains Mono Regular for Δ δ μ σ Σ → ← ≤ ≥ ≈ ≠ ∞ ‰ ■ □ ▲ △ ▼ ▽
+   ▶ ▷ ● ○ ◆ ◇ ◌ ✓ ✕ and box drawing, which no fontsource subset carries. Total 117.7 KB.
+   Preload only the terminal face: <link rel="preload" href="/fonts/jetbrains-mono-latin-wght.woff2" as="font" type="font/woff2" crossorigin> */
+@font-face {
+  font-family: 'JetBrains Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url(/fonts/jetbrains-mono-latin-wght.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* Glyph supplement: same family, its own unicode-range, so a lamp word or a Δ never falls back to a system font. */
+@font-face {
+  font-family: 'JetBrains Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  src: url(/fonts/ms-glyphs.woff2) format('woff2');
+  unicode-range: U+0394, U+03A3, U+03B4, U+03BC, U+03C3, U+2030, U+2190, U+2192, U+2194, U+221E, U+2248, U+2260, U+2264-2265, U+2500, U+2502, U+2514, U+251C, U+253C, U+25A0-25A1, U+25B2-25B3, U+25B6-25B7, U+25BC-25BD, U+25C6-25C7, U+25CB-25CC, U+25CF, U+2713, U+2715;
+}
+/* The readout face. Display, H1/H2, readouts and section numerals only, 22px and up. Axes: wght 100-800, wdth 75-112.5. */
+@font-face {
+  font-family: 'Martian Mono Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 800;
+  font-stretch: 75% 112.5%;
+  src: url(/fonts/martian-mono-latin-standard.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* Prose only (lede, methods, captions): a misread character in a sha or a unit is a defect. */
+@font-face {
+  font-family: 'Atkinson Hyperlegible Next Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url(/fonts/atkinson-hyperlegible-next-latin-wght.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* Metric-matched fallbacks, so the swap does not shift layout. Martian advance .75em vs system mono .60em. */
+@font-face {
+  font-family: 'Martian Mono Fallback';
+  src: local('Menlo'), local('DejaVu Sans Mono'), local('Consolas'), local('Courier New');
+  size-adjust: 125%;
+  ascent-override: 80%;
+  descent-override: 16%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Atkinson Fallback';
+  src: local('Arial'), local('Helvetica Neue'), local('Liberation Sans');
+  size-adjust: 96%;
+  ascent-override: 102%;
+  descent-override: 33%;
+  line-gap-override: 0%;
+}
+
+@theme static {
   --color-*: initial;
-  --color-bg: #090a0c; /* matte carbon */
-  --color-panel: #111318; /* secondary / panels */
-  --color-line: #222630; /* borders */
-  --color-fg: #e2e8f0; /* text primary */
-  --color-muted: #64748b; /* text muted */
-  --color-emerald: #10b981; /* active telemetry */
-  --color-amber: #f59e0b; /* warning / bidding */
+  /* v0.1 names kept so existing classes keep working */
+  --color-bg: #090a0c; /* carbon. fg on it 16.07 */
+  --color-panel: #111318; /* fg 15.07 */
+  --color-line: #222630; /* hairline, structure only: 1.31 / 1.23 / 1.15 (never a control edge) */
+  --color-fg: #e2e8f0; /* 16.07 / 15.07 / 14.14 AAA */
+  --color-muted: #8893a2; /* CHANGED from #64748b (3.90 on panel): 6.36 / 5.97 / 5.59 AA */
+  --color-emerald: #10b981; /* agreement, pass, live: 7.81 / 7.33 / 6.87. carbon on it 7.81 */
+  --color-amber: #f59e0b; /* gap, uncal, fault: 9.22 / 8.65 / 8.11. carbon on it 9.22 */
+  /* additions (measured) */
+  --color-raised: #171a20; /* hover row, selected, input well. fg 14.14 */
+  --color-edge: #6b7588; /* control boundary: 4.27 / 4.00 / 3.76, passes 1.4.11 on every surface */
+  --color-dim: #5c646f; /* disabled + decoration only (3.31 / 3.10 / 2.91). Never essential text */
+  --color-grat: #1a1d24; /* graticule major (decorative) */
+  --color-grat-axis: #2b303a; /* graticule centre axes + minor ticks (decorative) */
+  --color-ch-stock: #00a2ce; /* CH2 stock twin, data only: 6.66 / 6.25 / 5.86 */
+  --color-ch-cal: #b0449a; /* CH3 calibrated twin, data only: 3.90 / 3.66 / 3.44 */
+  /* Channel pair, all pairs on carbon/panel/raised: CVD worst ΔE 10.0 (deutan), normal-vision ΔE 26.7, both ≥ 3:1. */
 
   --font-*: initial;
-  /* Slashed zero, no ligatures: `->` and `<=` must render as typed. Tailwind's preflight reads this for pre/code/kbd. */
+  --font-display: 'Martian Mono Variable', 'Martian Mono', 'Martian Mono Fallback', 'JetBrains Mono Variable', ui-monospace, monospace;
+  /* Slashed zero, no ligatures: `->` and `<=` render as typed. Tailwind's preflight reads this for pre/code/kbd. */
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --font-mono--font-feature-settings: 'zero' 1, 'calt' 0;
-  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', 'Fira Code', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --font-sans: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Atkinson Hyperlegible Next Variable', 'Atkinson Hyperlegible Next', 'Atkinson Fallback', ui-sans-serif, system-ui, sans-serif;
 
+  /* Type scale: size / line-height. Weight, width and tracking live in the t-* role utilities below. */
+  --text-legend: 11px;
+  --text-legend--line-height: 1.3;
+  --text-ann: 10.5px;
+  --text-ann--line-height: 1;
+  --text-ui: 13px;
+  --text-ui--line-height: 1.5;
+  --text-code: 13px;
+  --text-code--line-height: 1.7;
+  --text-body: 14px;
+  --text-body--line-height: 1.55;
+  --text-caption: 14.5px;
+  --text-caption--line-height: 1.5;
+  --text-h3: 16px;
+  --text-h3--line-height: 1.4;
+  --text-prose: 17px;
+  --text-prose--line-height: 1.6;
+  --text-lede: 20px;
+  --text-lede--line-height: 1.5;
+  --text-h2: 30px; /* phone 24 */
+  --text-h2--line-height: 1.18;
+  --text-h1: 48px; /* phone 34 */
+  --text-h1--line-height: 1.05;
+  --text-display: 76px; /* phone 50 */
+  --text-display--line-height: 0.98;
+  --text-ro-s: 26px;
+  --text-ro-s--line-height: 1;
+  --text-ro-m: 40px;
+  --text-ro-m--line-height: 1;
+  --text-ro-l: 64px; /* phone 48 */
+  --text-ro-l--line-height: 1;
+  --text-ro-xl: 112px; /* phone 72 */
+  --text-ro-xl--line-height: 1;
+
+  --spacing: 4px; /* s-1..s-10 = 4 8 12 16 24 32 48 64 96 128 */
   --radius-*: initial;
   --shadow-*: initial;
+  --inset-shadow-*: initial;
   --drop-shadow-*: initial;
+  --text-shadow-*: initial;
   --blur-*: initial;
+
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 43.75rem; /* 700: 5 divisions */
+  --breakpoint-lg: 68.75rem; /* 1100 */
+  --container-plot: 35rem; /* 560: plots go to 5 divisions, s/div doubles; Fig 2 stacks; Fig 3 vernier only */
+  --container-strip: 56.25rem; /* 900: Fig 1 side table drops below */
+  --container-mock: 47.5rem; /* 760: homepage single column, report index stacks */
+  --container-hero: 62.5rem; /* 1000: hero stacks */
+
+  --animate-blink: blink 1s steps(1, end) infinite; /* armed lamp, stream cursor only */
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+}
+
+:root {
+  color-scheme: dark;
+  /* Semantic aliases for components and hand-written SVG. Charts style strokes with these through CSS classes,
+     so the paper theme re-resolves the same SVG. */
+  --bg: var(--color-bg);
+  --surface: var(--color-panel);
+  --raised: var(--color-raised);
+  --screen: var(--color-bg);
+  --line: var(--color-line);
+  --edge: var(--color-edge);
+  --text: var(--color-fg);
+  --muted: var(--color-muted);
+  --dim: var(--color-dim);
+  --on-signal: var(--color-bg);
+  --ok: var(--color-emerald);
+  --warn: var(--color-amber);
+  --ok-wash: color-mix(in srgb, var(--color-emerald) 12%, transparent);
+  --warn-wash: color-mix(in srgb, var(--color-amber) 10%, transparent); /* amber text on it 7.57 */
+  --mask-wash: color-mix(in srgb, var(--color-fg) 9%, transparent); /* ±tolerance band around CH1 */
+  --ch-real: var(--color-fg); /* CH1: solid 1.5px, drawn last (on top) */
+  --ch-stock: var(--color-ch-stock); /* CH2: dash 8 4, 2px, under CH1 */
+  --ch-cal: var(--color-ch-cal); /* CH3: dash 6 3, 4px on traces (a dashed fringe around CH1 where it agrees), 1.5px in Δ */
+  --ch-cmd: var(--color-muted); /* command a[t]: dot 1 3, 1px */
+  --grat: var(--color-grat);
+  --grat-axis: var(--color-grat-axis);
+  --grat-frame: var(--color-line);
+  --focus: var(--color-fg); /* 2px outline, 2px offset: 16.07 on carbon */
+
+  --mono-features: 'zero' 1, 'calt' 0;
+  --wdth-readout: 112.5%;
+  --wdth-display: 100%;
+  --wdth-head: 87.5%;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+  --s-10: 128px;
+  --bw: 1px;
+  --bw-2: 2px;
+
+  --divs: 10;
+  --gutter: 24px;
+  --margin: 48px;
+  --maxw: 1440px;
+  --h-key: 36px;
+  --h-key-sm: 28px;
+  --h-touch: 44px;
+  --h-ctl: 40px;
+  --h-row: 32px;
+  --h-ann: 20px;
+  --dur-0: 0ms;
+  --dur-blink: 1000ms;
+  --dur-sweep: 1200ms; /* sweep deferred to v0.3 */
+  --ease-step: steps(1, end);
+  --z-plot: 10;
+  --z-sticky: 40;
+  --z-pop: 60;
+  --z-dialog: 80;
+
+  /*
+   * Space the sticky status bar takes at the top of the viewport (bar height plus breathing room), so
+   * in-page jumps land below it. Phones: the bar scrolls away. sm..1599px: two-row bar. 1600px+: one row.
+   */
+  --header-h: 0px;
+}
+@media (width >= 40rem) {
+  :root {
+    --header-h: 80px;
+  }
+}
+@media (width >= 1600px) {
+  :root {
+    --header-h: 56px;
+  }
+}
+@media (width < 1100px) {
+  :root {
+    --margin: 32px;
+  }
+}
+@media (width < 700px) {
+  :root {
+    --margin: 16px;
+    --gutter: 16px;
+    --divs: 5;
+  }
+}
+
+/* Paper: exports and print only. Same components and SVG, re-resolved from tokens.
+   Ratios against paper #F3F1EC / sheet #FBFAF7 / raised #EFECE5. */
+:root[data-theme='paper'],
+.theme-paper {
+  color-scheme: light;
+  --bg: #f3f1ec;
+  --surface: #fbfaf7;
+  --raised: #efece5;
+  --screen: #fbfaf7;
+  --line: #d9d6ce;
+  --edge: #7e838b; /* 3.38 / 3.65 / 3.23 */
+  --text: #0b0d10; /* 17.24 / 18.64 / 16.49 */
+  --muted: #5f6570; /* 5.19 / 5.62 / 4.97 */
+  --dim: #8a8f97;
+  --on-signal: #fbfaf7;
+  --ok: #047857; /* 4.86 / 5.25 / 4.65; sheet on it 5.25 */
+  --warn: #92400e; /* 6.28 / 6.79 / 6.01; sheet on it 6.79 */
+  --ok-wash: color-mix(in srgb, #047857 10%, transparent);
+  --warn-wash: color-mix(in srgb, #b45309 10%, transparent);
+  --mask-wash: color-mix(in srgb, #0b0d10 7%, transparent);
+  --ch-real: #0b0d10;
+  --ch-stock: #0088af;
+  --ch-cal: #a90959; /* paper pair: CVD ΔE 13.7; 3.62 / 6.48 on paper */
+  --ch-cmd: #5f6570;
+  --grat: #e6e3dc;
+  --grat-axis: #cfcbc2;
+  --grat-frame: #cfcbc2;
+  --focus: #0b0d10;
+}
+@media print {
+  :root {
+    color-scheme: light;
+  }
+}
+
+/* ---- Type roles: one class per role; never mix families inside a role ---- */
+@utility t-display {
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  line-height: var(--text-display--line-height);
+  font-weight: 300;
+  font-stretch: var(--wdth-head);
+  letter-spacing: -0.035em;
+  @media (width < 700px) {
+    font-size: 50px;
+  }
+}
+@utility t-h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  line-height: var(--text-h1--line-height);
+  font-weight: 350;
+  font-stretch: var(--wdth-head);
+  letter-spacing: -0.025em;
+  @media (width < 700px) {
+    font-size: 34px;
+  }
+}
+@utility t-h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  line-height: var(--text-h2--line-height);
+  font-weight: 380;
+  font-stretch: var(--wdth-head);
+  letter-spacing: -0.02em;
+  @media (width < 700px) {
+    font-size: 24px;
+  }
+}
+@utility t-h3 {
+  font-family: var(--font-mono);
+  font-size: var(--text-h3);
+  line-height: var(--text-h3--line-height);
+  font-weight: 600;
+}
+@utility t-readout {
+  font-family: var(--font-display);
+  font-stretch: var(--wdth-readout);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: proportional-nums;
+  white-space: nowrap;
+}
+@utility t-body {
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+}
+@utility t-ui {
+  font-size: var(--text-ui);
+  line-height: var(--text-ui--line-height);
+}
+@utility t-code {
+  font-family: var(--font-mono);
+  font-size: var(--text-code);
+  line-height: var(--text-code--line-height);
+}
+@utility t-legend {
+  font-family: var(--font-mono);
+  font-size: var(--text-legend);
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+@utility t-lede {
+  font-family: var(--font-sans);
+  font-feature-settings: normal;
+  font-size: var(--text-lede);
+  line-height: var(--text-lede--line-height);
+  font-weight: 400;
+  @media (width < 700px) {
+    font-size: 18px;
+  }
+}
+@utility t-prose {
+  font-family: var(--font-sans);
+  font-feature-settings: normal;
+  font-size: var(--text-prose);
+  line-height: var(--text-prose--line-height);
+  font-weight: 400;
+}
+@utility t-caption {
+  font-family: var(--font-sans);
+  font-feature-settings: normal;
+  font-size: var(--text-caption);
+  line-height: var(--text-caption--line-height);
+  font-weight: 400;
+  color: var(--muted);
+}
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+/* "n = 10", "133 ms" and "95% [a, b]" never break across lines. */
+@utility nw {
+  white-space: nowrap;
+}
+/* Visible on keyboard focus only. First focusable element on every page: <a class="skip-link" href="#main">. */
+@utility skip-link {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 100;
+  padding: 8px 12px;
+  background: var(--text);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-decoration: none;
+  &:focus {
+    top: 8px;
+  }
 }
 
 @layer base {
@@ -33,31 +412,13 @@
     border-radius: 0 !important;
   }
 
-  /*
-   * Space the sticky status bar takes at the top of the viewport (bar height plus breathing room), so
-   * in-page jumps land below it. Phones: the bar scrolls away. sm..1599px: two-row bar. 1600px+: one row.
-   */
-  :root {
-    --header-h: 0px;
-  }
-  @media (width >= 40rem) {
-    :root {
-      --header-h: 80px;
-    }
-  }
-  @media (width >= 1600px) {
-    :root {
-      --header-h: 56px;
-    }
-  }
-
   html {
     scroll-padding-top: var(--header-h);
     color-scheme: dark;
-    background-color: var(--color-bg);
-    color: var(--color-fg);
+    background-color: var(--bg);
+    color: var(--text);
     font-family: var(--font-mono);
-    font-feature-settings: 'zero' 1, 'calt' 0;
+    font-feature-settings: var(--mono-features);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-text-size-adjust: 100%;
@@ -67,17 +428,18 @@
   body {
     margin: 0;
     min-height: 100dvh;
-    background-color: var(--color-bg);
+    background-color: var(--bg);
     overflow-x: hidden;
   }
 
   ::selection {
     background-color: color-mix(in srgb, var(--color-emerald) 35%, transparent);
-    color: var(--color-fg);
+    color: var(--text);
   }
 
+  /* Focus: a 2px fg outline with a 2px offset on everything focusable, including the primary key and plot playheads. */
   :focus-visible {
-    outline: 1px solid var(--color-emerald);
+    outline: var(--bw-2) solid var(--focus);
     outline-offset: 2px;
   }
 
@@ -87,6 +449,7 @@
   textarea {
     font: inherit;
     color: inherit;
+    font-feature-settings: inherit;
   }
 
   button:not(:disabled),
@@ -97,22 +460,23 @@
   /* Thin, square scrollbars that match the panels. */
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-line) transparent;
+    scrollbar-color: var(--line) transparent;
   }
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--color-line);
+    background: var(--line);
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
 }
 
+/* ---- v0.1 utilities kept until their call sites move (StatusBar ticker, DispatchConsole flash). ----
+   Deprecated by the system: the ticker and the flash go with the v0.2 pages. `cursor-blink` = `animate-blink`. */
 @layer utilities {
-  /* Horizontal ticker crawl for narrow screens. Duplicate the content twice inside .ticker-track. */
   @keyframes ticker-crawl {
     from {
       transform: translateX(0);
@@ -126,23 +490,9 @@
     width: max-content;
     animation: ticker-crawl 40s linear infinite;
   }
-
-  /* Hard on/off cursor blink (no easing: terminals don't fade). */
-  @keyframes cursor-blink {
-    0%,
-    49% {
-      opacity: 1;
-    }
-    50%,
-    100% {
-      opacity: 0;
-    }
-  }
   .cursor-blink {
-    animation: cursor-blink 1s steps(1, end) infinite;
+    animation: blink var(--dur-blink) var(--ease-step) infinite;
   }
-
-  /* One-shot flash used when [ TASK NODE ] loads a payload into the console. */
   @keyframes flash-emerald {
     0% {
       box-shadow: inset 0 0 0 1px var(--color-emerald);
@@ -156,20 +506,72 @@
   .flash-emerald {
     animation: flash-emerald 900ms steps(6, end) 1;
   }
+}
 
-  .tabular {
-    font-variant-numeric: tabular-nums;
+/* ---- Terminals don't fade (rule 7). Reduced motion turns off every animation. ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ticker-track {
-    animation: none;
+/* ---- Forced colours: borders, lamps and focus map to system colours; placeholder underlines stay visible. ---- */
+@media (forced-colors: active) {
+  .ann,
+  .key,
+  .ctl,
+  .pnl,
+  .fig,
+  .scope-f,
+  .code,
+  .con,
+  .seal,
+  .co,
+  .tblock,
+  .pframe,
+  .chkey,
+  .mode {
+    border-color: CanvasText;
+    forced-color-adjust: auto;
   }
-  .cursor-blink {
-    animation: none;
+  .ann::before,
+  .key .sq {
+    background: CanvasText !important;
+    border-color: CanvasText !important;
   }
-  .flash-emerald {
-    animation: none;
+  .ann--pass,
+  .ann--fault,
+  .ann--refused,
+  .ann--lit {
+    background: Canvas !important;
+  }
+  .ann--pass > span,
+  .ann--fault > span,
+  .ann--refused > span,
+  .ann--lit > span {
+    color: CanvasText !important;
+  }
+  .num:not([data-prov]) {
+    text-decoration-color: CanvasText;
+  }
+  .concept,
+  .ann--concept,
+  .ruler {
+    background: Canvas;
+  }
+  .ruler {
+    border-top-color: CanvasText;
+  }
+  :focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+@media print {
+  .skip-link {
+    display: none;
   }
 }

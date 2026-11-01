@@ -1,0 +1,103 @@
+/* Layout for the living design reference (src/pages/DesignPage.tsx) only. Not product UI.
+   Imported by DesignPage, so it ships only where the reference is routed. Token-only. */
+@layer components {
+  .dsr { padding-bottom: var(--s-8); }
+  .dsr-sec { padding-top: var(--s-9); padding-bottom: var(--s-7); container-type: inline-size; }
+  .dsr-sec:first-of-type { padding-top: var(--s-8); }
+  .dsr-index {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 4px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .dsr-index .brand { font-weight: 600; margin-right: var(--s-4); white-space: nowrap; }
+  .dsr-index .brand span { color: var(--muted); font-weight: 400; }
+  .dsr-index a { color: var(--muted); text-decoration: none; padding: 6px 8px; font-size: 12.5px; white-space: nowrap; }
+  .dsr-index a:hover { color: var(--text); }
+  .dsr-index a b { font-weight: 500; margin-right: 6px; }
+  .dsr-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: var(--s-3);
+    display: flex;
+    gap: var(--s-3);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .dsr-label b { color: var(--text); font-weight: 600; }
+  .dsr-cell { border: 1px solid var(--line); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .dsr-cell > .dsr-label { margin-bottom: var(--s-4); }
+  .dsr-cover-h {
+    font-family: var(--font-display);
+    font-size: 60px;
+    line-height: 1.05;
+    font-weight: 350;
+    font-stretch: var(--wdth-head);
+    letter-spacing: -0.025em;
+    max-width: 15ch;
+    margin: 0;
+  }
+  @media (width < 700px) {
+    .dsr-cover-h { font-size: 38px; }
+  }
+
+  /* seven rules */
+  .dsr-rules { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); border-top: 1px solid var(--edge); border-left: 1px solid var(--line); margin: 0; padding: 0; list-style: none; }
+  .dsr-rules > li { padding: var(--s-4) var(--s-4) var(--s-5); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-width: 0; }
+  .dsr-rules > li > b { display: block; font-family: var(--font-display); font-size: 30px; font-weight: 200; font-stretch: var(--wdth-readout); color: var(--muted); line-height: 1; margin-bottom: var(--s-3); }
+  .dsr-rules h3 { font-size: 14.5px; font-weight: 600; margin: 0 0 6px; }
+  .dsr-rules p { font-family: var(--font-sans); font-feature-settings: normal; font-size: 15px; line-height: 1.5; color: var(--muted); margin: 0; }
+  .dsr-taken { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .dsr-taken li { display: grid; grid-template-columns: 52px 1fr; gap: 10px; }
+  .dsr-taken li .ann { justify-self: start; margin-top: 2px; }
+  .dsr-taken li p { font-family: var(--font-sans); font-feature-settings: normal; font-size: 15px; line-height: 1.5; color: var(--muted); margin: 0; }
+
+  /* tokens */
+  .dsr-swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+  .dsr-swatch { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-width: 0; }
+  .dsr-swatch .chip { height: 64px; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 14px; }
+  .dsr-swatch .chip.is-surface { border: 1px solid var(--line); border-width: 0 0 1px; }
+  .dsr-swatch .chip i { display: block; width: 100%; height: 0; border-top: 2px solid; }
+  .dsr-swatch .meta { padding: 8px 10px 10px; font-size: 11.5px; display: grid; gap: 2px; }
+  .dsr-swatch .meta b { font-weight: 600; }
+  .dsr-swatch .meta .cr { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .dsr-type { border-top: 1px solid var(--line); }
+  .dsr-type > div { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: var(--s-5); padding: var(--s-4) 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+  .dsr-type .meta { font-size: 11.5px; color: var(--muted); line-height: 1.6; margin: 0; }
+  .dsr-type .meta b { color: var(--text); font-weight: 600; }
+  .dsr-type .ex { min-width: 0; overflow: hidden; padding-bottom: 0.12em; margin: 0; }
+  @media (width < 700px) {
+    .dsr-type > div { grid-template-columns: 1fr; gap: var(--s-2); }
+  }
+  .dsr-spacing { display: flex; align-items: flex-end; gap: var(--s-4); flex-wrap: wrap; }
+  .dsr-spacing > div { display: grid; gap: 6px; justify-items: start; font-size: 11px; color: var(--muted); }
+  .dsr-spacing i { display: block; background: var(--edge); height: 12px; }
+  .dsr-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .dsr-list b { font-weight: 600; }
+
+  /* voice + access */
+  .dsr-dodont { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); }
+  .dsr-dodont > div { padding: var(--s-3) var(--s-4); font-family: var(--font-sans); font-feature-settings: normal; font-size: 15px; line-height: 1.5; }
+  .dsr-dodont > div + div { border-left: 1px solid var(--line); }
+  .dsr-dodont .h { font-family: var(--font-mono); margin: 0 0 6px; display: flex; gap: 8px; align-items: center; }
+  @media (width < 700px) {
+    .dsr-dodont { grid-template-columns: 1fr; }
+    .dsr-dodont > div + div { border-left: 0; border-top: 1px solid var(--line); }
+  }
+  .dsr-check { margin: 0; padding: 0; list-style: none; }
+  .dsr-check li { display: grid; grid-template-columns: 180px 1fr; gap: var(--s-4); padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .dsr-check li b { font-weight: 600; }
+  .dsr-check li span { font-family: var(--font-sans); font-feature-settings: normal; font-size: 15px; color: var(--muted); }
+  @media (width < 700px) {
+    .dsr-check li { grid-template-columns: 1fr; gap: 4px; }
+  }
+  .dsr-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  @media (width < 1100px) {
+    .dsr-two { grid-template-columns: minmax(0, 1fr); }
+  }
+  .dsr-foot { margin-top: var(--s-8); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+}
